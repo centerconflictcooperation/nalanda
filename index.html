@@ -5,7 +5,7 @@
 <meta charset="utf-8">
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-<title>What the Package Does (One Line, Title Case) • nalanda</title>
+<title>Tools for Analyzing Books and Prosociality Research Data • nalanda</title>
 <!-- favicons --><link rel="icon" type="image/png" sizes="96x96" href="favicon-96x96.png">
 <link rel="icon" type="”image/svg+xml”" href="favicon.svg">
 <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
@@ -15,9 +15,9 @@
 <link href="deps/bootstrap-5.3.1/bootstrap.min.css" rel="stylesheet">
 <script src="deps/bootstrap-5.3.1/bootstrap.bundle.min.js"></script><link href="deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
-<script src="deps/headroom-0.11.0/headroom.min.js"></script><script src="deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="deps/search-1.0.0/fuse.min.js"></script><script src="deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="pkgdown.js"></script><meta property="og:title" content="What the Package Does (One Line, Title Case)">
-<meta name="description" content="What the package does (one paragraph).">
-<meta property="og:description" content="What the package does (one paragraph).">
+<script src="deps/headroom-0.11.0/headroom.min.js"></script><script src="deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="deps/search-1.0.0/fuse.min.js"></script><script src="deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="pkgdown.js"></script><meta property="og:title" content="Tools for Analyzing Books and Prosociality Research Data">
+<meta name="description" content="Provides tools and utilities for analyzing research data related to books, reading, and prosocial behavior. Named after the historic Nalanda Mahavihara, a center of learning and scholarly collaboration in ancient India.">
+<meta property="og:description" content="Provides tools and utilities for analyzing research data related to books, reading, and prosocial behavior. Named after the historic Nalanda Mahavihara, a center of learning and scholarly collaboration in ancient India.">
 <meta property="og:image" content="https://centerconflictcooperation.github.io/nalanda/logo.png">
 </head>
 <body>
@@ -57,7 +57,18 @@
 </div>
 <!-- badges: start -->
 
-<p>The goal of nalanda is to …</p>
+<div class="section level2">
+<h2 id="about-the-name">About the Name<a class="anchor" aria-label="anchor" href="#about-the-name"></a>
+</h2>
+<p>The package is named after <a href="https://en.wikipedia.org/wiki/Nalanda" class="external-link">Nalanda Mahavihara</a>, one of the most renowned centers of learning in ancient India. Founded in the 5th century CE, Nalanda was a Buddhist monastic university that attracted scholars from across Asia and became a symbol of knowledge, wisdom, and the pursuit of learning through texts and collaboration.</p>
+<p>This name is particularly fitting for a package related to the study of books and prosociality, reflecting the historical significance of Nalanda as a center for both scholarly texts and the cooperative exchange of ideas. The connection resonates with contemporary research on how books and shared learning can foster prosocial behavior and cooperation.</p>
+<p>Learn more about related research on books, learning, and prosociality: <a href="https://mindandlife-europe.org/2024-eva-recipients-projects/" class="external-link">Mind and Life Europe - 2024 EVA Recipients &amp; Projects</a></p>
+</div>
+<div class="section level2">
+<h2 id="overview">Overview<a class="anchor" aria-label="anchor" href="#overview"></a>
+</h2>
+<p>The <strong>nalanda</strong> package provides tools and utilities for analyzing research data related to books, reading, and prosocial behavior. The package aims to facilitate the exploration of how books and shared learning experiences can foster prosociality and cooperation in communities.</p>
+</div>
 <div class="section level2">
 <h2 id="installation">Installation<a class="anchor" aria-label="anchor" href="#installation"></a>
 </h2>
@@ -69,24 +80,13 @@
 <div class="section level2">
 <h2 id="example">Example<a class="anchor" aria-label="anchor" href="#example"></a>
 </h2>
-<p>This is a basic example which shows you how to solve a common problem:</p>
+<p>The package includes a simple function to explore historical facts about Nalanda University:</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://centerconflictcooperation.github.io/nalanda/">nalanda</a></span><span class="op">)</span></span>
-<span><span class="co">## basic example code</span></span></code></pre></div>
-<p>What is special about using <code>README.Rmd</code> instead of just <code>README.md</code>? You can include R chunks like so:</p>
-<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">cars</span><span class="op">)</span></span>
-<span><span class="co">#&gt;      speed           dist       </span></span>
-<span><span class="co">#&gt;  Min.   : 4.0   Min.   :  2.00  </span></span>
-<span><span class="co">#&gt;  1st Qu.:12.0   1st Qu.: 26.00  </span></span>
-<span><span class="co">#&gt;  Median :15.0   Median : 36.00  </span></span>
-<span><span class="co">#&gt;  Mean   :15.4   Mean   : 42.98  </span></span>
-<span><span class="co">#&gt;  3rd Qu.:19.0   3rd Qu.: 56.00  </span></span>
-<span><span class="co">#&gt;  Max.   :25.0   Max.   :120.00</span></span></code></pre></div>
-<p>You’ll still need to render <code>README.Rmd</code> regularly, to keep <code>README.md</code> up-to-date. <code>devtools::build_readme()</code> is handy for this.</p>
-<p>You can also embed plots, for example:</p>
-<p><img src="reference/figures/README-pressure-1.png" width="100%"></p>
-<p>In that case, don’t forget to commit and push the resulting figure files, so they display on GitHub and CRAN.</p>
+<span></span>
+<span><span class="co"># Get a random fact about Nalanda University</span></span>
+<span><span class="fu"><a href="reference/nalanda.html">nalanda</a></span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="co">#&gt; [1] "Xuanzang, the 7th-century Chinese monk and scholar, studied at Nalanda for several years and documented its curriculum."</span></span></code></pre></div>
 </div>
 </div>
   </main><aside class="col-md-3"><div class="license">
@@ -116,7 +116,7 @@
 <div class="developers">
 <h2 data-toc-skip>Developers</h2>
 <ul class="list-unstyled">
-<li>First Last <br><small class="roles"> Author, maintainer </small>   </li>
+<li>Rémi Thériault <br><small class="roles"> Author, maintainer </small> <a href="https://orcid.org/0000-0003-4315-6788" target="orcid.widget" aria-label="ORCID" class="external-link"><span class="fab fa-orcid orcid" aria-hidden="true"></span></a>  </li>
 </ul>
 </div>
 
@@ -135,7 +135,7 @@
 
 
     <footer><div class="pkgdown-footer-left">
-  <p>Developed by First Last.</p>
+  <p>Developed by Rémi Thériault.</p>
 </div>
 
 <div class="pkgdown-footer-right">
