@@ -62,5 +62,5 @@ library(nalanda)
 
 # Get a random fact about Nalanda University
 nalanda()
-#> [1] "Nalanda University was founded in the 5th century CE in present-day Bihar, India."
+#> [1] "Xuanzang, the 7th-century Chinese monk and scholar, studied at Nalanda for several years and documented its curriculum."
 ```
