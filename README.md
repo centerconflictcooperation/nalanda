@@ -36,7 +36,11 @@ Projects](https://mindandlife-europe.org/2024-eva-recipients-projects/)
 
 ## Overview
 
-The goal of nalanda is to …
+The **nalanda** package provides tools and utilities for analyzing
+research data related to books, reading, and prosocial behavior. The
+package aims to facilitate the exploration of how books and shared
+learning experiences can foster prosociality and cooperation in
+communities.
 
 ## Installation
 

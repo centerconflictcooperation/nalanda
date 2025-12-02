@@ -1,9 +1,12 @@
 Package: nalanda
-Title: What the Package Does (One Line, Title Case)
+Title: Tools for Analyzing Books and Prosociality Research Data
 Version: 0.0.0.9000
 Authors@R: 
-    person("First", "Last", , "first.last@example.com", role = c("aut", "cre"))
-Description: What the package does (one paragraph).
+    person("Rémi", "Thériault", , "remi.theriault@mail.mcgill.ca", role = c("aut", "cre"),
+           comment = c(ORCID = "0000-0003-4315-6788"))
+Description: Provides tools and utilities for analyzing research data related to 
+    books, reading, and prosocial behavior. Named after the historic Nalanda 
+    Mahavihara, a center of learning and scholarly collaboration in ancient India.
 License: MIT + file LICENSE
 Suggests: 
     testthat (>= 3.0.0)
