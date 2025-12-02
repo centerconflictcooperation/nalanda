@@ -14,6 +14,28 @@ status](https://www.r-pkg.org/badges/version/nalanda)](https://CRAN.R-project.or
 coverage](https://codecov.io/gh/centerconflictcooperation/nalanda/graph/badge.svg)](https://app.codecov.io/gh/centerconflictcooperation/nalanda)
 <!-- badges: end -->
 
+## About the Name
+
+The package is named after [Nalanda
+Mahavihara](https://en.wikipedia.org/wiki/Nalanda), one of the most
+renowned centers of learning in ancient India. Founded in the 5th
+century CE, Nalanda was a Buddhist monastic university that attracted
+scholars from across Asia and became a symbol of knowledge, wisdom, and
+the pursuit of learning through texts and collaboration.
+
+This name is particularly fitting for a package related to the study of
+books and prosociality, reflecting the historical significance of
+Nalanda as a center for both scholarly texts and the cooperative
+exchange of ideas. The connection resonates with contemporary research
+on how books and shared learning can foster prosocial behavior and
+cooperation.
+
+Learn more about related research on books, learning, and prosociality:
+[Mind and Life Europe - 2024 EVA Recipients &
+Projects](https://mindandlife-europe.org/2024-eva-recipients-projects/)
+
+## Overview
+
 The goal of nalanda is to …
 
 ## Installation
