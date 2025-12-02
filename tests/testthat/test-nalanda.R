@@ -15,7 +15,7 @@ test_that("nalanda() returns one of the expected facts", {
     "Xuanzang, the 7th-century Chinese monk and scholar, studied at Nalanda for several years and documented its curriculum.",
     "Nalanda remained an active center of learning for roughly 700 years until the 12th century."
   )
-  
+
   result <- nalanda()
   expect_true(result %in% expected_facts)
 })
@@ -24,7 +24,7 @@ test_that("nalanda() returns different facts when called multiple times", {
   # Set seed for reproducibility but expect some variation
   set.seed(123)
   results <- replicate(50, nalanda())
-  
+
   # Should have more than one unique fact in 50 calls
   expect_gt(length(unique(results)), 1)
 })
