@@ -1,25 +1,5 @@
 # nalanda
 
-## About the Name
-
-The package is named after [Nalanda
-Mahavihara](https://en.wikipedia.org/wiki/Nalanda), one of the most
-renowned centers of learning in ancient India. Founded in the 5th
-century CE, Nalanda was a Buddhist monastic university that attracted
-scholars from across Asia and became a symbol of knowledge, wisdom, and
-the pursuit of learning through texts and collaboration.
-
-This name is particularly fitting for a package related to the study of
-books and prosociality, reflecting the historical significance of
-Nalanda as a center for both scholarly texts and the cooperative
-exchange of ideas. The connection resonates with contemporary research
-on how books and shared learning can foster prosocial behavior and
-cooperation.
-
-Learn more about related research on books, learning, and prosociality:
-[Mind and Life Europe - 2024 EVA Recipients &
-Projects](https://mindandlife-europe.org/2024-eva-recipients-projects/)
-
 ## Overview
 
 The **nalanda** package provides tools and utilities for analyzing
@@ -48,5 +28,25 @@ library(nalanda)
 
 # Get a random fact about Nalanda University
 nalanda()
-#> [1] "Xuanzang, the 7th-century Chinese monk and scholar, studied at Nalanda for several years and documented its curriculum."
+#> [1] "Nalanda University was founded in the 5th century CE in present-day Bihar, India."
 ```
+
+## About the Name
+
+The package is named after [Nalanda
+Mahavihara](https://en.wikipedia.org/wiki/Nalanda), one of the most
+renowned centers of learning in ancient India. Founded in the 5th
+century CE, Nalanda was a Buddhist monastic university that attracted
+scholars from across Asia and became a symbol of knowledge, wisdom, and
+the pursuit of learning through texts and collaboration.
+
+This name is particularly fitting for a package related to the study of
+books and prosociality, reflecting the historical significance of
+Nalanda as a center for both scholarly texts and the cooperative
+exchange of ideas. The connection resonates with contemporary research
+on how books and shared learning can foster prosocial behavior and
+cooperation.
+
+Learn more about related research on books, learning, and prosociality:
+[Mind and Life Europe - 2024 EVA Recipients &
+Projects](https://mindandlife-europe.org/2024-eva-recipients-projects/)
