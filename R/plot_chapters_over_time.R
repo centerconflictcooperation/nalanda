@@ -31,7 +31,9 @@ plot_chapters_over_time <- function(
 ) {
   bind_simulation_results <- function(chapters) {
     if (is.list(chapters) && !inherits(chapters, "data.frame")) {
-      dplyr::bind_rows(chapters)
+      # Unclass to ensure bind_rows treats it as a plain list of data frames
+      # and not a custom object that might be misinterpreted
+      dplyr::bind_rows(unclass(chapters))
     } else {
       chapters
     }
@@ -42,8 +44,11 @@ plot_chapters_over_time <- function(
     candidate <- intersect(c("score", "mean_score", "mean_baseline"), names(df))
     if (length(candidate) == 0) {
       stop(
-        "Column '", dv, "' not found and no fallback mean score columns detected.\n",
-        "Available columns: ", paste(names(df), collapse = ", ")
+        "Column '",
+        dv,
+        "' not found and no fallback mean score columns detected.\n",
+        "Available columns: ",
+        paste(names(df), collapse = ", ")
       )
     }
     dv_column <- candidate[1]
@@ -59,16 +64,49 @@ plot_chapters_over_time <- function(
     dplyr::group_by(book) |>
     dplyr::mutate(chapter_index = dplyr::dense_rank(chapter)) |>
     dplyr::ungroup()
+
+  # Create a unique simulation ID to handle cases with multiple contexts/parties per sim
+  # This ensures pivot_wider has a unique key for each row
+  grouping_cols <- intersect(c("book", "sim", "context", "party"), names(df))
+  if (length(grouping_cols) > 0) {
+    df <- df |>
+      dplyr::group_by(dplyr::pick(dplyr::all_of(grouping_cols))) |>
+      dplyr::mutate(sim_unique_id = dplyr::cur_group_id()) |>
+      dplyr::ungroup()
+  } else {
+    df$sim_unique_id <- df$sim
+  }
+
   df_wide <- df |>
     dplyr::mutate(time_var = paste0("T", chapter_index)) |>
-    dplyr::select(book, sim, time_var, score) |>
+    dplyr::select(
+      book,
+      sim_unique_id,
+      time_var,
+      score,
+      dplyr::any_of("party")
+    ) |>
     dplyr::distinct() |>
     tidyr::pivot_wider(names_from = time_var, values_from = score)
+
   response_cols <- grep("^T[0-9]+$", names(df_wide), value = TRUE)
+
+  # Auto-detect grouping variable
+  group_var <- "book"
+  if (length(unique(df_wide$book)) == 1 && "party" %in% names(df_wide)) {
+    group_var <- "party"
+  }
+
+  # Update x-axis label if grouping by party
+  if (group_var == "party") {
+    book_name <- unique(df_wide$book)[1]
+    xtitle <- paste0(xtitle, " (", book_name, ")")
+  }
+
   p <- rempsyc::plot_means_over_time(
     data = df_wide,
     response = response_cols,
-    group = "book",
+    group = group_var,
     ytitle = ytitle,
     ci_type = ci_type,
     legend.position = legend.position,
@@ -84,7 +122,7 @@ plot_chapters_over_time <- function(
       ggplot2::labs(
         title = paste0(
           "Results of ",
-          df_wide$sim[1],
+          nrow(df_wide),
           " simulations",
           " (model = '",
           attr(chapters, "model"),
@@ -92,7 +130,9 @@ plot_chapters_over_time <- function(
         )
       )
   }
-  if (isTRUE(neutrality_line)) {
+  if (
+    isTRUE(neutrality_line) && !grepl("difference|diff", dv, ignore.case = TRUE)
+  ) {
     p <- p +
       ggplot2::geom_hline(
         yintercept = 50,
@@ -110,5 +150,28 @@ plot_chapters_over_time <- function(
         size = 3
       )
   }
+
+  # Add line at 0 for difference scores
+  if (
+    isTRUE(neutrality_line) && grepl("difference|diff", dv, ignore.case = TRUE)
+  ) {
+    p <- p +
+      ggplot2::geom_hline(
+        yintercept = 0,
+        linetype = "dashed",
+        linewidth = 0.6,
+        color = "grey40"
+      ) +
+      ggplot2::annotate(
+        "text",
+        x = 1,
+        y = 2, # Slightly above 0
+        label = "No Change (0)",
+        color = "grey30",
+        hjust = 0,
+        size = 3
+      )
+  }
+
   p
 }

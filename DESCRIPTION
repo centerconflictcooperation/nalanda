@@ -14,6 +14,7 @@ Imports:
     ellmer,
     ggplot2,
     purrr,
+    progress,
     readr,
     rempsyc,
     rlang,

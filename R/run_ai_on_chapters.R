@@ -51,6 +51,25 @@ run_ai_on_chapters <- function(
     stop("`n_simulations` must be >= 1.")
   }
 
+  # Calculate total steps for progress bar
+  total_chapters <- 0
+  if (is.character(book_texts)) {
+    total_chapters <- 1
+  } else if (is.list(book_texts)) {
+    # Count total chapters across all books
+    total_chapters <- sum(vapply(book_texts, length, integer(1)))
+  }
+
+  total_steps <- total_chapters * n_simulations * length(context_text)
+
+  # Initialize progress bar
+  pb <- progress::progress_bar$new(
+    format = "  running [:bar] :percent eta: :eta :what",
+    total = total_steps,
+    clear = FALSE,
+    width = 60
+  )
+
   # Handle multiple contexts by running the core function for each and combining
   if (length(context_text) > 1) {
     results <- lapply(seq_along(context_text), function(k) {
@@ -66,7 +85,8 @@ run_ai_on_chapters <- function(
         base_url = base_url,
         excerpt_chars = excerpt_chars,
         include_tokens = include_tokens,
-        include_cost = include_cost
+        include_cost = include_cost,
+        pb = pb
       )
     })
 
@@ -119,7 +139,8 @@ run_ai_on_chapters <- function(
     base_url = base_url,
     excerpt_chars = excerpt_chars,
     include_tokens = include_tokens,
-    include_cost = include_cost
+    include_cost = include_cost,
+    pb = pb
   )
 }
 
@@ -139,7 +160,8 @@ run_ai_on_chapters <- function(
   base_url,
   excerpt_chars,
   include_tokens,
-  include_cost
+  include_cost,
+  pb = NULL
 ) {
   model <- paste0("@", virtual_key, "/", base_model)
 
@@ -185,6 +207,10 @@ run_ai_on_chapters <- function(
 
     # Run simulations sequentially (each simulation = 2 turns in same chat)
     results <- lapply(seq_len(n_simulations), function(i) {
+      if (!is.null(pb)) {
+        pb$tick(tokens = list(what = paste0(chapter_id, " (sim ", i, ")")))
+      }
+
       # Create a new chat instance for this simulation
       chat <- ellmer::chat_portkey(
         model = model,
@@ -234,6 +260,7 @@ run_ai_on_chapters <- function(
       party = sapply(results, function(r) r$party),
       baseline_score = sapply(results, function(r) r$baseline_score),
       score = sapply(results, function(r) r$score),
+      difference_score = sapply(results, function(r) r$score - r$baseline_score),
       chapter_excerpt = excerpt,
       context = context_text,
       question = question_text
@@ -261,6 +288,10 @@ run_ai_on_chapters <- function(
 
         # Run simulations sequentially for this chapter
         results <- lapply(seq_len(n_simulations), function(k) {
+          if (!is.null(pb)) {
+            pb$tick(tokens = list(what = paste0(book, " - ", chapter_id, " (sim ", k, ")")))
+          }
+
           # Create a new chat instance for this simulation
           chat <- ellmer::chat_portkey(
             model = model,
@@ -314,6 +345,7 @@ run_ai_on_chapters <- function(
           party = sapply(results, function(r) r$party),
           baseline_score = sapply(results, function(r) r$baseline_score),
           score = sapply(results, function(r) r$score),
+          difference_score = sapply(results, function(r) r$score - r$baseline_score),
           chapter_excerpt = excerpt,
           context = context_text,
           question = question_text

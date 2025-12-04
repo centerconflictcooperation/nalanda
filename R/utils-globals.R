@@ -14,11 +14,13 @@ utils::globalVariables(c(
     "chapter_excerpt",
     "chapter_index",
     "chapter_num",
+    "difference_score",
     "mean_score",
     "new_name",
     "party",
     "score",
     "sd_score",
     "sim",
+    "sim_unique_id",
     "time_var"
 ))
