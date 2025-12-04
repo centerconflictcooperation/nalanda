@@ -1,5 +1,5 @@
 Package: nalanda
-Title: Tools for Analyzing Books and Prosociality Research Data
+Title: R Toolbox to answer the question: Do book really change lives?
 Version: 0.0.0.9000
 Authors@R: 
     person("Rémi", "Thériault", , "remi.theriault@mail.mcgill.ca", role = c("aut", "cre"),

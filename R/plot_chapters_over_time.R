@@ -60,9 +60,15 @@ plot_chapters_over_time <- function(
       dplyr::mutate(score = rempsyc::nice_reverse(score, 100, 1))
   }
   df <- df |>
-    dplyr::arrange(book, chapter, sim) |>
+    dplyr::mutate(
+      chapter_num = suppressWarnings(as.integer(stringr::str_extract(
+        chapter,
+        "\\d+"
+      )))
+    ) |>
+    dplyr::arrange(book, chapter_num, sim) |>
     dplyr::group_by(book) |>
-    dplyr::mutate(chapter_index = dplyr::dense_rank(chapter)) |>
+    dplyr::mutate(chapter_index = dplyr::dense_rank(chapter_num)) |>
     dplyr::ungroup()
 
   # Create a unique simulation ID to handle cases with multiple contexts/parties per sim
@@ -122,10 +128,10 @@ plot_chapters_over_time <- function(
       ggplot2::labs(
         title = paste0(
           "Results of ",
-          nrow(df_wide),
-          " simulations",
+          max(chapters[[1]]$sim) * 2,
+          " simulations per book per chapter",
           " (model = '",
-          attr(chapters, "model"),
+          attr(chapters[[1]], "model"),
           "')"
         )
       )

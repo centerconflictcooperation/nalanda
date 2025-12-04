@@ -1,7 +1,7 @@
 
 <!-- README.md is generated from README.Rmd. Please edit that file -->
 
-# nalanda
+# nalanda: R Toolbox to answer the question: Do book really change lives?
 
 ## Overview
 
