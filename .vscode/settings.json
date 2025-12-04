@@ -1,0 +1,50 @@
+{
+    "r.rterm.windows": "C:\\Users\\rt3105\\.local\\bin\\radian.exe",
+    "r.rpath.windows": "C:\\Users\\rt3105\\AppData\\Local\\Programs\\R\\R-4.5.0\\bin\\R.exe",
+    "r.rterm.option": [
+        "--r-binary=C:\\Users\\rt3105\\AppData\\Local\\Programs\\R\\R-4.5.0\\bin\\R.exe"
+    ],
+    "r.alwaysUseActiveTerminal": true,
+    "terminal.integrated.env.windows": {
+        "R_HOME": "C:\\Users\\rt3105\\AppData\\Local\\Programs\\R\\R-4.5.0"
+    },
+    "terminal.integrated.profiles.windows": {
+        "Radian": {
+            "path": "C:\\Users\\rt3105\\.local\\bin\\radian.exe",
+            "args": [
+                "--r-binary=C:\\Users\\rt3105\\AppData\\Local\\Programs\\R\\R-4.5.0\\bin\\R.exe"
+            ],
+            "icon": "terminal"
+        },
+        "PowerShell": {
+            "source": "PowerShell",
+            "icon": "terminal-powershell"
+        }
+    },
+    "terminal.integrated.defaultProfile.windows": "Radian",
+    "editor.fontSize": 16,
+    "workbench.colorTheme": "Default Positron Dark",
+    "editor.fontVariations": false,
+    "workbench.colorCustomizations": {
+        "editor.background": "#323232"
+    },
+    "editor.bracketPairColorization.enabled": false,
+    "editor.tokenColorCustomizations": {
+        "comments": "#bc9458",
+        "strings": "#a5c261",
+        "numbers": "#6892b2",
+        "keywords": "#cc7833",
+        "functions": "#ffffff",
+        "variables": "#ffffff",
+        "textMateRules": [
+            {
+                "scope": "punctuation",
+                "settings": {
+                    "foreground": "#6892b2"
+                }
+            }
+        ]
+    },
+    "r.sessionWatcher": true,
+    "r.bracketedPaste": true
+}
