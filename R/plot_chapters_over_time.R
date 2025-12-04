@@ -76,7 +76,7 @@ plot_chapters_over_time <- function(
       axis.title = ggplot2::element_text(size = text_size),
       plot.title = ggplot2::element_text(size = text_size)
     )
-  if (!is.null(title)) {
+  if (isTRUE(plot_title)) {
     p <- p +
       ggplot2::labs(
         title = paste0(
