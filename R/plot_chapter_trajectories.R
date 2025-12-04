@@ -12,7 +12,7 @@ plot_chapter_trajectories <- function(summary_df) {
     ggplot2::geom_point(ggplot2::aes(shape = book)) +
     ggplot2::labs(
       x = "Chapter (order in book)",
-      y = "Simulated polarization-reduction score (0–100)",
+      y = "Simulated polarization-reduction score (0-100)",
       linetype = "Book",
       shape = "Book"
     ) +

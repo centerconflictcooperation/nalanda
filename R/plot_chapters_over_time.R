@@ -41,7 +41,10 @@ plot_chapters_over_time <- function(
   if (!dv_column %in% names(df)) {
     candidate <- intersect(c("score", "mean_score", "mean_baseline"), names(df))
     if (length(candidate) == 0) {
-      stop("Column '", dv, "' not found and no fallback mean score columns detected.")
+      stop(
+        "Column '", dv, "' not found and no fallback mean score columns detected.\n",
+        "Available columns: ", paste(names(df), collapse = ", ")
+      )
     }
     dv_column <- candidate[1]
   }
