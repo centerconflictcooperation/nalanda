@@ -8,6 +8,7 @@ Description: Provides tools and utilities for analyzing research data related to
     books, reading, and prosocial behavior. Named after the historic Nalanda 
     Mahavihara, a center of learning and scholarly collaboration in ancient India.
 License: MIT + file LICENSE
+Depends: R (>= 4.1.0)
 Imports: 
     dplyr,
     ellmer,
