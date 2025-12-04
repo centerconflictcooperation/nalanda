@@ -1,8 +1,17 @@
 # Run AI model on book chapters and collect structured responses
 
-This wraps model/chat utilities to run the same question against one or
-more chapter texts and return a tibble (or list of tibbles by book) with
-predictions.
+This function implements a two-turn sequential chat design to measure
+the effect of reading book chapters on attitudes. For each simulation,
+the function:
+
+1.  Establishes a baseline by asking the model to choose a party and
+    rate the outgroup
+
+2.  Shows the chapter and asks for a post-intervention rating in the
+    same chat session
+
+This design creates a within-agent pre-post comparison, with
+conversation memory maintained between turns.
 
 ## Usage
 
@@ -33,17 +42,24 @@ run_ai_on_chapters(
 
 - context_text:
 
-  Character vector. Context to prepend to each chapter when prompting.
-  Can be a vector of multiple contexts - the function will run once for
-  each context and combine results.
+  Character vector. Context used in the baseline prompt to establish
+  party identity. Can be a vector of multiple contexts - the function
+  will run once for each context and combine results. Example: "You are
+  simulating an American adult who politically identifies as a
+  Democrat."
 
 - question_text:
 
-  Character. Question to ask the model.
+  Character. Question to ask the model in both baseline and
+  post-intervention turns. The post-intervention turn will append "
+  after reading this chapter?" to this question. Example: "On a scale
+  from 0 to 100, how warmly do you feel towards your political
+  outgroup?"
 
 - n_simulations:
 
-  Integer. Number of repeated prompts/simulations per chapter.
+  Integer. Number of repeated simulations per chapter (each simulation =
+  2 chat turns).
 
 - temperature:
 
@@ -51,7 +67,8 @@ run_ai_on_chapters(
 
 - seed:
 
-  Integer. Random seed for reproducibility.
+  Integer. Random seed for reproducibility (incremented for each
+  simulation).
 
 - base_model:
 
@@ -71,13 +88,16 @@ run_ai_on_chapters(
 
 - include_tokens:
 
-  Logical. Return token counts if available.
+  Logical. Return token counts if available (summed across both turns).
 
 - include_cost:
 
-  Logical. Return cost info if available.
+  Logical. Return cost info if available (summed across both turns).
 
 ## Value
 
-A tibble of results, or a named list of tibbles (one per book). The
-object has class `nalanda` and an attribute `model` with the model name.
+A tibble of results, or a named list of tibbles (one per book). Each row
+represents one simulation and includes: `chapter`, `sim`, `party`,
+`baseline_score` (pre-intervention), `score` (post-intervention),
+`chapter_excerpt`, `context`, and `question`. The object has class
+`nalanda` and an attribute `model` with the model name.
