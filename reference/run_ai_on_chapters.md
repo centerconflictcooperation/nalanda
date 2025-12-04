@@ -33,7 +33,9 @@ run_ai_on_chapters(
 
 - context_text:
 
-  Character. Context to prepend to each chapter when prompting.
+  Character vector. Context to prepend to each chapter when prompting.
+  Can be a vector of multiple contexts - the function will run once for
+  each context and combine results.
 
 - question_text:
 
