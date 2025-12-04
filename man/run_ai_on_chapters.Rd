@@ -12,8 +12,8 @@ run_ai_on_chapters(
   temperature = 0,
   seed = 42,
   base_model = "gemini-2.5-flash-lite",
-  virtual_key = NULL,
-  base_url = NULL,
+  virtual_key = getOption("nalanda.virtual_key"),
+  base_url = getOption("nalanda.base_url"),
   excerpt_chars = 200,
   include_tokens = FALSE,
   include_cost = FALSE
