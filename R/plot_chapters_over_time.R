@@ -37,8 +37,16 @@ plot_chapters_over_time <- function(
     }
   }
   df <- bind_simulation_results(chapters)
+  dv_column <- dv
+  if (!dv_column %in% names(df)) {
+    candidate <- intersect(c("score", "mean_score", "mean_baseline"), names(df))
+    if (length(candidate) == 0) {
+      stop("Column '", dv, "' not found and no fallback mean score columns detected.")
+    }
+    dv_column <- candidate[1]
+  }
   df <- df |>
-    dplyr::mutate(score = .data[[dv]])
+    dplyr::mutate(score = .data[[dv_column]])
   if (reverse_score) {
     df <- df |>
       dplyr::mutate(score = rempsyc::nice_reverse(score, 100, 1))
