@@ -22,7 +22,8 @@ run_ai_on_chapters(
 \arguments{
 \item{book_texts}{A single character (one chapter) or a nested list of books -> chapters as returned by \code{read_book_texts()}.}
 
-\item{context_text}{Character. Context to prepend to each chapter when prompting.}
+\item{context_text}{Character vector. Context to prepend to each chapter when prompting.
+Can be a vector of multiple contexts - the function will run once for each context and combine results.}
 
 \item{question_text}{Character. Question to ask the model.}
 

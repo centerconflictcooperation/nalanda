@@ -4,7 +4,8 @@
 #' chapter texts and return a tibble (or list of tibbles by book) with predictions.
 #'
 #' @param book_texts A single character (one chapter) or a nested list of books -> chapters as returned by `read_book_texts()`.
-#' @param context_text Character. Context to prepend to each chapter when prompting.
+#' @param context_text Character vector. Context to prepend to each chapter when prompting.
+#'   Can be a vector of multiple contexts - the function will run once for each context and combine results.
 #' @param question_text Character. Question to ask the model.
 #' @param n_simulations Integer. Number of repeated prompts/simulations per chapter.
 #' @param temperature Numeric. Sampling temperature passed to the chat backend.
@@ -38,9 +39,11 @@ run_ai_on_chapters <- function(
   if (n_simulations < 1) {
     stop("`n_simulations` must be >= 1.")
   }
+
+  # Handle multiple contexts by running the core function for each and combining
   if (length(context_text) > 1) {
     results <- lapply(seq_along(context_text), function(k) {
-      Recall(
+      .run_ai_single_context(
         book_texts = book_texts,
         context_text = context_text[k],
         question_text = question_text,
@@ -55,20 +58,78 @@ run_ai_on_chapters <- function(
         include_cost = include_cost
       )
     })
-    first_res <- results[[1]]
+
+    # Combine results appropriately
+    # First, strip the nalanda class from individual results to avoid bind_rows issues
+    results_clean <- lapply(results, function(res) {
+      if (is.list(res) && !inherits(res, "data.frame")) {
+        # List of tibbles (one per book)
+        lapply(res, function(tbl) {
+          class(tbl) <- setdiff(class(tbl), "nalanda")
+          tbl
+        })
+      } else {
+        # Single tibble
+        class(res) <- setdiff(class(res), "nalanda")
+        res
+      }
+    })
+
+    first_res <- results_clean[[1]]
     if (is.list(first_res) && !inherits(first_res, "data.frame")) {
+      # Results are lists of tibbles (one per book)
       book_names <- names(first_res)
       combined <- lapply(seq_along(first_res), function(i) {
-        dplyr::bind_rows(lapply(results, function(r) r[[i]]))
+        dplyr::bind_rows(lapply(results_clean, function(r) r[[i]]))
       })
       if (!is.null(book_names)) {
         names(combined) <- book_names
       }
       out <- combined
     } else {
-      out <- dplyr::bind_rows(results)
+      # Results are single tibbles
+      out <- dplyr::bind_rows(results_clean)
     }
+    class(out) <- c(class(out), "nalanda")
+    attr(out, "model") <- base_model
+    return(out)
   }
+
+  # Single context - call the internal function
+  .run_ai_single_context(
+    book_texts = book_texts,
+    context_text = context_text,
+    question_text = question_text,
+    n_simulations = n_simulations,
+    temperature = temperature,
+    seed = seed,
+    virtual_key = virtual_key,
+    base_model = base_model,
+    base_url = base_url,
+    excerpt_chars = excerpt_chars,
+    include_tokens = include_tokens,
+    include_cost = include_cost
+  )
+}
+
+#' Internal function to run AI on chapters with a single context
+#'
+#' @keywords internal
+#' @noRd
+.run_ai_single_context <- function(
+  book_texts,
+  context_text,
+  question_text,
+  n_simulations,
+  temperature,
+  seed,
+  base_model,
+  virtual_key,
+  base_url,
+  excerpt_chars,
+  include_tokens,
+  include_cost
+) {
   model <- paste0("@", virtual_key, "/", base_model)
   chat <- ellmer::chat_portkey(
     model = model,
