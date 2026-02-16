@@ -1,5 +1,5 @@
 Package: nalanda
-Title: R Toolbox to answer the question: Do book really change lives?
+Title: R Toolbox to answer the question: Do books really change lives?
 Version: 0.0.0.9000
 Authors@R: 
     person("Rémi", "Thériault", , "remi.theriault@mail.mcgill.ca", role = c("aut", "cre"),
