@@ -14,6 +14,8 @@ plot_chapters_over_time(
   ci_type = "between",
   legend.position = "bottom",
   text_size = 20,
+  line_width = 3,
+  point_size = 4,
   reverse_score = FALSE,
   error_bars = TRUE,
   neutrality_line = TRUE,
@@ -24,6 +26,8 @@ plot_chapters_over_time(
 \item{chapters}{A data frame or list of simulation rows containing columns \code{book}, \code{chapter}, and the desired \code{dv}.}
 
 \item{dv}{Character. Name of the column to plot as the dependent variable (default: "score").}
+
+\item{group}{The group by which to plot the variable}
 
 \item{xtitle}{Character. X-axis label.}
 
@@ -37,11 +41,20 @@ plot_chapters_over_time(
 
 \item{text_size}{Numeric. Base text size for axis/title text.}
 
+\item{line_width}{Numeric. Line thickness used in \code{geom_line()}.
+Defaults to 3. Can be reduced for publication figures or increased
+for presentation slides.}
+
+\item{point_size}{Numeric. Point size used in \code{geom_point()}.
+Defaults to 4. Adjust to improve readability depending on output format.}
+
 \item{reverse_score}{Logical. Whether to reverse score scale using rempsyc::nice_reverse.}
 
 \item{error_bars}{Logical. Show error bars.}
 
 \item{neutrality_line}{Logical. Add a horizontal neutrality line at 50.}
+
+\item{facet}{The variable by which to facet grid.}
 }
 \value{
 A ggplot2 object.

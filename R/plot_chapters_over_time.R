@@ -5,12 +5,20 @@
 #'
 #' @param chapters A data frame or list of simulation rows containing columns `book`, `chapter`, and the desired `dv`.
 #' @param dv Character. Name of the column to plot as the dependent variable (default: "score").
+#' @param group The group by which to plot the variable
+#' @param facet The variable by which to facet grid.
 #' @param xtitle Character. X-axis label.
 #' @param ytitle Character. Y-axis label.
 #' @param plot_title Logical. Whether to include a title.
 #' @param ci_type Character. Type of confidence interval to pass to `rempsyc::plot_means_over_time`.
 #' @param legend.position Position for legend.
 #' @param text_size Numeric. Base text size for axis/title text.
+#' @param line_width Numeric. Line thickness used in `geom_line()`.
+#'   Defaults to 3. Can be reduced for publication figures or increased
+#'   for presentation slides.
+#'
+#' @param point_size Numeric. Point size used in `geom_point()`.
+#'   Defaults to 4. Adjust to improve readability depending on output format.
 #' @param reverse_score Logical. Whether to reverse score scale using rempsyc::nice_reverse.
 #' @param error_bars Logical. Show error bars.
 #' @param neutrality_line Logical. Add a horizontal neutrality line at 50.
@@ -26,6 +34,8 @@ plot_chapters_over_time <- function(
   ci_type = "between",
   legend.position = "bottom",
   text_size = 20,
+  line_width = 3,
+  point_size = 4,
   reverse_score = FALSE,
   error_bars = TRUE,
   neutrality_line = TRUE,
@@ -109,6 +119,8 @@ plot_chapters_over_time <- function(
     ci_type = ci_type,
     legend.position = legend.position,
     error_bars = error_bars,
+    line_width = line_width,
+    point_size = point_size,
     facet = facet
   ) +
     ggplot2::labs(x = xtitle) +
@@ -175,9 +187,18 @@ plot_chapters_over_time <- function(
   if (group %in% names(df_wide)) {
     group_levels <- levels(as.factor(df_wide[[group]]))
     if (all(group_levels %in% c("Democrat", "Republican"))) {
+      # dem_blue <- "#2E74C0" #2E6FBA #0015BC
+      # rep_red <- "#CB454A" #C63D3D #E81B23
+      # https://www.flagcolorcodes.com/republican-party-elephant
       p <- p +
         ggplot2::scale_colour_manual(
-          values = c("Democrat" = "#2E74C0", "Republican" = "#CB454A")
+          values = c("Democrat" = "#00AEF3", "Republican" = "#E81B23")
+        ) +
+        ggplot2::scale_shape_manual(
+          values = c("Democrat" = 21, "Republican" = 24)
+        ) +
+        ggplot2::scale_linetype_manual(
+          values = c("Democrat" = "solid", "Republican" = "longdash")
         )
     }
   }
