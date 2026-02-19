@@ -6,7 +6,8 @@
 \usage{
 plot_chapters_over_time(
   chapters,
-  dv = "score",
+  dv = "mean_diff",
+  group = "book",
   xtitle = "Chapter",
   ytitle = "Simulated scores",
   plot_title = TRUE,
@@ -15,7 +16,8 @@ plot_chapters_over_time(
   text_size = 20,
   reverse_score = FALSE,
   error_bars = TRUE,
-  neutrality_line = TRUE
+  neutrality_line = TRUE,
+  facet = NULL
 )
 }
 \arguments{

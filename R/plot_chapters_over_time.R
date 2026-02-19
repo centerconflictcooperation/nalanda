@@ -18,7 +18,8 @@
 #' @export
 plot_chapters_over_time <- function(
   chapters,
-  dv = "score",
+  dv = "mean_diff",
+  group = "book",
   xtitle = "Chapter",
   ytitle = "Simulated scores",
   plot_title = TRUE,
@@ -27,17 +28,9 @@ plot_chapters_over_time <- function(
   text_size = 20,
   reverse_score = FALSE,
   error_bars = TRUE,
-  neutrality_line = TRUE
+  neutrality_line = TRUE,
+  facet = NULL
 ) {
-  bind_simulation_results <- function(chapters) {
-    if (is.list(chapters) && !inherits(chapters, "data.frame")) {
-      # Unclass to ensure bind_rows treats it as a plain list of data frames
-      # and not a custom object that might be misinterpreted
-      dplyr::bind_rows(unclass(chapters))
-    } else {
-      chapters
-    }
-  }
   df <- bind_simulation_results(chapters)
   dv_column <- dv
   if (!dv_column %in% names(df)) {
@@ -57,7 +50,9 @@ plot_chapters_over_time <- function(
     dplyr::mutate(score = .data[[dv_column]])
   if (reverse_score) {
     df <- df |>
-      dplyr::mutate(score = rempsyc::nice_reverse(score, 100, 1))
+      dplyr::mutate(difference_score = difference_score * -1)
+    # df <- df |>
+    #   dplyr::mutate(score = rempsyc::nice_reverse(difference_score, 100, 1))
   }
   df <- df |>
     dplyr::mutate(
@@ -89,22 +84,19 @@ plot_chapters_over_time <- function(
       book,
       sim_unique_id,
       time_var,
-      score,
+      difference_score,
       dplyr::any_of("party")
     ) |>
     dplyr::distinct() |>
-    tidyr::pivot_wider(names_from = time_var, values_from = score)
+    tidyr::pivot_wider(names_from = time_var, values_from = difference_score)
 
   response_cols <- grep("^T[0-9]+$", names(df_wide), value = TRUE)
 
   # Auto-detect grouping variable
-  group_var <- "book"
-  if (length(unique(df_wide$book)) == 1 && "party" %in% names(df_wide)) {
-    group_var <- "party"
-  }
+  group <- group
 
   # Update x-axis label if grouping by party
-  if (group_var == "party") {
+  if (group == "party") {
     book_name <- unique(df_wide$book)[1]
     xtitle <- paste0(xtitle, " (", book_name, ")")
   }
@@ -112,11 +104,12 @@ plot_chapters_over_time <- function(
   p <- rempsyc::plot_means_over_time(
     data = df_wide,
     response = response_cols,
-    group = group_var,
+    group = group,
     ytitle = ytitle,
     ci_type = ci_type,
     legend.position = legend.position,
-    error_bars = error_bars
+    error_bars = error_bars,
+    facet = facet
   ) +
     ggplot2::labs(x = xtitle) +
     ggplot2::theme(
@@ -179,5 +172,29 @@ plot_chapters_over_time <- function(
       )
   }
 
+  if (group %in% names(df_wide)) {
+    group_levels <- levels(as.factor(df_wide[[group]]))
+    if (all(group_levels %in% c("Democrat", "Republican"))) {
+      p <- p +
+        ggplot2::scale_colour_manual(
+          values = c("Democrat" = "#2E74C0", "Republican" = "#CB454A")
+        )
+    }
+  }
+  # Optional faceting
+  if (!is.null(facet) && facet %in% names(df)) {
+    p <- p + ggplot2::facet_wrap(stats::as.formula(paste("~", facet)))
+  }
+
   p
+}
+
+bind_simulation_results <- function(chapters) {
+  if (is.list(chapters) && !inherits(chapters, "data.frame")) {
+    # Unclass to ensure bind_rows treats it as a plain list of data frames
+    # and not a custom object that might be misinterpreted
+    dplyr::bind_rows(unclass(chapters))
+  } else {
+    chapters
+  }
 }

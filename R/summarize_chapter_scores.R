@@ -16,8 +16,12 @@ summarize_chapter_scores <- function(x) {
   # helper to robustly flatten various nested formats produced by run_ai_on_chapters
   flatten_sim_results <- function(z) {
     # If already a data.frame, return as-is
-    if (inherits(z, "data.frame")) return(z)
-    if (!is.list(z)) stop("Unsupported input: expected data.frame or list-like object")
+    if (inherits(z, "data.frame")) {
+      return(z)
+    }
+    if (!is.list(z)) {
+      stop("Unsupported input: expected data.frame or list-like object")
+    }
 
     # Recursively collect all data.frames inside the (possibly nested) list.
     collect_dfs <- function(obj, parent_name = NULL) {
@@ -25,13 +29,19 @@ summarize_chapter_scores <- function(x) {
       if (inherits(obj, "data.frame")) {
         df <- obj
         # if parent name exists and there's no book column, attach it
-        if (!is.null(parent_name) && !"book" %in% names(df)) df$book <- parent_name
+        if (!is.null(parent_name) && !"book" %in% names(df)) {
+          df$book <- parent_name
+        }
         return(list(df))
       }
       if (is.list(obj)) {
         nm <- names(obj)
         for (i in seq_along(obj)) {
-          child_name <- if (!is.null(nm) && nzchar(nm[i])) nm[i] else parent_name
+          child_name <- if (!is.null(nm) && nzchar(nm[i])) {
+            nm[i]
+          } else {
+            parent_name
+          }
           out <- c(out, collect_dfs(obj[[i]], parent_name = child_name))
         }
       }
@@ -39,25 +49,38 @@ summarize_chapter_scores <- function(x) {
     }
 
     dfs <- collect_dfs(z, parent_name = NULL)
-    if (length(dfs) == 0) stop("Unsupported nested structure for simulation results")
+    if (length(dfs) == 0) {
+      stop("Unsupported nested structure for simulation results")
+    }
     # bind rows; if we added book columns above they will be preserved
     return(dplyr::bind_rows(dfs))
   }
 
-  df <- if (is.list(x) && !inherits(x, "data.frame")) flatten_sim_results(x) else x
+  df <- if (is.list(x) && !inherits(x, "data.frame")) {
+    flatten_sim_results(x)
+  } else {
+    x
+  }
 
   # Ensure we operate on a plain tibble/data.frame to avoid S3 surprises
   df <- tibble::as_tibble(df)
 
   # ensure chapter column exists (try to infer common alternatives)
   if (!"chapter" %in% names(df)) {
-    candidates <- grep("chap|file|name", names(df), value = TRUE, ignore.case = TRUE)
+    candidates <- grep(
+      "chap|file|name",
+      names(df),
+      value = TRUE,
+      ignore.case = TRUE
+    )
     candidate <- if (length(candidates) > 0) candidates[1] else NA_character_
     if (!is.na(candidate) && nzchar(candidate)) {
       # only rename if candidate is a simple column name
       df <- dplyr::rename(df, chapter = !!rlang::sym(candidate))
     } else {
-      stop("Input data must contain a 'chapter' column (or a close alternative)")
+      stop(
+        "Input data must contain a 'chapter' column (or a close alternative)"
+      )
     }
   }
 
@@ -65,7 +88,9 @@ summarize_chapter_scores <- function(x) {
   has_book <- "book" %in% names(df)
   has_baseline <- "baseline_score" %in% names(df)
 
-  if (has_party) df <- dplyr::mutate(df, party = tolower(party))
+  if (has_party) {
+    df <- dplyr::mutate(df, party = tolower(party))
+  }
 
   extract_chapter_num <- function(ch) {
     suppressWarnings(as.integer(stringr::str_extract(ch, "\\d+")))
@@ -76,13 +101,41 @@ summarize_chapter_scores <- function(x) {
       dplyr::group_by(book, chapter) |>
       dplyr::summarise(
         sim = sum(!is.na(score)),
-        mean_baseline = if (has_baseline) mean(baseline_score, na.rm = TRUE) else NA_real_,
-        sd_baseline = if (has_baseline) sd(baseline_score, na.rm = TRUE) else NA_real_,
-        mean_score = if ("score" %in% names(df)) mean(score, na.rm = TRUE) else NA_real_,
-        sd_score = if ("score" %in% names(df)) sd(score, na.rm = TRUE) else NA_real_,
-        mean_diff = if (has_baseline && "score" %in% names(df)) mean(score - baseline_score, na.rm = TRUE) else NA_real_,
-        sd_diff = if (has_baseline && "score" %in% names(df)) sd(score - baseline_score, na.rm = TRUE) else NA_real_,
-        percent_republican = if (has_party) mean(party == "republican", na.rm = TRUE) * 100 else NA_real_,
+        mean_baseline = if (has_baseline) {
+          mean(baseline_score, na.rm = TRUE)
+        } else {
+          NA_real_
+        },
+        sd_baseline = if (has_baseline) {
+          sd(baseline_score, na.rm = TRUE)
+        } else {
+          NA_real_
+        },
+        mean_score = if ("score" %in% names(df)) {
+          mean(score, na.rm = TRUE)
+        } else {
+          NA_real_
+        },
+        sd_score = if ("score" %in% names(df)) {
+          sd(score, na.rm = TRUE)
+        } else {
+          NA_real_
+        },
+        mean_diff = if (has_baseline && "score" %in% names(df)) {
+          mean(score - baseline_score, na.rm = TRUE)
+        } else {
+          NA_real_
+        },
+        sd_diff = if (has_baseline && "score" %in% names(df)) {
+          sd(score - baseline_score, na.rm = TRUE)
+        } else {
+          NA_real_
+        },
+        percent_republican = if (has_party) {
+          mean(party == "republican", na.rm = TRUE) * 100
+        } else {
+          NA_real_
+        },
         chapter_excerpt = dplyr::first(chapter_excerpt),
         .groups = "drop_last"
       ) |>
@@ -97,13 +150,41 @@ summarize_chapter_scores <- function(x) {
       dplyr::group_by(chapter) |>
       dplyr::summarise(
         sim = sum(!is.na(score)),
-        mean_baseline = if (has_baseline) mean(baseline_score, na.rm = TRUE) else NA_real_,
-        sd_baseline = if (has_baseline) sd(baseline_score, na.rm = TRUE) else NA_real_,
-        mean_score = if ("score" %in% names(df)) mean(score, na.rm = TRUE) else NA_real_,
-        sd_score = if ("score" %in% names(df)) sd(score, na.rm = TRUE) else NA_real_,
-        mean_diff = if (has_baseline && "score" %in% names(df)) mean(score - baseline_score, na.rm = TRUE) else NA_real_,
-        sd_diff = if (has_baseline && "score" %in% names(df)) sd(score - baseline_score, na.rm = TRUE) else NA_real_,
-        percent_republican = if (has_party) mean(party == "republican", na.rm = TRUE) * 100 else NA_real_,
+        mean_baseline = if (has_baseline) {
+          mean(baseline_score, na.rm = TRUE)
+        } else {
+          NA_real_
+        },
+        sd_baseline = if (has_baseline) {
+          sd(baseline_score, na.rm = TRUE)
+        } else {
+          NA_real_
+        },
+        mean_score = if ("score" %in% names(df)) {
+          mean(score, na.rm = TRUE)
+        } else {
+          NA_real_
+        },
+        sd_score = if ("score" %in% names(df)) {
+          sd(score, na.rm = TRUE)
+        } else {
+          NA_real_
+        },
+        mean_diff = if (has_baseline && "score" %in% names(df)) {
+          mean(baseline_score - score, na.rm = TRUE)
+        } else {
+          NA_real_
+        },
+        sd_diff = if (has_baseline && "score" %in% names(df)) {
+          sd(baseline_score - score, na.rm = TRUE)
+        } else {
+          NA_real_
+        },
+        percent_republican = if (has_party) {
+          mean(party == "republican", na.rm = TRUE) * 100
+        } else {
+          NA_real_
+        },
         chapter_excerpt = dplyr::first(chapter_excerpt),
         .groups = "drop"
       ) |>
