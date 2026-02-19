@@ -16,6 +16,8 @@ plot_chapters_over_time(
   ci_type = "between",
   legend.position = "bottom",
   text_size = 20,
+  line_width = 3,
+  point_size = 4,
   reverse_score = FALSE,
   error_bars = TRUE,
   neutrality_line = TRUE,
@@ -34,6 +36,10 @@ plot_chapters_over_time(
 
   Character. Name of the column to plot as the dependent variable
   (default: "score").
+
+- group:
+
+  The group by which to plot the variable
 
 - xtitle:
 
@@ -60,6 +66,16 @@ plot_chapters_over_time(
 
   Numeric. Base text size for axis/title text.
 
+- line_width:
+
+  Numeric. Line thickness used in `geom_line()`. Defaults to 3. Can be
+  reduced for publication figures or increased for presentation slides.
+
+- point_size:
+
+  Numeric. Point size used in `geom_point()`. Defaults to 4. Adjust to
+  improve readability depending on output format.
+
 - reverse_score:
 
   Logical. Whether to reverse score scale using rempsyc::nice_reverse.
@@ -71,6 +87,10 @@ plot_chapters_over_time(
 - neutrality_line:
 
   Logical. Add a horizontal neutrality line at 50.
+
+- facet:
+
+  The variable by which to facet grid.
 
 ## Value
 
