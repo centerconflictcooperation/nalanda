@@ -4,12 +4,20 @@
 \alias{summarize_chapter_scores}
 \title{Summarize simulated chapter scores}
 \usage{
-summarize_chapter_scores(x)
+summarize_chapter_scores(x, aggregate_level = c("chapter", "book"))
 }
 \arguments{
 \item{x}{A data frame or list-like object containing simulation rows with
 at least \code{score} and \code{chapter} columns. If \code{book} and \code{party} are present,
 the summary will include those groupings.}
+
+\item{aggregate_book}{Logical. Default is FALSE. If TRUE and a \code{book}
+column is present, chapter-level effects are aggregated to the book
+level using inverse-variance weighting (i.e., weights = 1 / (sd_diff^2 / sim)).
+This properly propagates within-chapter simulation uncertainty and
+returns one row per book instead of one row per chapter.
+
+When FALSE (default), results are summarized at the chapter level.}
 }
 \value{
 A tibble summarizing each chapter (and book if present). The returned

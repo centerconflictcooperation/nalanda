@@ -11,15 +11,18 @@ plot_chapters_over_time(
   xtitle = "Chapter",
   ytitle = "Simulated scores",
   plot_title = TRUE,
+  plot_subtitle = "",
   ci_type = "between",
   legend.position = "bottom",
+  groups.order = "decreasing",
   text_size = 20,
   line_width = 3,
   point_size = 4,
   reverse_score = FALSE,
   error_bars = TRUE,
   neutrality_line = TRUE,
-  facet = NULL
+  facet = NULL,
+  facets.order = "increasing"
 )
 }
 \arguments{
@@ -35,9 +38,17 @@ plot_chapters_over_time(
 
 \item{plot_title}{Logical. Whether to include a title.}
 
+\item{plot_subtitle}{Optional plot subtitle.}
+
 \item{ci_type}{Character. Type of confidence interval to pass to \code{rempsyc::plot_means_over_time}.}
 
 \item{legend.position}{Position for legend.}
+
+\item{groups.order}{Specifies the desired display order of the groups
+on the legend. Either provide the levels directly, or a string: "increasing"
+or "decreasing", to order based on the average value of the variable on the
+y axis, or "string.length", to order from the shortest to the longest
+string (useful when working with long string names). "Defaults to "decreasing".}
 
 \item{text_size}{Numeric. Base text size for axis/title text.}
 
@@ -55,6 +66,12 @@ Defaults to 4. Adjust to improve readability depending on output format.}
 \item{neutrality_line}{Logical. Add a horizontal neutrality line at 50.}
 
 \item{facet}{The variable by which to facet grid.}
+
+\item{facets.order}{Specifies the desired display order of facet panels.
+Either provide the levels directly, or a string: "increasing" or
+"decreasing", to order panels based on the average value of the
+y variable, or "string.length" to order panels by facet label length.
+Defaults to "increasing".}
 }
 \value{
 A ggplot2 object.

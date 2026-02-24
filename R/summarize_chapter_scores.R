@@ -7,10 +7,21 @@
 #' @param x A data frame or list-like object containing simulation rows with
 #'   at least `score` and `chapter` columns. If `book` and `party` are present,
 #'   the summary will include those groupings.
+#' @param aggregate_book Logical. Default is FALSE. If TRUE and a `book`
+#'   column is present, chapter-level effects are aggregated to the book
+#'   level using inverse-variance weighting (i.e., weights = 1 / (sd_diff^2 / sim)).
+#'   This properly propagates within-chapter simulation uncertainty and
+#'   returns one row per book instead of one row per chapter.
+#'
+#'   When FALSE (default), results are summarized at the chapter level.
 #' @return A tibble summarizing each chapter (and book if present). The returned
 #'   object will have the original `model` attribute copied to it.
 #' @export
-summarize_chapter_scores <- function(x) {
+summarize_chapter_scores <- function(
+  x,
+  aggregate_level = c("chapter", "book")
+) {
+  aggregate_level <- match.arg(aggregate_level)
   model <- attr(x, "model")
 
   # helper to robustly flatten various nested formats produced by run_ai_on_chapters
@@ -94,6 +105,47 @@ summarize_chapter_scores <- function(x) {
 
   extract_chapter_num <- function(ch) {
     suppressWarnings(as.integer(stringr::str_extract(ch, "\\d+")))
+  }
+
+  if (has_book && aggregate_level == "book") {
+    df <- df |>
+      dplyr::group_by(book) |>
+      dplyr::summarise(
+        sim = sum(!is.na(score)),
+        mean_baseline = if (has_baseline) {
+          mean(baseline_score, na.rm = TRUE)
+        } else {
+          NA_real_
+        },
+        sd_baseline = if (has_baseline) {
+          sd(baseline_score, na.rm = TRUE)
+        } else {
+          NA_real_
+        },
+        mean_score = mean(score, na.rm = TRUE),
+        sd_score = sd(score, na.rm = TRUE),
+        mean_diff = if (has_baseline) {
+          mean(score - baseline_score, na.rm = TRUE)
+        } else {
+          NA_real_
+        },
+        sd_diff = if (has_baseline) {
+          sd(score - baseline_score, na.rm = TRUE)
+        } else {
+          NA_real_
+        },
+        percent_republican = if (has_party) {
+          mean(tolower(party) == "republican", na.rm = TRUE) * 100
+        } else {
+          NA_real_
+        },
+        chapter_excerpt = NA_character_,
+        chapter_index = NA_integer_,
+        .groups = "drop"
+      )
+
+    attr(df, "model") <- model
+    return(df)
   }
 
   if (has_book) {

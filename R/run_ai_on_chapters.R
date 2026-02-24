@@ -150,7 +150,7 @@ run_ai_on_chapters <- function(
 #' @noRd
 .run_ai_single_context <- function(
   book_texts,
-  context_text,
+  context_text = NULL,
   question_text,
   n_simulations,
   temperature,
@@ -164,27 +164,6 @@ run_ai_on_chapters <- function(
   pb = NULL
 ) {
   model <- paste0("@", virtual_key, "/", base_model)
-
-  # Create prompt functions for the two-turn design
-  make_baseline_prompt <- function() {
-    paste(
-      context_text,
-      "\n\n",
-      question_text,
-      sep = ""
-    )
-  }
-
-  make_post_prompt <- function(chapter_text) {
-    paste(
-      "You have just read the chapter below.\n\n",
-      chapter_text,
-      "\n\n",
-      question_text,
-      " after reading this chapter?",
-      sep = ""
-    )
-  }
 
   # Type schemas for structured responses
   type_baseline <- ellmer::type_object(
@@ -220,7 +199,7 @@ run_ai_on_chapters <- function(
       )
 
       # Turn 1: Baseline (establish party and get initial score)
-      baseline_prompt <- make_baseline_prompt()
+      baseline_prompt <- make_baseline_prompt(context_text, question_text)
       baseline_response <- chat$chat_structured(
         baseline_prompt,
         type = type_baseline
@@ -260,7 +239,9 @@ run_ai_on_chapters <- function(
       party = sapply(results, function(r) r$party),
       baseline_score = sapply(results, function(r) r$baseline_score),
       score = sapply(results, function(r) r$score),
-      difference_score = sapply(results, function(r) r$score - r$baseline_score),
+      difference_score = sapply(results, function(r) {
+        r$score - r$baseline_score
+      }),
       chapter_excerpt = excerpt,
       context = context_text,
       question = question_text
@@ -289,7 +270,11 @@ run_ai_on_chapters <- function(
         # Run simulations sequentially for this chapter
         results <- lapply(seq_len(n_simulations), function(k) {
           if (!is.null(pb)) {
-            pb$tick(tokens = list(what = paste0(book, " - ", chapter_id, " (sim ", k, ")")))
+            pb$tick(
+              tokens = list(
+                what = paste0(book, " - ", chapter_id, " (sim ", k, ")")
+              )
+            )
           }
 
           # Create a new chat instance for this simulation
@@ -304,7 +289,7 @@ run_ai_on_chapters <- function(
           )
 
           # Turn 1: Baseline
-          baseline_prompt <- make_baseline_prompt()
+          baseline_prompt <- make_baseline_prompt(context_text, question_text)
           baseline_response <- chat$chat_structured(
             baseline_prompt,
             type = type_baseline
@@ -345,7 +330,9 @@ run_ai_on_chapters <- function(
           party = sapply(results, function(r) r$party),
           baseline_score = sapply(results, function(r) r$baseline_score),
           score = sapply(results, function(r) r$score),
-          difference_score = sapply(results, function(r) r$score - r$baseline_score),
+          difference_score = sapply(results, function(r) {
+            r$score - r$baseline_score
+          }),
           chapter_excerpt = excerpt,
           context = context_text,
           question = question_text
@@ -376,4 +363,28 @@ run_ai_on_chapters <- function(
   class(out) <- c(class(out), "nalanda")
   attr(out, "model") <- base_model
   out
+}
+
+# Create prompt functions for the two-turn design
+make_baseline_prompt <- function(
+  context_text,
+  question_text
+) {
+  paste(
+    context_text,
+    "\n\n",
+    question_text,
+    sep = ""
+  )
+}
+
+make_post_prompt <- function(chapter_text) {
+  paste(
+    "You have just read the chapter below.\n\n",
+    chapter_text,
+    "\n\n",
+    question_text,
+    " after reading this chapter?",
+    sep = ""
+  )
 }
