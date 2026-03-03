@@ -100,4 +100,5 @@ A tibble of results, or a named list of tibbles (one per book). Each row
 represents one simulation and includes: `chapter`, `sim`, `party`,
 `baseline_score` (pre-intervention), `score` (post-intervention),
 `chapter_excerpt`, `context`, and `question`. The object has class
-`nalanda` and an attribute `model` with the model name.
+`nalanda` and model attributes (`model` with the model name,
+`temperature` with the temperature setting used).

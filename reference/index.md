@@ -14,11 +14,17 @@
   : Plot chapter trajectories by book
 - [`plot_chapters_over_time()`](https://centerconflictcooperation.github.io/nalanda/reference/plot_chapters_over_time.md)
   : Plot chapters over time (multi-timepoint means)
+- [`plot_forest_books()`](https://centerconflictcooperation.github.io/nalanda/reference/plot_forest_books.md)
+  : Create a forest plot of book-level polarization reduction effects
+- [`prepare_forest_books()`](https://centerconflictcooperation.github.io/nalanda/reference/prepare_forest_books.md)
+  : Prepare book-level data for forest plotting
 - [`read_book_texts()`](https://centerconflictcooperation.github.io/nalanda/reference/read_book_texts.md)
   : Read book chapters into a nested list
 - [`rename_chapters()`](https://centerconflictcooperation.github.io/nalanda/reference/rename_chapters.md)
   : Rename chapter text files in a folder to a sequential order
 - [`run_ai_on_chapters()`](https://centerconflictcooperation.github.io/nalanda/reference/run_ai_on_chapters.md)
   : Run AI model on book chapters and collect structured responses
+- [`save_forest_plot()`](https://centerconflictcooperation.github.io/nalanda/reference/save_forest_plot.md)
+  : Save a forest plot to PNG and PDF formats
 - [`summarize_chapter_scores()`](https://centerconflictcooperation.github.io/nalanda/reference/summarize_chapter_scores.md)
   : Summarize simulated chapter scores

@@ -13,15 +13,18 @@ plot_chapters_over_time(
   xtitle = "Chapter",
   ytitle = "Simulated scores",
   plot_title = TRUE,
+  plot_subtitle = "",
   ci_type = "between",
   legend.position = "bottom",
+  groups.order = "decreasing",
   text_size = 20,
   line_width = 3,
   point_size = 4,
   reverse_score = FALSE,
   error_bars = TRUE,
   neutrality_line = TRUE,
-  facet = NULL
+  facet = NULL,
+  facets.order = "increasing"
 )
 ```
 
@@ -53,6 +56,10 @@ plot_chapters_over_time(
 
   Logical. Whether to include a title.
 
+- plot_subtitle:
+
+  Optional plot subtitle.
+
 - ci_type:
 
   Character. Type of confidence interval to pass to
@@ -61,6 +68,15 @@ plot_chapters_over_time(
 - legend.position:
 
   Position for legend.
+
+- groups.order:
+
+  Specifies the desired display order of the groups on the legend.
+  Either provide the levels directly, or a string: "increasing" or
+  "decreasing", to order based on the average value of the variable on
+  the y axis, or "string.length", to order from the shortest to the
+  longest string (useful when working with long string names). "Defaults
+  to "decreasing".
 
 - text_size:
 
@@ -91,6 +107,14 @@ plot_chapters_over_time(
 - facet:
 
   The variable by which to facet grid.
+
+- facets.order:
+
+  Specifies the desired display order of facet panels. Either provide
+  the levels directly, or a string: "increasing" or "decreasing", to
+  order panels based on the average value of the y variable, or
+  "string.length" to order panels by facet label length. Defaults to
+  "increasing".
 
 ## Value
 
