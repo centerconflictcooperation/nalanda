@@ -28,7 +28,8 @@
 #' @return A tibble of results, or a named list of tibbles (one per book). Each row represents
 #'   one simulation and includes: `chapter`, `sim`, `party`, `baseline_score` (pre-intervention),
 #'   `score` (post-intervention), `chapter_excerpt`, `context`, and `question`.
-#'   The object has class `nalanda` and an attribute `model` with the model name.
+#'   The object has class `nalanda` and model attributes (`model` with the model name,
+#'   `temperature` with the temperature setting used).
 #' @export
 run_ai_on_chapters <- function(
   book_texts,
@@ -123,6 +124,7 @@ run_ai_on_chapters <- function(
     }
     class(out) <- c(class(out), "nalanda")
     attr(out, "model") <- base_model
+    attr(out, "temperature") <- temperature
     return(out)
   }
 
@@ -168,45 +170,49 @@ run_ai_on_chapters <- function(
   # Type schemas for structured responses
   type_baseline <- ellmer::type_object(
     party = ellmer::type_string(),
-    score = ellmer::type_number()
+    ingroup_rating = ellmer::type_number(),
+    outgroup_rating = ellmer::type_number()
   )
 
   type_post <- ellmer::type_object(
-    score = ellmer::type_number()
+    ingroup_rating = ellmer::type_number(),
+    outgroup_rating = ellmer::type_number()
   )
 
-  if (is.character(book_texts) && length(book_texts) == 1) {
-    chapter_text <- book_texts[[1]]
-    chapter_id <- if (!is.null(names(book_texts))) {
-      names(book_texts)[1]
-    } else {
-      "chapter_1"
-    }
+  run_simulate_chapter <- function(chapter_text, chapter_id, book = NULL) {
     excerpt <- substr(chapter_text, 1, excerpt_chars)
 
-    # Run simulations sequentially (each simulation = 2 turns in same chat)
-    results <- lapply(seq_len(n_simulations), function(i) {
+    # Run simulations sequentially
+    results <- lapply(seq_len(n_simulations), function(k) {
       if (!is.null(pb)) {
-        pb$tick(tokens = list(what = paste0(chapter_id, " (sim ", i, ")")))
+        what_text <- if (!is.null(book)) {
+          paste0(book, " - ", chapter_id, " (sim ", k, ")")
+        } else {
+          paste0(chapter_id, " (sim ", k, ")")
+        }
+        pb$tick(tokens = list(what = what_text))
       }
 
       # Create a new chat instance for this simulation
       chat <- ellmer::chat_portkey(
         model = model,
         base_url = base_url,
-        params = ellmer::params(temperature = temperature, seed = seed + i - 1),
-        api_args = list(temperature = temperature, seed = seed + i - 1)
+        params = ellmer::params(
+          temperature = temperature,
+          seed = seed + k - 1
+        ),
+        api_args = list(temperature = temperature, seed = seed + k - 1)
       )
 
-      # Turn 1: Baseline (establish party and get initial score)
+      # Turn 1: Baseline
       baseline_prompt <- make_baseline_prompt(context_text, question_text)
       baseline_response <- chat$chat_structured(
         baseline_prompt,
         type = type_baseline
       )
 
-      # Turn 2: Post-intervention (show chapter and get final score)
-      post_prompt <- make_post_prompt(chapter_text)
+      # Turn 2: Post-intervention
+      post_prompt <- make_post_prompt(chapter_text, question_text)
       post_response <- chat$chat_structured(
         post_prompt,
         type = type_post
@@ -215,8 +221,10 @@ run_ai_on_chapters <- function(
       # Combine results
       list(
         party = baseline_response$party,
-        baseline_score = baseline_response$score,
-        score = post_response$score,
+        pre_ingroup_rating = baseline_response$ingroup_rating,
+        pre_outgroup_rating = baseline_response$outgroup_rating,
+        post_ingroup_rating = post_response$ingroup_rating,
+        post_outgroup_rating = post_response$outgroup_rating,
         input_tokens = if (
           include_tokens && !is.null(baseline_response$input_tokens)
         ) {
@@ -233,124 +241,77 @@ run_ai_on_chapters <- function(
     })
 
     # Convert results to tibble
-    out <- tibble::tibble(
+    out_tbl <- tibble::tibble(
       chapter = chapter_id,
       sim = seq_len(n_simulations),
       party = sapply(results, function(r) r$party),
-      baseline_score = sapply(results, function(r) r$baseline_score),
-      score = sapply(results, function(r) r$score),
-      difference_score = sapply(results, function(r) {
-        r$score - r$baseline_score
+      pre_ingroup_rating = sapply(results, function(r) {
+        r$pre_ingroup_rating
+      }),
+      pre_outgroup_rating = sapply(results, function(r) {
+        r$pre_outgroup_rating
+      }),
+      post_ingroup_rating = sapply(results, function(r) {
+        r$post_ingroup_rating
+      }),
+      post_outgroup_rating = sapply(results, function(r) {
+        r$post_outgroup_rating
+      }),
+      pre_party_difference_score = sapply(results, function(r) {
+        r$pre_ingroup_rating - r$pre_outgroup_rating
+      }),
+      post_party_difference_score = sapply(results, function(r) {
+        r$post_ingroup_rating - r$post_outgroup_rating
+      }),
+      pre_post_ingroup_difference_score = sapply(results, function(r) {
+        r$post_ingroup_rating - r$pre_ingroup_rating
+      }),
+      pre_post_outgroup_difference_score = sapply(results, function(r) {
+        r$post_outgroup_rating - r$pre_outgroup_rating
       }),
       chapter_excerpt = excerpt,
       context = context_text,
       question = question_text
     )
 
-    if (include_tokens) {
-      out$input_tokens <- sapply(results, function(r) r$input_tokens)
-    }
-    if (include_cost) {
-      out$cost <- sapply(results, function(r) r$cost)
+    if (!is.null(book)) {
+      out_tbl <- tibble::add_column(out_tbl, book = book, .before = 1)
     }
 
-    attr(out, "model") <- base_model
-    out
+    if (include_tokens) {
+      out_tbl$input_tokens <- sapply(results, function(r) r$input_tokens)
+    }
+    if (include_cost) {
+      out_tbl$cost <- sapply(results, function(r) r$cost)
+    }
+
+    out_tbl
+  }
+
+  if (is.character(book_texts) && length(book_texts) == 1) {
+    chapter_text <- book_texts[[1]]
+    chapter_id <- if (!is.null(names(book_texts))) {
+      names(book_texts)[1]
+    } else {
+      "chapter_1"
+    }
+    out <- run_simulate_chapter(chapter_text, chapter_id)
   } else if (is.list(book_texts)) {
     book_names <- names(book_texts)
     out_list <- purrr::map(seq_along(book_texts), function(i) {
       book <- if (is.null(book_names)) paste0("book_", i) else book_names[[i]]
-      chapters <- book_texts[[i]]
-      chapter_texts <- unlist(chapters, use.names = TRUE)
+      chapter_texts <- unlist(book_texts[[i]], use.names = TRUE)
+      
       df_book <- purrr::map_dfr(seq_along(chapter_texts), function(j) {
-        chapter_id <- names(chapter_texts)[j]
-        chapter_text <- chapter_texts[[j]]
-        excerpt <- substr(chapter_text, 1, excerpt_chars)
-
-        # Run simulations sequentially for this chapter
-        results <- lapply(seq_len(n_simulations), function(k) {
-          if (!is.null(pb)) {
-            pb$tick(
-              tokens = list(
-                what = paste0(book, " - ", chapter_id, " (sim ", k, ")")
-              )
-            )
-          }
-
-          # Create a new chat instance for this simulation
-          chat <- ellmer::chat_portkey(
-            model = model,
-            base_url = base_url,
-            params = ellmer::params(
-              temperature = temperature,
-              seed = seed + k - 1
-            ),
-            api_args = list(temperature = temperature, seed = seed + k - 1)
-          )
-
-          # Turn 1: Baseline
-          baseline_prompt <- make_baseline_prompt(context_text, question_text)
-          baseline_response <- chat$chat_structured(
-            baseline_prompt,
-            type = type_baseline
-          )
-
-          # Turn 2: Post-intervention
-          post_prompt <- make_post_prompt(chapter_text)
-          post_response <- chat$chat_structured(
-            post_prompt,
-            type = type_post
-          )
-
-          # Combine results
-          list(
-            party = baseline_response$party,
-            baseline_score = baseline_response$score,
-            score = post_response$score,
-            input_tokens = if (
-              include_tokens && !is.null(baseline_response$input_tokens)
-            ) {
-              baseline_response$input_tokens + post_response$input_tokens
-            } else {
-              NA_real_
-            },
-            cost = if (include_cost && !is.null(baseline_response$cost)) {
-              baseline_response$cost + post_response$cost
-            } else {
-              NA_real_
-            }
-          )
-        })
-
-        # Convert results to tibble
-        df <- tibble::tibble(
-          book = book,
-          chapter = chapter_id,
-          sim = seq_len(n_simulations),
-          party = sapply(results, function(r) r$party),
-          baseline_score = sapply(results, function(r) r$baseline_score),
-          score = sapply(results, function(r) r$score),
-          difference_score = sapply(results, function(r) {
-            r$score - r$baseline_score
-          }),
-          chapter_excerpt = excerpt,
-          context = context_text,
-          question = question_text
+        run_simulate_chapter(
+          chapter_text = chapter_texts[[j]],
+          chapter_id = names(chapter_texts)[j],
+          book = book
         )
-
-        if (include_tokens) {
-          df$input_tokens <- sapply(results, function(r) r$input_tokens)
-        }
-        if (include_cost) {
-          df$cost <- sapply(results, function(r) r$cost)
-        }
-
-        attr(df, "model") <- base_model
-        df
       })
-      attr(df_book, "model") <- base_model
       df_book
     })
+    
     if (!is.null(book_names)) {
       names(out_list) <- book_names
     }
@@ -361,24 +322,26 @@ run_ai_on_chapters <- function(
     )
   }
   class(out) <- c(class(out), "nalanda")
-  attr(out, "model") <- base_model
+  # attr(out, "model") <- base_model
   out
 }
 
 # Create prompt functions for the two-turn design
-make_baseline_prompt <- function(
-  context_text,
-  question_text
-) {
-  paste(
-    context_text,
-    "\n\n",
-    question_text,
-    sep = ""
-  )
+make_baseline_prompt <- function(context_text, question_text) {
+  out <- lapply(seq_along(context_text), function(k) {
+    if (k != 1) {
+      question_text <- rev(question_text)
+    }
+    paste(
+      context_text[k],
+      paste(question_text, collapse = " "),
+      sep = " "
+    )
+  })
+  as.character(out)
 }
 
-make_post_prompt <- function(chapter_text) {
+make_post_prompt <- function(chapter_text, question_text) {
   paste(
     "You have just read the chapter below.\n\n",
     chapter_text,
@@ -388,3 +351,19 @@ make_post_prompt <- function(chapter_text) {
     sep = ""
   )
 }
+
+# make_post_prompt <- function(chapter_text, question_text) {
+#   out <- lapply(seq_along(chapter_text), function(k) {
+#     if (k != 1) {
+#       question_text <- rev(question_text)
+#     }
+#     paste(
+#       "You have just read the chapter below.\n\n",
+#       chapter_text,
+#       "\n\n",
+#       paste(question_text, collapse = " "),
+#       sep = " "
+#     )
+#   })
+#   as.character(out)
+# }

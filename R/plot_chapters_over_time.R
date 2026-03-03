@@ -152,6 +152,8 @@ plot_chapters_over_time <- function(
           " simulations per book per chapter",
           " (model = '",
           attr(chapters[[1]], "model"),
+          "; temperature = ",
+          attr(chapters[[1]], "temperature"),
           "')"
         )
       )
@@ -206,8 +208,8 @@ plot_chapters_over_time <- function(
   }
 
   if (group %in% names(df_wide)) {
-    group_levels <- levels(as.factor(df_wide[[group]]))
-    if (all(group_levels %in% c("Democrat", "Republican"))) {
+    group_levels <- tolower(levels(as.factor(df_wide[[group]])))
+    if (all(group_levels %in% c("democrat", "republican"))) {
       # dem_blue <- "#2E74C0" #2E6FBA #0015BC
       # rep_red <- "#CB454A" #C63D3D #E81B23
       # https://www.flagcolorcodes.com/republican-party-elephant
@@ -217,6 +219,7 @@ plot_chapters_over_time <- function(
         ) +
         ggplot2::scale_shape_manual(
           values = c("Democrat" = 21, "Republican" = 24)
+          # 23 for diamond shape
         ) +
         ggplot2::theme(
           panel.spacing = ggplot2::unit(1.2, "lines"),

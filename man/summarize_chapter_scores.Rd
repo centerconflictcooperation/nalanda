@@ -4,14 +4,18 @@
 \alias{summarize_chapter_scores}
 \title{Summarize simulated chapter scores}
 \usage{
-summarize_chapter_scores(x, aggregate_level = c("chapter", "book"))
+summarize_chapter_scores(
+  x,
+  aggregate_level = c("chapter", "book"),
+  by_party = FALSE
+)
 }
 \arguments{
 \item{x}{A data frame or list-like object containing simulation rows with
 at least \code{score} and \code{chapter} columns. If \code{book} and \code{party} are present,
 the summary will include those groupings.}
 
-\item{aggregate_book}{Logical. Default is FALSE. If TRUE and a \code{book}
+\item{aggregate_level}{Logical. Default is FALSE. If TRUE and a \code{book}
 column is present, chapter-level effects are aggregated to the book
 level using inverse-variance weighting (i.e., weights = 1 / (sd_diff^2 / sim)).
 This properly propagates within-chapter simulation uncertainty and

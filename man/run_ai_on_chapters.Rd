@@ -52,7 +52,8 @@ Example: "On a scale from 0 to 100, how warmly do you feel towards your politica
 A tibble of results, or a named list of tibbles (one per book). Each row represents
 one simulation and includes: \code{chapter}, \code{sim}, \code{party}, \code{baseline_score} (pre-intervention),
 \code{score} (post-intervention), \code{chapter_excerpt}, \code{context}, and \code{question}.
-The object has class \code{nalanda} and an attribute \code{model} with the model name.
+The object has class \code{nalanda} and model attributes (\code{model} with the model name,
+\code{temperature} with the temperature setting used).
 }
 \description{
 This function implements a two-turn sequential chat design to measure the effect
