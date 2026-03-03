@@ -31,7 +31,7 @@ library(nalanda)
 
 # Get a random fact about Nalanda University
 nalanda()
-#> [1] "Nalanda University was founded in the 5th century CE in present-day Bihar, India."
+#> [1] "The Nalanda library, known as Dharmaganja, was reputed to house hundreds of thousands of manuscripts."
 ```
 
 ## About the Name
