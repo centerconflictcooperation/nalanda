@@ -43,11 +43,20 @@ polarization across books, including 95% confidence intervals.</p>
     <h2 id="ref-usage">Usage<a class="anchor" aria-label="anchor" href="#ref-usage"></a></h2>
     <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">plot_forest_books</span><span class="op">(</span></span>
 <span>  <span class="va">forest_df</span>,</span>
-<span>  label_cols <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"book"</span>, <span class="st">"ci"</span><span class="op">)</span>,</span>
+<span>  dv <span class="op">=</span> <span class="st">"delta_gap"</span>,</span>
+<span>  add_ci_label <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  digits <span class="op">=</span> <span class="fl">2</span>,</span>
+<span>  label_cols <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"book"</span><span class="op">)</span>,</span>
+<span>  show_ci_label <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  ci_multiline <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  ci_show_party <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  show_legend <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  ci_label_fontsize <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  ci_label_lineheight <span class="op">=</span> <span class="fl">0.85</span>,</span>
 <span>  header <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  title <span class="op">=</span> <span class="st">""</span>,</span>
 <span>  xlab <span class="op">=</span> <span class="st">""</span>,</span>
-<span>  zero <span class="op">=</span> <span class="fl">0</span>,</span>
+<span>  zero <span class="op">=</span> <span class="cn">NA</span>,</span>
 <span>  show_overall <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  ci.vertices <span class="op">=</span> <span class="cn">FALSE</span></span>
 <span><span class="op">)</span></span></code></pre></div>
@@ -58,13 +67,60 @@ polarization across books, including 95% confidence intervals.</p>
 
 
 <dl><dt id="arg-forest-df">forest_df<a class="anchor" aria-label="anchor" href="#arg-forest-df"></a></dt>
-<dd><p>A data frame produced by <code><a href="prepare_forest_books.html">prepare_forest_books()</a></code>,
-containing <code>book</code>, <code>mean</code>, <code>lower</code>, and <code>upper</code> columns.</p></dd>
+<dd><p>Either:</p><ul><li><p>A data frame produced by <code><a href="prepare_forest_books.html">prepare_forest_books()</a></code> containing
+<code>book</code>, <code>mean</code>, <code>lower</code>, and <code>upper</code>, or</p></li>
+<li><p>A summary data frame (for example from
+<code>summarize_chapter_scores(..., aggregate_level = "book")</code>) with
+<code>mean_{dv}</code> and <code>sd_{dv}</code> columns.</p></li>
+</ul></dd>
+
+
+<dt id="arg-dv">dv<a class="anchor" aria-label="anchor" href="#arg-dv"></a></dt>
+<dd><p>Character. Variable prefix used when <code>forest_df</code> is not already
+prepared. Defaults to <code>"delta_gap"</code>.</p></dd>
+
+
+<dt id="arg-add-ci-label">add_ci_label<a class="anchor" aria-label="anchor" href="#arg-add-ci-label"></a></dt>
+<dd><p>Logical. Passed to <code><a href="prepare_forest_books.html">prepare_forest_books()</a></code> when
+internal preparation is needed. Defaults to <code>TRUE</code>.</p></dd>
+
+
+<dt id="arg-digits">digits<a class="anchor" aria-label="anchor" href="#arg-digits"></a></dt>
+<dd><p>Integer. Passed to <code><a href="prepare_forest_books.html">prepare_forest_books()</a></code> when internal
+preparation is needed. Defaults to 2.</p></dd>
 
 
 <dt id="arg-label-cols">label_cols<a class="anchor" aria-label="anchor" href="#arg-label-cols"></a></dt>
-<dd><p>The names of the columns to be included on the side
-of the plot.</p></dd>
+<dd><p>Character vector of left-side label columns.
+Defaults to <code>"book"</code>.</p></dd>
+
+
+<dt id="arg-show-ci-label">show_ci_label<a class="anchor" aria-label="anchor" href="#arg-show-ci-label"></a></dt>
+<dd><p>Logical. If TRUE, appends an internally generated <code>ci</code>
+label column to the right-side text.</p></dd>
+
+
+<dt id="arg-ci-multiline">ci_multiline<a class="anchor" aria-label="anchor" href="#arg-ci-multiline"></a></dt>
+<dd><p>Logical. For grouped party output, print each party CI on
+its own line (using <code>\n</code>) when TRUE.</p></dd>
+
+
+<dt id="arg-ci-show-party">ci_show_party<a class="anchor" aria-label="anchor" href="#arg-ci-show-party"></a></dt>
+<dd><p>Logical. Include party names in CI labels.</p></dd>
+
+
+<dt id="arg-show-legend">show_legend<a class="anchor" aria-label="anchor" href="#arg-show-legend"></a></dt>
+<dd><p>Logical. Show party legend when grouped data are present.</p></dd>
+
+
+<dt id="arg-ci-label-fontsize">ci_label_fontsize<a class="anchor" aria-label="anchor" href="#arg-ci-label-fontsize"></a></dt>
+<dd><p>Optional numeric size for the CI label column.
+Useful when grouped party CIs are shown on multiple lines.</p></dd>
+
+
+<dt id="arg-ci-label-lineheight">ci_label_lineheight<a class="anchor" aria-label="anchor" href="#arg-ci-label-lineheight"></a></dt>
+<dd><p>Numeric line height for the CI label column when
+<code>ci_label_fontsize</code> is set.</p></dd>
 
 
 <dt id="arg-header">header<a class="anchor" aria-label="anchor" href="#arg-header"></a></dt>
@@ -81,7 +137,9 @@ of the plot.</p></dd>
 
 
 <dt id="arg-zero">zero<a class="anchor" aria-label="anchor" href="#arg-zero"></a></dt>
-<dd><p>Where should the "zero" axis (graph) start.</p></dd>
+<dd><p>Numeric scalar, NA, or NULL. Reference line position for
+forestplot. Defaults to NA (no zero/reference line). NULL is
+treated as NA for convenience.</p></dd>
 
 
 <dt id="arg-show-overall">show_overall<a class="anchor" aria-label="anchor" href="#arg-show-overall"></a></dt>
@@ -104,6 +162,10 @@ line indicating the overall mean effect is added.</p></dd>
 95% confidence intervals.</p>
 <p>The vertical dashed line (if enabled) represents the average
 effect across books.</p>
+<p>The temporary <code>mean/lower/upper</code> columns required by <code>forestplot</code> are
+generated internally when needed.</p>
+<p>If <code>party</code> is present, estimates are drawn as multiple CIs per book row
+(one row per book; one estimate per party).</p>
     </div>
 
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
