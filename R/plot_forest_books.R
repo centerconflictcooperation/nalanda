@@ -3,8 +3,18 @@
 #' Generates a forest plot displaying mean reduction in affective
 #' polarization across books, including 95% confidence intervals.
 #'
-#' @param forest_df A data frame produced by `prepare_forest_books()`,
-#' containing `book`, `mean`, `lower`, and `upper` columns.
+#' @param forest_df Either:
+#'   - A data frame produced by `prepare_forest_books()` containing
+#'     `book`, `mean`, `lower`, and `upper`, or
+#'   - A summary data frame (for example from
+#'     `summarize_chapter_scores(..., aggregate_level = "book")`) with
+#'     `mean_{dv}` and `sd_{dv}` columns.
+#' @param dv Character. Variable prefix used when `forest_df` is not already
+#'   prepared. Defaults to `"delta_gap"`.
+#' @param add_ci_label Logical. Passed to `prepare_forest_books()` when
+#'   internal preparation is needed. Defaults to `TRUE`.
+#' @param digits Integer. Passed to `prepare_forest_books()` when internal
+#'   preparation is needed. Defaults to 2.
 #' @param label_cols The names of the columns to be included on the side
 #' of the plot.
 #' @param header Labels of the columns to be displayed and as specified in
@@ -27,9 +37,15 @@
 #' The vertical dashed line (if enabled) represents the average
 #' effect across books.
 #'
+#' The temporary `mean/lower/upper` columns required by `forestplot` are
+#' generated internally when needed.
+#'
 #' @export
 plot_forest_books <- function(
   forest_df,
+  dv = "delta_gap",
+  add_ci_label = TRUE,
+  digits = 2,
   label_cols = c("book", "ci"),
   header = NULL,
   title = "",
@@ -38,6 +54,24 @@ plot_forest_books <- function(
   show_overall = TRUE,
   ci.vertices = FALSE
 ) {
+  required_cols <- c("mean", "lower", "upper")
+  if (!all(required_cols %in% names(forest_df))) {
+    forest_df <- prepare_forest_books(
+      summary_books = forest_df,
+      dv = dv,
+      add_ci_label = add_ci_label,
+      digits = digits
+    )
+  }
+
+  missing_label_cols <- setdiff(label_cols, names(forest_df))
+  if (length(missing_label_cols) > 0) {
+    stop(
+      "`label_cols` not found in data: ",
+      paste(missing_label_cols, collapse = ", ")
+    )
+  }
+
   forest_df <- forest_df |>
     dplyr::arrange(
       dplyr::across(dplyr::any_of("party")),

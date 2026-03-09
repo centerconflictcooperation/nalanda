@@ -73,8 +73,13 @@ summarize_chapter_scores <- function(
   group_cols <- c()
   if (has_book) group_cols <- c(group_cols, "book")
   if (aggregate_level == "chapter") group_cols <- c(group_cols, "chapter")
-  if (by_party && has_party) group_cols <- c(group_cols, "party")
-  if (has_identity) group_cols <- c(group_cols, "identity")
+  if (by_party) {
+    if (has_party) {
+      group_cols <- c(group_cols, "party")
+    } else if (has_identity) {
+      group_cols <- c(group_cols, "identity")
+    }
+  }
 
   # --- Summarise ---
   df <- df |>
@@ -174,3 +179,5 @@ flatten_sim_results <- function(z) {
   # bind rows; if we added book columns above they will be preserved
   return(dplyr::bind_rows(dfs))
 }
+
+

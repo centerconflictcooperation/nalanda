@@ -12,19 +12,25 @@ summarize_chapter_scores(
 }
 \arguments{
 \item{x}{A data frame or list-like object containing simulation rows as
-produced by \code{run_ai_on_chapters()}. Expected columns include \code{chapter}, pre/post ingroup-outgroup fields, and the derived difference columns used in summaries (\code{gap_pre}, \code{gap_post}, \code{delta_outgroup}, \code{delta_ingroup}, \code{delta_gap}). If \code{book} and \code{party} are present, the summary will include those groupings.}
+produced by run_ai_on_chapters(). Expected columns include chapter,
+pre/post ingroup-outgroup fields, and the derived difference columns used
+in summaries (gap_pre, gap_post, delta_outgroup, delta_ingroup, delta_gap).
+If book and party are present, the summary will include those groupings.}
 
-\item{aggregate_level}{Character. One of \code{"chapter"} (default) or \code{"book"}.
-When \code{"book"}, results are aggregated to the book level.}
+\item{aggregate_level}{Character. One of "chapter" (default) or "book".
+When "book", results are aggregated to the book level.}
 
 \item{by_party}{Logical. If TRUE, summaries are computed separately by party
 (if present).}
 }
 \value{
 A tibble summarizing each chapter (and book if present). The returned
-object will have the original \code{model} attribute copied to it.
+object will have the original model attribute copied to it.
 }
 \description{
 Aggregate simulation results by chapter (and book, if present) computing
-number of simulations, means and SDs for core model outputs. In the current schema, this includes ingroup/outgroup pre-post ratings plus delta and gap metrics (for example \code{delta_outgroup}, \code{delta_ingroup}, and \code{delta_gap}). Retains a chapter excerpt at chapter level.
+number of simulations, means and SDs for core model outputs. In the current
+schema, this includes ingroup/outgroup pre-post ratings plus delta and gap
+metrics (for example delta_outgroup, delta_ingroup, and delta_gap).
+Retains a chapter excerpt at chapter level.
 }

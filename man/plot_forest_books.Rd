@@ -6,6 +6,9 @@
 \usage{
 plot_forest_books(
   forest_df,
+  dv = "delta_gap",
+  add_ci_label = TRUE,
+  digits = 2,
   label_cols = c("book", "ci"),
   header = NULL,
   title = "",
@@ -16,8 +19,23 @@ plot_forest_books(
 )
 }
 \arguments{
-\item{forest_df}{A data frame produced by \code{prepare_forest_books()},
-containing \code{book}, \code{mean}, \code{lower}, and \code{upper} columns.}
+\item{forest_df}{Either:
+\itemize{
+\item A data frame produced by \code{prepare_forest_books()} containing
+\code{book}, \code{mean}, \code{lower}, and \code{upper}, or
+\item A summary data frame (for example from
+\code{summarize_chapter_scores(..., aggregate_level = "book")}) with
+\verb{mean_\{dv\}} and \verb{sd_\{dv\}} columns.
+}}
+
+\item{dv}{Character. Variable prefix used when \code{forest_df} is not already
+prepared. Defaults to \code{"delta_gap"}.}
+
+\item{add_ci_label}{Logical. Passed to \code{prepare_forest_books()} when
+internal preparation is needed. Defaults to \code{TRUE}.}
+
+\item{digits}{Integer. Passed to \code{prepare_forest_books()} when internal
+preparation is needed. Defaults to 2.}
 
 \item{label_cols}{The names of the columns to be included on the side
 of the plot.}
@@ -51,4 +69,7 @@ The plot uses circular markers for point estimates and displays
 
 The vertical dashed line (if enabled) represents the average
 effect across books.
+
+The temporary \code{mean/lower/upper} columns required by \code{forestplot} are
+generated internally when needed.
 }
