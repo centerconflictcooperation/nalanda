@@ -1,8 +1,8 @@
 # Summarize simulated chapter scores
 
 Aggregate simulation results by chapter (and book, if present) computing
-number of simulations, mean and sd of scores, percent of Republican
-responses, and retain a chapter excerpt.
+number of simulations, means and SDs for ingroup/outgroup ratings (pre
+and post), and difference scores. Retains a chapter excerpt.
 
 ## Usage
 
@@ -18,19 +18,22 @@ summarize_chapter_scores(
 
 - x:
 
-  A data frame or list-like object containing simulation rows with at
-  least `score` and `chapter` columns. If `book` and `party` are
-  present, the summary will include those groupings.
+  A data frame or list-like object containing simulation rows as
+  produced by
+  [`run_ai_on_chapters()`](https://centerconflictcooperation.github.io/nalanda/reference/run_ai_on_chapters.md).
+  Expected columns include `chapter`, `pre_ingroup`, `post_ingroup`,
+  `pre_outgroup`, `post_outgroup`. If `book` and `party` are present,
+  the summary will include those groupings.
 
 - aggregate_level:
 
-  Logical. Default is FALSE. If TRUE and a `book` column is present,
-  chapter-level effects are aggregated to the book level using
-  inverse-variance weighting (i.e., weights = 1 / (sd_diff^2 / sim)).
-  This properly propagates within-chapter simulation uncertainty and
-  returns one row per book instead of one row per chapter.
+  Character. One of `"chapter"` (default) or `"book"`. When `"book"`,
+  results are aggregated to the book level.
 
-  When FALSE (default), results are summarized at the chapter level.
+- by_party:
+
+  Logical. If TRUE, summaries are computed separately by party (if
+  present).
 
 ## Value
 

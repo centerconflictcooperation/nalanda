@@ -6,6 +6,10 @@
   : Fix text file encoding and normalize punctuation/whitespace
 - [`list_book_chapters()`](https://centerconflictcooperation.github.io/nalanda/reference/list_book_chapters.md)
   : List book chapter files inside a books directory
+- [`make_baseline_prompt()`](https://centerconflictcooperation.github.io/nalanda/reference/make_baseline_prompt.md)
+  : Build the baseline (Turn 1) prompt
+- [`make_post_prompt()`](https://centerconflictcooperation.github.io/nalanda/reference/make_post_prompt.md)
+  : Build the post-intervention (Turn 2) prompt
 - [`nalanda()`](https://centerconflictcooperation.github.io/nalanda/reference/nalanda.md)
   : A Random Historical Fact About Nalanda University
 - [`plot_chapter_scores_faceted()`](https://centerconflictcooperation.github.io/nalanda/reference/plot_chapter_scores_faceted.md)

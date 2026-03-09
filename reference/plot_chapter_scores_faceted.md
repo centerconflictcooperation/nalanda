@@ -6,7 +6,11 @@ bars.
 ## Usage
 
 ``` r
-plot_chapter_scores_faceted(summary_df, ytitle = "Simulated scores")
+plot_chapter_scores_faceted(
+  summary_df,
+  dv = "post_outgroup",
+  ytitle = "Simulated scores"
+)
 ```
 
 ## Arguments
@@ -15,6 +19,11 @@ plot_chapter_scores_faceted(summary_df, ytitle = "Simulated scores")
 
   Data frame produced by
   [`summarize_chapter_scores()`](https://centerconflictcooperation.github.io/nalanda/reference/summarize_chapter_scores.md).
+
+- dv:
+
+  Character. Column name prefix for mean and sd. For example,
+  `"post_outgroup"` will plot `mean_post_outgroup` ± `sd_post_outgroup`.
 
 - ytitle:
 

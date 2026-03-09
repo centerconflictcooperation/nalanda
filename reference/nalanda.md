@@ -19,5 +19,5 @@ A character string containing one factual statement about Nalanda.
 
 ``` r
 nalanda()
-#> [1] "At its height, Nalanda attracted scholars from many regions, including China, Korea, and Southeast Asia."
+#> [1] "The Nalanda library, known as Dharmaganja, was reputed to house hundreds of thousands of manuscripts."
 ```

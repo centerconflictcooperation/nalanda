@@ -1,23 +1,26 @@
 # Run AI model on book chapters and collect structured responses
 
 This function implements a two-turn sequential chat design to measure
-the effect of reading book chapters on attitudes. For each simulation,
-the function:
+the effect of reading book chapters on attitudes. For each simulation
+and each identity assignment, the function:
 
-1.  Establishes a baseline by asking the model to choose a party and
-    rate the outgroup
+1.  Establishes a baseline by assigning an identity, then asking for
+    ratings of each group (ingroup first, outgroup second).
 
-2.  Shows the chapter and asks for a post-intervention rating in the
-    same chat session
+2.  Shows the chapter and asks for post-intervention ratings in the same
+    chat session (same ordering: ingroup first, outgroup second).
 
 This design creates a within-agent pre-post comparison, with
-conversation memory maintained between turns.
+conversation memory maintained between turns. Ingroup and outgroup
+columns are computed post-hoc from the assigned identity and the group
+labels.
 
 ## Usage
 
 ``` r
 run_ai_on_chapters(
   book_texts,
+  groups,
   context_text,
   question_text,
   n_simulations = 1,
@@ -40,26 +43,33 @@ run_ai_on_chapters(
   chapters as returned by
   [`read_book_texts()`](https://centerconflictcooperation.github.io/nalanda/reference/read_book_texts.md).
 
+- groups:
+
+  Character vector of group labels (length \>= 2). These are the groups
+  being compared. Example: `c("Democrat", "Republican")`.
+
 - context_text:
 
-  Character vector. Context used in the baseline prompt to establish
-  party identity. Can be a vector of multiple contexts - the function
-  will run once for each context and combine results. Example: "You are
-  simulating an American adult who politically identifies as a
-  Democrat."
+  Character. Either:
+
+  - A scalar template containing `{identity}`, which will be expanded
+    once for each group (e.g.,
+    `"You are simulating an American adult who politically identifies as a {identity}."`),
+    or
+
+  - A character vector of length equal to `length(groups)`, where each
+    element is the full context for the corresponding group identity.
 
 - question_text:
 
-  Character. Question to ask the model in both baseline and
-  post-intervention turns. The post-intervention turn will append "
-  after reading this chapter?" to this question. Example: "On a scale
-  from 0 to 100, how warmly do you feel towards your political
-  outgroup?"
+  Character scalar. A question template containing the placeholder
+  `{group}`, which will be replaced with each group label. Example:
+  `"On a scale from 0 to 100, how warmly do you feel towards {group}s?"`
 
 - n_simulations:
 
-  Integer. Number of repeated simulations per chapter (each simulation =
-  2 chat turns).
+  Integer. Number of repeated simulations per chapter per identity (each
+  simulation = 2 chat turns).
 
 - temperature:
 
@@ -97,8 +107,42 @@ run_ai_on_chapters(
 ## Value
 
 A tibble of results, or a named list of tibbles (one per book). Each row
-represents one simulation and includes: `chapter`, `sim`, `party`,
-`baseline_score` (pre-intervention), `score` (post-intervention),
-`chapter_excerpt`, `context`, and `question`. The object has class
-`nalanda` and model attributes (`model` with the model name,
-`temperature` with the temperature setting used).
+represents one simulation x identity combination and includes:
+`chapter`, `sim`, `identity`, `party`, and (depending on mode):
+
+- Per-group mode (`{group}` in question):
+
+  Per-group raw ratings (`pre_rating_{group}`, `post_rating_{group}`),
+  computed `pre_ingroup`, `pre_outgroup`, `post_ingroup`,
+  `post_outgroup`, and difference scores: `gap_pre`, `gap_post`,
+  `delta_ingroup`, `delta_outgroup`, and `delta_gap`.
+
+- Single-question mode (no `{group}`):
+
+  `pre_rating`, `post_rating`, `pre_outgroup`, `post_outgroup` (=
+  ratings), `pre_ingroup = NA`, `post_ingroup = NA`, and
+  `delta_outgroup`.
+
+The object has class `nalanda` and model attributes.
+
+## Examples
+
+``` r
+# Per-group mode (asks about each group, ingroup first):
+make_baseline_prompt(
+  identity_context = "You are simulating an American Democrat.",
+  question_template = "How warmly do you feel towards {group}s?",
+  groups = c("Democrat", "Republican"),
+  identity_label = "Democrat"
+)
+#> [1] "You are simulating an American Democrat. How warmly do you feel towards Democrats? How warmly do you feel towards Republicans?"
+
+# Single-question mode (asks once, as-is):
+make_baseline_prompt(
+  identity_context = "You are simulating an American Democrat.",
+  question_template = "How warmly do you feel towards your political outgroup?",
+  groups = c("Democrat", "Republican"),
+  identity_label = "Democrat"
+)
+#> [1] "You are simulating an American Democrat. How warmly do you feel towards your political outgroup?"
+```

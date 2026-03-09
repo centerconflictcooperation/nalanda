@@ -52,6 +52,10 @@ plot_forest_books(
   Logical. If TRUE (default), a vertical dashed line indicating the
   overall mean effect is added.
 
+- ci.vertices:
+
+  Logical. Whether to draw CI vertices in the forest plot.
+
 ## Value
 
 A `forestplot` grob object.

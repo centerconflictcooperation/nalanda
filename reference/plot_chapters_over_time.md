@@ -8,7 +8,7 @@ rempsyc::plot_means_over_time for the wide-format response variables.
 ``` r
 plot_chapters_over_time(
   chapters,
-  dv = "mean_diff",
+  dv = "delta_gap",
   group = "book",
   xtitle = "Chapter",
   ytitle = "Simulated scores",
@@ -38,7 +38,7 @@ plot_chapters_over_time(
 - dv:
 
   Character. Name of the column to plot as the dependent variable
-  (default: "score").
+  (default: "pre_post_outgroup_difference").
 
 - group:
 
@@ -94,7 +94,7 @@ plot_chapters_over_time(
 
 - reverse_score:
 
-  Logical. Whether to reverse score scale using rempsyc::nice_reverse.
+  Logical. Whether to reverse score scale.
 
 - error_bars:
 
