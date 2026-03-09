@@ -158,3 +158,108 @@ test_that("plot_forest_books still accepts precomputed forest data", {
     )
   )
 })
+
+test_that("plot_forest_books treats zero = NULL as no reference line", {
+  summary_books <- tibble::tibble(
+    book = c("Book A", "Book B"),
+    sim = c(10, 12),
+    mean_delta_gap = c(1.2, 0.8),
+    sd_delta_gap = c(0.6, 0.5)
+  )
+
+  expect_no_error(
+    plot_forest_books(
+      summary_books,
+      dv = "delta_gap",
+      zero = NULL,
+      show_overall = FALSE,
+      ci.vertices = FALSE
+    )
+  )
+})
+
+test_that("party inputs are consolidated to one row per book", {
+  forest_df <- tibble::tibble(
+    book = c("Book A", "Book A", "Book B", "Book B"),
+    party = c("Democrat", "Republican", "Democrat", "Republican"),
+    mean = c(8, 12, 10, 14),
+    lower = c(7, 11, 9, 13),
+    upper = c(9, 13, 11, 15),
+    ci = c("8 [7, 9]", "12 [11, 13]", "10 [9, 11]", "14 [13, 15]")
+  )
+
+  built <- nalanda:::.build_forestplot_inputs(
+    forest_df,
+    label_cols = c("book"),
+    show_ci_label = TRUE,
+    ci_multiline = TRUE,
+    ci_show_party = FALSE
+  )
+
+  expect_equal(nrow(built$label_mat), 2)
+  expect_true(is.matrix(built$mean))
+  expect_equal(ncol(built$mean), 2)
+})
+
+test_that("grouped CI labels can be multiline and without party prefixes", {
+  forest_df <- tibble::tibble(
+    book = c("Book A", "Book A"),
+    party = c("Democrat", "Republican"),
+    mean = c(8, 12),
+    lower = c(7, 11),
+    upper = c(9, 13),
+    ci = c("8 [7, 9]", "12 [11, 13]")
+  )
+
+  built <- nalanda:::.build_forestplot_inputs(
+    forest_df,
+    label_cols = c("book"),
+    show_ci_label = TRUE,
+    ci_multiline = TRUE,
+    ci_show_party = FALSE
+  )
+
+  expect_match(built$label_mat[1, "ci"], "\\n")
+  expect_false(grepl("Democrat:", built$label_mat[1, "ci"]))
+})
+
+test_that("plot_forest_books allows compact CI text styling", {
+  grouped <- tibble::tibble(
+    book = c("Book A", "Book A", "Book B", "Book B"),
+    party = c("Democrat", "Republican", "Democrat", "Republican"),
+    mean = c(8, 12, 10, 14),
+    lower = c(7, 11, 9, 13),
+    upper = c(9, 13, 11, 15),
+    ci = c("8 [7, 9]", "12 [11, 13]", "10 [9, 11]", "14 [13, 15]")
+  )
+
+  expect_no_error(
+    plot_forest_books(
+      grouped,
+      show_ci_label = TRUE,
+      ci_multiline = TRUE,
+      ci_label_fontsize = 8,
+      ci_label_lineheight = 0.8,
+      show_overall = FALSE
+    )
+  )
+})
+
+test_that("ungrouped forest plot prints without fn.ci_norm mismatch", {
+  summary_books <- tibble::tibble(
+    book = c("Book A", "Book B"),
+    sim = c(10, 12),
+    mean_delta_outgroup = c(1.2, 0.8),
+    sd_delta_outgroup = c(0.6, 0.5)
+  )
+
+  p <- plot_forest_books(
+    summary_books,
+    label_cols = "book",
+    dv = "delta_outgroup",
+    header = c("Book tested", "Effect [95% CI]"),
+    show_overall = FALSE
+  )
+
+  expect_no_error(print(p))
+})

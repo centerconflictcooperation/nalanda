@@ -9,11 +9,17 @@ plot_forest_books(
   dv = "delta_gap",
   add_ci_label = TRUE,
   digits = 2,
-  label_cols = c("book", "ci"),
+  label_cols = c("book"),
+  show_ci_label = TRUE,
+  ci_multiline = TRUE,
+  ci_show_party = FALSE,
+  show_legend = TRUE,
+  ci_label_fontsize = NULL,
+  ci_label_lineheight = 0.85,
   header = NULL,
   title = "",
   xlab = "",
-  zero = 0,
+  zero = NA,
   show_overall = TRUE,
   ci.vertices = FALSE
 )
@@ -37,8 +43,24 @@ internal preparation is needed. Defaults to \code{TRUE}.}
 \item{digits}{Integer. Passed to \code{prepare_forest_books()} when internal
 preparation is needed. Defaults to 2.}
 
-\item{label_cols}{The names of the columns to be included on the side
-of the plot.}
+\item{label_cols}{Character vector of left-side label columns.
+Defaults to \code{"book"}.}
+
+\item{show_ci_label}{Logical. If TRUE, appends an internally generated \code{ci}
+label column to the right-side text.}
+
+\item{ci_multiline}{Logical. For grouped party output, print each party CI on
+its own line (using \verb{\\n}) when TRUE.}
+
+\item{ci_show_party}{Logical. Include party names in CI labels.}
+
+\item{show_legend}{Logical. Show party legend when grouped data are present.}
+
+\item{ci_label_fontsize}{Optional numeric size for the CI label column.
+Useful when grouped party CIs are shown on multiple lines.}
+
+\item{ci_label_lineheight}{Numeric line height for the CI label column when
+\code{ci_label_fontsize} is set.}
 
 \item{header}{Labels of the columns to be displayed and as specified in
 \code{label_cols}.}
@@ -47,7 +69,9 @@ of the plot.}
 
 \item{xlab}{X-axis label}
 
-\item{zero}{Where should the "zero" axis (graph) start.}
+\item{zero}{Numeric scalar, NA, or NULL. Reference line position for
+forestplot. Defaults to NA (no zero/reference line). NULL is
+treated as NA for convenience.}
 
 \item{show_overall}{Logical. If TRUE (default), a vertical dashed
 line indicating the overall mean effect is added.}
@@ -72,4 +96,7 @@ effect across books.
 
 The temporary \code{mean/lower/upper} columns required by \code{forestplot} are
 generated internally when needed.
+
+If \code{party} is present, estimates are drawn as multiple CIs per book row
+(one row per book; one estimate per party).
 }
