@@ -1,4 +1,4 @@
-# nalanda: R Toolbox to answer the question: Do book really change lives?
+# nalanda: R Toolbox to answer the question: Do books really change lives?
 
 ## Overview
 

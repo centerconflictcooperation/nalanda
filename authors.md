@@ -7,6 +7,9 @@
 
 ## Citation
 
+Source:
+[`DESCRIPTION`](https://github.com/centerconflictcooperation/nalanda/blob/main/DESCRIPTION)
+
 Thériault R (2026). *nalanda: R Toolbox to answer the question: Do books
 really change lives?*. R package version 0.0.1,
 <https://centerconflictcooperation.github.io/nalanda/>.

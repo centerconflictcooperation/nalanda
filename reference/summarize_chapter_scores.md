@@ -1,8 +1,10 @@
 # Summarize simulated chapter scores
 
 Aggregate simulation results by chapter (and book, if present) computing
-number of simulations, means and SDs for ingroup/outgroup ratings (pre
-and post), and difference scores. Retains a chapter excerpt.
+number of simulations, means and SDs for core model outputs. In the
+current schema, this includes ingroup/outgroup pre-post ratings plus
+delta and gap metrics (for example `delta_outgroup`, `delta_ingroup`,
+and `delta_gap`). Retains a chapter excerpt at chapter level.
 
 ## Usage
 
@@ -21,9 +23,10 @@ summarize_chapter_scores(
   A data frame or list-like object containing simulation rows as
   produced by
   [`run_ai_on_chapters()`](https://centerconflictcooperation.github.io/nalanda/reference/run_ai_on_chapters.md).
-  Expected columns include `chapter`, `pre_ingroup`, `post_ingroup`,
-  `pre_outgroup`, `post_outgroup`. If `book` and `party` are present,
-  the summary will include those groupings.
+  Expected columns include `chapter`, pre/post ingroup-outgroup fields,
+  and the derived difference columns used in summaries (`gap_pre`,
+  `gap_post`, `delta_outgroup`, `delta_ingroup`, `delta_gap`). If `book`
+  and `party` are present, the summary will include those groupings.
 
 - aggregate_level:
 
