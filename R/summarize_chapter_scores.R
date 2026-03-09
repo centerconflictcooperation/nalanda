@@ -1,19 +1,17 @@
 #' Summarize simulated chapter scores
 #'
 #' Aggregate simulation results by chapter (and book, if present) computing
-#' number of simulations, mean and sd of scores, percent of Republican responses,
-#' and retain a chapter excerpt.
+#' number of simulations, means and SDs for ingroup/outgroup ratings (pre and
+#' post), and difference scores. Retains a chapter excerpt.
 #'
-#' @param x A data frame or list-like object containing simulation rows with
-#'   at least `score` and `chapter` columns. If `book` and `party` are present,
-#'   the summary will include those groupings.
-#' @param aggregate_level Logical. Default is FALSE. If TRUE and a `book`
-#'   column is present, chapter-level effects are aggregated to the book
-#'   level using inverse-variance weighting (i.e., weights = 1 / (sd_diff^2 / sim)).
-#'   This properly propagates within-chapter simulation uncertainty and
-#'   returns one row per book instead of one row per chapter.
-#'
-#'   When FALSE (default), results are summarized at the chapter level.
+#' @param x A data frame or list-like object containing simulation rows as
+#'   produced by `run_ai_on_chapters()`. Expected columns include `chapter`,
+#'   `pre_ingroup`, `post_ingroup`, `pre_outgroup`, `post_outgroup`. If `book`
+#'   and `party` are present, the summary will include those groupings.
+#' @param aggregate_level Character. One of `"chapter"` (default) or `"book"`.
+#'   When `"book"`, results are aggregated to the book level.
+#' @param by_party Logical. If TRUE, summaries are computed separately by party
+#'   (if present).
 #' @return A tibble summarizing each chapter (and book if present). The returned
 #'   object will have the original `model` attribute copied to it.
 #' @export
@@ -24,6 +22,14 @@ summarize_chapter_scores <- function(
 ) {
   aggregate_level <- match.arg(aggregate_level)
   model <- attr(x, "model")
+  temperature <- attr(x, "temperature")
+
+  # Fallback: check first list element (covers lapply(files, readRDS) workflow)
+  if (is.null(model) && is.list(x) && !inherits(x, "data.frame") &&
+    length(x) > 0) {
+    model <- model %||% attr(x[[1]], "model")
+    temperature <- temperature %||% attr(x[[1]], "temperature")
+  }
 
   df <- if (is.list(x) && !inherits(x, "data.frame")) {
     flatten_sim_results(x)
@@ -44,7 +50,6 @@ summarize_chapter_scores <- function(
     )
     candidate <- if (length(candidates) > 0) candidates[1] else NA_character_
     if (!is.na(candidate) && nzchar(candidate)) {
-      # only rename if candidate is a simple column name
       df <- dplyr::rename(df, chapter = !!rlang::sym(candidate))
     } else {
       stop(
@@ -55,169 +60,72 @@ summarize_chapter_scores <- function(
 
   has_party <- "party" %in% names(df)
   has_book <- "book" %in% names(df)
-  has_baseline <- "baseline_score" %in% names(df)
+  has_identity <- "identity" %in% names(df)
 
   extract_chapter_num <- function(ch) {
     suppressWarnings(as.integer(stringr::str_extract(ch, "\\d+")))
   }
 
-  if (has_book && aggregate_level == "book") {
-    df <- df |>
-      dplyr::group_by(
-        book,
-        party = if (by_party && has_party) party else NULL
-      ) |>
-      dplyr::summarise(
-        sim = sum(!is.na(score)),
-        mean_baseline = if (has_baseline) {
-          mean(baseline_score, na.rm = TRUE)
-        } else {
-          NA_real_
-        },
-        sd_baseline = if (has_baseline) {
-          sd(baseline_score, na.rm = TRUE)
-        } else {
-          NA_real_
-        },
-        mean_score = mean(score, na.rm = TRUE),
-        sd_score = sd(score, na.rm = TRUE),
-        mean_diff = if (has_baseline) {
-          mean(score - baseline_score, na.rm = TRUE)
-        } else {
-          NA_real_
-        },
-        sd_diff = if (has_baseline) {
-          sd(score - baseline_score, na.rm = TRUE)
-        } else {
-          NA_real_
-        },
-        percent_republican = if (has_party) {
-          mean(tolower(party) == "republican", na.rm = TRUE) * 100
-        } else {
-          NA_real_
-        },
-        chapter_excerpt = NA_character_,
-        chapter_index = NA_integer_,
-        .groups = "drop"
-      )
+  # --- Determine grouping columns ---
+  group_cols <- c()
+  if (has_book) group_cols <- c(group_cols, "book")
+  if (aggregate_level == "chapter") group_cols <- c(group_cols, "chapter")
+  if (by_party && has_party) group_cols <- c(group_cols, "party")
+  if (has_identity) group_cols <- c(group_cols, "identity")
 
-    attr(df, "model") <- model
-    df
-  }
+  # --- Summarise ---
+  df <- df |>
+    dplyr::group_by(dplyr::across(dplyr::all_of(group_cols))) |>
+    dplyr::summarise(
+      sim = dplyr::n(),
+      mean_pre_ingroup = mean(pre_ingroup, na.rm = TRUE),
+      sd_pre_ingroup = sd(pre_ingroup, na.rm = TRUE),
+      mean_post_ingroup = mean(post_ingroup, na.rm = TRUE),
+      sd_post_ingroup = sd(post_ingroup, na.rm = TRUE),
+      mean_pre_outgroup = mean(pre_outgroup, na.rm = TRUE),
+      sd_pre_outgroup = sd(pre_outgroup, na.rm = TRUE),
+      mean_post_outgroup = mean(post_outgroup, na.rm = TRUE),
+      sd_post_outgroup = sd(post_outgroup, na.rm = TRUE),
+      mean_gap_pre = mean(gap_pre, na.rm = TRUE),
+      sd_gap_pre = sd(gap_pre, na.rm = TRUE),
+      mean_gap_post = mean(gap_post, na.rm = TRUE),
+      sd_gap_post = sd(gap_post, na.rm = TRUE),
+      mean_delta_outgroup = mean(delta_outgroup, na.rm = TRUE),
+      sd_delta_outgroup = sd(delta_outgroup, na.rm = TRUE),
+      mean_delta_ingroup = mean(delta_ingroup, na.rm = TRUE),
+      sd_delta_ingroup = sd(delta_ingroup, na.rm = TRUE),
+      mean_delta_gap = mean(delta_gap, na.rm = TRUE),
+      sd_delta_gap = sd(delta_gap, na.rm = TRUE),
+      chapter_excerpt = if (aggregate_level == "chapter") {
+        dplyr::first(chapter_excerpt)
+      } else {
+        NA_character_
+      },
+      .groups = "drop"
+    )
 
-  if (has_book && aggregate_level == "chapter") {
+  # --- Add chapter ordering for chapter-level results ---
+  if (aggregate_level == "chapter") {
     df <- df |>
-      dplyr::group_by(
-        book,
-        chapter,
-        party = if (by_party && has_party) party else NULL
-      ) |>
-      dplyr::summarise(
-        sim = sum(!is.na(score)),
-        mean_baseline = if (has_baseline) {
-          mean(baseline_score, na.rm = TRUE)
-        } else {
-          NA_real_
-        },
-        sd_baseline = if (has_baseline) {
-          sd(baseline_score, na.rm = TRUE)
-        } else {
-          NA_real_
-        },
-        mean_score = if ("score" %in% names(df)) {
-          mean(score, na.rm = TRUE)
-        } else {
-          NA_real_
-        },
-        sd_score = if ("score" %in% names(df)) {
-          sd(score, na.rm = TRUE)
-        } else {
-          NA_real_
-        },
-        mean_diff = if (has_baseline && "score" %in% names(df)) {
-          mean(score - baseline_score, na.rm = TRUE)
-        } else {
-          NA_real_
-        },
-        sd_diff = if (has_baseline && "score" %in% names(df)) {
-          sd(score - baseline_score, na.rm = TRUE)
-        } else {
-          NA_real_
-        },
-        percent_republican = if (has_party) {
-          mean(tolower(party) == "republican", na.rm = TRUE) * 100
-        } else {
-          NA_real_
-        },
-        chapter_excerpt = dplyr::first(chapter_excerpt),
-        .groups = "drop_last"
-      ) |>
-      dplyr::mutate(chapter_num = extract_chapter_num(chapter)) |>
-      dplyr::arrange(book, chapter_num, chapter) |>
-      dplyr::group_by(
-        book,
-        party = if (by_party && has_party) party else NULL
-      ) |>
-      dplyr::mutate(chapter_index = dplyr::row_number()) |>
-      dplyr::ungroup() |>
-      dplyr::select(-chapter_num)
-  } else if (aggregate_level == "chapter") {
-    df <- df |>
-      dplyr::group_by(
-        chapter,
-        party = if (by_party && has_party) party else NULL
-      ) |>
-      dplyr::summarise(
-        sim = sum(!is.na(score)),
-        mean_baseline = if (has_baseline) {
-          mean(baseline_score, na.rm = TRUE)
-        } else {
-          NA_real_
-        },
-        sd_baseline = if (has_baseline) {
-          sd(baseline_score, na.rm = TRUE)
-        } else {
-          NA_real_
-        },
-        mean_score = if ("score" %in% names(df)) {
-          mean(score, na.rm = TRUE)
-        } else {
-          NA_real_
-        },
-        sd_score = if ("score" %in% names(df)) {
-          sd(score, na.rm = TRUE)
-        } else {
-          NA_real_
-        },
-        mean_diff = if (has_baseline && "score" %in% names(df)) {
-          mean(baseline_score - score, na.rm = TRUE)
-        } else {
-          NA_real_
-        },
-        sd_diff = if (has_baseline && "score" %in% names(df)) {
-          sd(baseline_score - score, na.rm = TRUE)
-        } else {
-          NA_real_
-        },
-        percent_republican = if (has_party) {
-          mean(tolower(party) == "republican", na.rm = TRUE) * 100
-        } else {
-          NA_real_
-        },
-        chapter_excerpt = dplyr::first(chapter_excerpt),
-        .groups = "drop"
-      ) |>
-      dplyr::mutate(chapter_num = extract_chapter_num(chapter)) |>
-      dplyr::arrange(chapter_num, chapter) |>
-      dplyr::mutate(chapter_index = dplyr::row_number()) |>
-      dplyr::select(-chapter_num)
-  }
+      dplyr::mutate(chapter_num = extract_chapter_num(chapter))
 
-  if (by_party) {
-    df <- dplyr::group_by(df, party)
+    if (has_book) {
+      df <- df |>
+        dplyr::arrange(book, chapter_num, chapter) |>
+        dplyr::group_by(book) |>
+        dplyr::mutate(chapter_index = dplyr::row_number()) |>
+        dplyr::ungroup()
+    } else {
+      df <- df |>
+        dplyr::arrange(chapter_num, chapter) |>
+        dplyr::mutate(chapter_index = dplyr::row_number())
+    }
+
+    df <- dplyr::select(df, -chapter_num)
   }
 
   attr(df, "model") <- model
+  attr(df, "temperature") <- temperature
   df
 }
 

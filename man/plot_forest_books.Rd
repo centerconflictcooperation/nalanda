@@ -33,6 +33,8 @@ of the plot.}
 
 \item{show_overall}{Logical. If TRUE (default), a vertical dashed
 line indicating the overall mean effect is added.}
+
+\item{ci.vertices}{Logical. Whether to draw CI vertices in the forest plot.}
 }
 \value{
 A \code{forestplot} grob object.

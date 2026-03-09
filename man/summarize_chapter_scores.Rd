@@ -11,17 +11,16 @@ summarize_chapter_scores(
 )
 }
 \arguments{
-\item{x}{A data frame or list-like object containing simulation rows with
-at least \code{score} and \code{chapter} columns. If \code{book} and \code{party} are present,
-the summary will include those groupings.}
+\item{x}{A data frame or list-like object containing simulation rows as
+produced by \code{run_ai_on_chapters()}. Expected columns include \code{chapter},
+\code{pre_ingroup}, \code{post_ingroup}, \code{pre_outgroup}, \code{post_outgroup}. If \code{book}
+and \code{party} are present, the summary will include those groupings.}
 
-\item{aggregate_level}{Logical. Default is FALSE. If TRUE and a \code{book}
-column is present, chapter-level effects are aggregated to the book
-level using inverse-variance weighting (i.e., weights = 1 / (sd_diff^2 / sim)).
-This properly propagates within-chapter simulation uncertainty and
-returns one row per book instead of one row per chapter.
+\item{aggregate_level}{Character. One of \code{"chapter"} (default) or \code{"book"}.
+When \code{"book"}, results are aggregated to the book level.}
 
-When FALSE (default), results are summarized at the chapter level.}
+\item{by_party}{Logical. If TRUE, summaries are computed separately by party
+(if present).}
 }
 \value{
 A tibble summarizing each chapter (and book if present). The returned
@@ -29,6 +28,6 @@ object will have the original \code{model} attribute copied to it.
 }
 \description{
 Aggregate simulation results by chapter (and book, if present) computing
-number of simulations, mean and sd of scores, percent of Republican responses,
-and retain a chapter excerpt.
+number of simulations, means and SDs for ingroup/outgroup ratings (pre and
+post), and difference scores. Retains a chapter excerpt.
 }

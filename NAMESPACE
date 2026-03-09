@@ -2,6 +2,8 @@
 
 export(fix_text_file)
 export(list_book_chapters)
+export(make_baseline_prompt)
+export(make_post_prompt)
 export(nalanda)
 export(plot_chapter_scores_faceted)
 export(plot_chapter_trajectories)

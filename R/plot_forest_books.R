@@ -14,6 +14,7 @@
 #' @param zero Where should the "zero" axis (graph) start.
 #' @param show_overall Logical. If TRUE (default), a vertical dashed
 #' line indicating the overall mean effect is added.
+#' @param ci.vertices Logical. Whether to draw CI vertices in the forest plot.
 #'
 #' @return A `forestplot` grob object.
 #'
@@ -48,23 +49,24 @@ plot_forest_books <- function(
     attr(line_pos, "gp") <- grid::gpar(col = "darkgray", lwd = 2, lty = 2)
   }
 
-  # Build label matrix from column names
+  # Build label matrix from column names (forestplot needs a plain matrix)
   label_mat <- as.matrix(forest_df[, label_cols, drop = FALSE])
-
-  forest_df$labeltext <- forest_df$book
 
   if (dplyr::is_grouped_df(forest_df)) {
     fn.ci_norm <- c(
-      forestplot::fpDrawCircleCI, # Democrat
-      forestplot::fpDrawDiamondCI # Republican
+      forestplot::fpDrawCircleCI, # e.g. Democrat
+      forestplot::fpDrawDiamondCI # e.g. Republican
     )
   } else {
     fn.ci_norm <- forestplot::fpDrawCircleCI
   }
 
+  # Convert to plain data.frame so forestplot doesn't choke on tibble
+  forest_df <- as.data.frame(forest_df)
+
   p <- forestplot::forestplot(
     forest_df,
-    labeltext = eval(label_cols),
+    labeltext = label_mat,
     mean = "mean",
     lower = "lower",
     upper = "upper",
@@ -79,10 +81,7 @@ plot_forest_books <- function(
         fill = "#F9F9F9"
       )
     ),
-    fn.ci_norm = c(
-      forestplot::fpDrawCircleCI, # Democrat
-      forestplot::fpDrawDiamondCI # Republican
-    ),
+    fn.ci_norm = fn.ci_norm,
     txt_gp = forestplot::fpTxtGp(
       label = grid::gpar(fontsize = 10),
       ticks = grid::gpar(fontsize = 18),
@@ -130,11 +129,15 @@ plot_forest_books <- function(
 #' Prepare book-level data for forest plotting
 #'
 #' Computes standard errors and 95% confidence intervals for book-level
-#' estimates of affective polarization reduction. This function assumes
-#' the input is already aggregated at the book level (e.g., using
+#' estimates. This function assumes the input is already aggregated at the
+#' book level (e.g., using
 #' `summarize_chapter_scores(..., aggregate_level = "book")`).
 #'
-#' @param summary_books A data frame containing at least the following columns:
+#' @param summary_books A data frame containing at least `book`, `sim`, and
+#'   mean/sd columns matching the `dv` prefix pattern.
+#' @param dv Character. The variable prefix to use for the forest plot.
+#'   Defaults to `"delta_gap"`. The function looks for
+#'   `mean_{dv}` and `sd_{dv}` columns.
 #' @param add_ci_label Logical. Default is TRUE. If TRUE, a formatted
 #'   character column `ci` is added containing the estimate and its
 #'   95% confidence interval in the format:
@@ -143,44 +146,49 @@ plot_forest_books <- function(
 #'   are returned.
 #' @param digits Integer. Default is 2. Number of decimal places used
 #'   when formatting the `ci` column. Ignored if `add_ci_label = FALSE`.
-#' \describe{
-#'   \item{book}{Character string identifying the book.}
-#'   \item{sim}{Number of simulations.}
-#'   \item{mean_diff}{Mean reduction score.}
-#'   \item{sd_diff}{Standard deviation of the reduction score.}
-#' }
 #'
 #' @return A tibble with added columns:
 #' \describe{
-#'   \item{mean}{Mean effect (copied from `mean_diff`).}
+#'   \item{mean}{Mean effect.}
 #'   \item{se}{Standard error of the mean.}
 #'   \item{lower}{Lower bound of the 95% CI.}
 #'   \item{upper}{Upper bound of the 95% CI.}
 #' }
 #'
 #' @details
-#' Standard errors are computed as `sd_diff / sqrt(sim)`. Confidence
-#' intervals are calculated using a normal approximation
-#' (`mean +/- 1.96 * SE`).
+#' Standard errors are computed as `sd / sqrt(sim)`. Confidence intervals
+#' are calculated using a normal approximation (`mean +/- 1.96 * SE`).
 #'
 #' @export
 prepare_forest_books <- function(
   summary_books,
+  dv = "delta_gap",
   add_ci_label = TRUE,
   digits = 2
 ) {
+  mean_col <- paste0("mean_", dv)
+  sd_col <- paste0("sd_", dv)
+
+  if (!mean_col %in% names(summary_books)) {
+    stop(
+      "Column '",
+      mean_col,
+      "' not found in summary_books. ",
+      "Available columns: ",
+      paste(names(summary_books), collapse = ", ")
+    )
+  }
+
   if (dplyr::is_grouped_df(summary_books)) {
-    ob.length <- length(unique(unlist(attributes(
-      grouped_summary_books
-    )$groups[1])))
-    summary_books$sim <- summary_books$sim * ob.length
+    n_groups <- dplyr::n_groups(summary_books)
+    summary_books$sim <- summary_books$sim * n_groups
   }
 
   out <- dplyr::mutate(
     summary_books,
     book = paste0(.data$book, " (n = ", .data$sim, ")"),
-    mean = .data$mean_diff,
-    se = .data$sd_diff / sqrt(.data$sim),
+    mean = .data[[mean_col]],
+    se = .data[[sd_col]] / sqrt(.data$sim),
     lower = .data$mean - 1.96 * .data$se,
     upper = .data$mean + 1.96 * .data$se
   )
@@ -201,16 +209,6 @@ prepare_forest_books <- function(
 
   return(out)
 }
-# prepare_forest_books <- function(summary_books) {
-#   summary_books |>
-#     dplyr::mutate(
-#       book = paste0(book, " (n = ", sim, ")"),
-#       mean = .data[["mean_diff"]],
-#       se = .data[["sd_diff"]] / sqrt(sim),
-#       lower = mean - 1.96 * .data[["se"]],
-#       upper = mean + 1.96 * .data[["se"]]
-#     )
-# }
 
 #' Save a forest plot to PNG and PDF formats
 #'

@@ -4,10 +4,17 @@
 \alias{plot_chapter_scores_faceted}
 \title{Faceted plot of chapter scores}
 \usage{
-plot_chapter_scores_faceted(summary_df, ytitle = "Simulated scores")
+plot_chapter_scores_faceted(
+  summary_df,
+  dv = "post_outgroup",
+  ytitle = "Simulated scores"
+)
 }
 \arguments{
 \item{summary_df}{Data frame produced by \code{summarize_chapter_scores()}.}
+
+\item{dv}{Character. Column name prefix for mean and sd. For example,
+\code{"post_outgroup"} will plot \code{mean_post_outgroup} ± \code{sd_post_outgroup}.}
 
 \item{ytitle}{Character string for y-axis label.}
 }

@@ -4,15 +4,25 @@
 \alias{plot_chapter_trajectories}
 \title{Plot chapter trajectories by book}
 \usage{
-plot_chapter_trajectories(summary_df)
+plot_chapter_trajectories(
+  summary_df,
+  dv = "mean_post_outgroup",
+  ytitle = "Simulated scores"
+)
 }
 \arguments{
 \item{summary_df}{A data frame produced by \code{summarize_chapter_scores()} with
-columns \code{chapter_index}, \code{mean_score}, and \code{book}.}
+columns \code{chapter_index}, \code{mean_post_outgroup}, and \code{book}.}
+
+\item{dv}{Character. Column name to plot on the y-axis. Defaults to
+\code{"mean_post_outgroup"}.}
+
+\item{ytitle}{Character. Y-axis label.}
 }
 \value{
 A ggplot2 object.
 }
 \description{
-Simple line plot of mean simulated score across chapter order for each book.
+Simple line plot of mean simulated outgroup rating across chapter order
+for each book.
 }

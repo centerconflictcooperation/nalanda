@@ -4,7 +4,7 @@
 #' for the wide-format response variables.
 #'
 #' @param chapters A data frame or list of simulation rows containing columns `book`, `chapter`, and the desired `dv`.
-#' @param dv Character. Name of the column to plot as the dependent variable (default: "score").
+#' @param dv Character. Name of the column to plot as the dependent variable (default: "pre_post_outgroup_difference").
 #' @param group The group by which to plot the variable
 #' @param xtitle Character. X-axis label.
 #' @param ytitle Character. Y-axis label.
@@ -23,7 +23,7 @@
 #'   for presentation slides.
 #' @param point_size Numeric. Point size used in `geom_point()`.
 #'   Defaults to 4. Adjust to improve readability depending on output format.
-#' @param reverse_score Logical. Whether to reverse score scale using rempsyc::nice_reverse.
+#' @param reverse_score Logical. Whether to reverse score scale.
 #' @param error_bars Logical. Show error bars.
 #' @param neutrality_line Logical. Add a horizontal neutrality line at 50.
 #' @param facet The variable by which to facet grid.
@@ -36,7 +36,7 @@
 #' @export
 plot_chapters_over_time <- function(
   chapters,
-  dv = "mean_diff",
+  dv = "delta_gap",
   group = "book",
   xtitle = "Chapter",
   ytitle = "Simulated scores",
@@ -54,15 +54,39 @@ plot_chapters_over_time <- function(
   facet = NULL,
   facets.order = "increasing"
 ) {
+  # Extract metadata before binding (works for tibble, list-of-tibbles, or
+  # individual tibbles loaded via readRDS and reassembled into a plain list)
+  model_name <- attr(chapters, "model")
+  model_temp <- attr(chapters, "temperature")
+
+  # Fallback: check first list element (covers lapply(files, readRDS) workflow)
+  if (is.null(model_name) && is.list(chapters) && length(chapters) > 0) {
+    first <- chapters[[1]]
+    model_name <- model_name %||% attr(first, "model")
+    model_temp <- model_temp %||% attr(first, "temperature")
+  }
+
   df <- bind_simulation_results(chapters)
+
+  # n_simulations: max sim per identity per chapter
+  n_sims <- max(df$sim, na.rm = TRUE)
   dv_column <- dv
   if (!dv_column %in% names(df)) {
-    candidate <- intersect(c("score", "mean_score", "mean_baseline"), names(df))
+    # Fallback candidates in the new schema
+    candidate <- intersect(
+      c(
+        "delta_gap",
+        "delta_outgroup",
+        "post_outgroup",
+        "pre_outgroup"
+      ),
+      names(df)
+    )
     if (length(candidate) == 0) {
       stop(
         "Column '",
         dv,
-        "' not found and no fallback mean score columns detected.\n",
+        "' not found and no fallback columns detected.\n",
         "Available columns: ",
         paste(names(df), collapse = ", ")
       )
@@ -73,9 +97,7 @@ plot_chapters_over_time <- function(
     dplyr::mutate(score = .data[[dv_column]])
   if (reverse_score) {
     df <- df |>
-      dplyr::mutate(difference_score = difference_score * -1)
-    # df <- df |>
-    #   dplyr::mutate(score = rempsyc::nice_reverse(difference_score, 100, 1))
+      dplyr::mutate(score = score * -1)
   }
   df <- df |>
     dplyr::mutate(
@@ -89,9 +111,12 @@ plot_chapters_over_time <- function(
     dplyr::mutate(chapter_index = dplyr::dense_rank(chapter_num)) |>
     dplyr::ungroup()
 
-  # Create a unique simulation ID to handle cases with multiple contexts/parties per sim
+  # Create a unique simulation ID to handle cases with multiple identities/parties per sim
   # This ensures pivot_wider has a unique key for each row
-  grouping_cols <- intersect(c("book", "sim", "context", "party"), names(df))
+  grouping_cols <- intersect(
+    c("book", "sim", "identity", "party"),
+    names(df)
+  )
   if (length(grouping_cols) > 0) {
     df <- df |>
       dplyr::group_by(dplyr::pick(dplyr::all_of(grouping_cols))) |>
@@ -107,11 +132,11 @@ plot_chapters_over_time <- function(
       book,
       sim_unique_id,
       time_var,
-      difference_score,
+      score,
       dplyr::any_of("party")
     ) |>
     dplyr::distinct() |>
-    tidyr::pivot_wider(names_from = time_var, values_from = difference_score)
+    tidyr::pivot_wider(names_from = time_var, values_from = score)
 
   response_cols <- grep("^T[0-9]+$", names(df_wide), value = TRUE)
 
@@ -148,18 +173,19 @@ plot_chapters_over_time <- function(
       ggplot2::labs(
         title = paste0(
           "Results of ",
-          max(chapters[[1]]$sim) * 2,
+          n_sims * 2,
           " simulations per book per chapter",
           " (model = '",
-          attr(chapters[[1]], "model"),
-          "; temperature = ",
-          attr(chapters[[1]], "temperature"),
-          "')"
+          model_name %||% "unknown",
+          "'; temperature = ",
+          model_temp %||% "unknown",
+          ")"
         )
       )
   }
   if (
-    isTRUE(neutrality_line) && !grepl("difference|diff", dv, ignore.case = TRUE)
+    isTRUE(neutrality_line) &&
+      !grepl("difference|diff|delta|gap", dv, ignore.case = TRUE)
   ) {
     p <- p +
       ggplot2::geom_hline(
@@ -181,7 +207,8 @@ plot_chapters_over_time <- function(
 
   # Add line at 0 for difference scores
   if (
-    isTRUE(neutrality_line) && grepl("difference|diff", dv, ignore.case = TRUE)
+    isTRUE(neutrality_line) &&
+      grepl("difference|diff|delta|gap", dv, ignore.case = TRUE)
   ) {
     p <- p +
       ggplot2::geom_hline(
@@ -210,16 +237,12 @@ plot_chapters_over_time <- function(
   if (group %in% names(df_wide)) {
     group_levels <- tolower(levels(as.factor(df_wide[[group]])))
     if (all(group_levels %in% c("democrat", "republican"))) {
-      # dem_blue <- "#2E74C0" #2E6FBA #0015BC
-      # rep_red <- "#CB454A" #C63D3D #E81B23
-      # https://www.flagcolorcodes.com/republican-party-elephant
       p <- p +
         ggplot2::scale_colour_manual(
           values = c("Democrat" = "#00AEF3", "Republican" = "#E81B23")
         ) +
         ggplot2::scale_shape_manual(
           values = c("Democrat" = 21, "Republican" = 24)
-          # 23 for diamond shape
         ) +
         ggplot2::theme(
           panel.spacing = ggplot2::unit(1.2, "lines"),

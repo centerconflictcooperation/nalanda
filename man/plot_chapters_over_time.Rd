@@ -6,7 +6,7 @@
 \usage{
 plot_chapters_over_time(
   chapters,
-  dv = "mean_diff",
+  dv = "delta_gap",
   group = "book",
   xtitle = "Chapter",
   ytitle = "Simulated scores",
@@ -28,7 +28,7 @@ plot_chapters_over_time(
 \arguments{
 \item{chapters}{A data frame or list of simulation rows containing columns \code{book}, \code{chapter}, and the desired \code{dv}.}
 
-\item{dv}{Character. Name of the column to plot as the dependent variable (default: "score").}
+\item{dv}{Character. Name of the column to plot as the dependent variable (default: "pre_post_outgroup_difference").}
 
 \item{group}{The group by which to plot the variable}
 
@@ -59,7 +59,7 @@ for presentation slides.}
 \item{point_size}{Numeric. Point size used in \code{geom_point()}.
 Defaults to 4. Adjust to improve readability depending on output format.}
 
-\item{reverse_score}{Logical. Whether to reverse score scale using rempsyc::nice_reverse.}
+\item{reverse_score}{Logical. Whether to reverse score scale.}
 
 \item{error_bars}{Logical. Show error bars.}
 

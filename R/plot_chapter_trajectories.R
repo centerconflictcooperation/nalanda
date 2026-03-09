@@ -1,18 +1,29 @@
 #' Plot chapter trajectories by book
 #'
-#' Simple line plot of mean simulated score across chapter order for each book.
+#' Simple line plot of mean simulated outgroup rating across chapter order
+#' for each book.
 #'
 #' @param summary_df A data frame produced by `summarize_chapter_scores()` with
-#'   columns `chapter_index`, `mean_score`, and `book`.
+#'   columns `chapter_index`, `mean_post_outgroup`, and `book`.
+#' @param dv Character. Column name to plot on the y-axis. Defaults to
+#'   `"mean_post_outgroup"`.
+#' @param ytitle Character. Y-axis label.
 #' @return A ggplot2 object.
 #' @export
-plot_chapter_trajectories <- function(summary_df) {
-  ggplot2::ggplot(summary_df, ggplot2::aes(x = chapter_index, y = mean_score, group = book)) +
+plot_chapter_trajectories <- function(
+  summary_df,
+  dv = "mean_post_outgroup",
+  ytitle = "Simulated scores"
+) {
+  ggplot2::ggplot(
+    summary_df,
+    ggplot2::aes(x = chapter_index, y = .data[[dv]], group = book)
+  ) +
     ggplot2::geom_line(ggplot2::aes(linetype = book)) +
     ggplot2::geom_point(ggplot2::aes(shape = book)) +
     ggplot2::labs(
       x = "Chapter (order in book)",
-      y = "Simulated polarization-reduction score (0-100)",
+      y = ytitle,
       linetype = "Book",
       shape = "Book"
     ) +

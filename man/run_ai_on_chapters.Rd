@@ -6,6 +6,7 @@
 \usage{
 run_ai_on_chapters(
   book_texts,
+  groups,
   context_text,
   question_text,
   n_simulations = 1,
@@ -20,21 +21,31 @@ run_ai_on_chapters(
 )
 }
 \arguments{
-\item{book_texts}{A single character (one chapter) or a nested list of books -> chapters as returned by \code{read_book_texts()}.}
+\item{book_texts}{A single character (one chapter) or a nested list of
+books -> chapters as returned by \code{read_book_texts()}.}
 
-\item{context_text}{Character vector. Context used in the baseline prompt to establish party identity.
-Can be a vector of multiple contexts - the function will run once for each context and combine results.
-Example: "You are simulating an American adult who politically identifies as a Democrat."}
+\item{groups}{Character vector of group labels (length >= 2). These are the
+groups being compared. Example: \code{c("Democrat", "Republican")}.}
 
-\item{question_text}{Character. Question to ask the model in both baseline and post-intervention turns.
-The post-intervention turn will append " after reading this chapter?" to this question.
-Example: "On a scale from 0 to 100, how warmly do you feel towards your political outgroup?"}
+\item{context_text}{Character. Either:
+\itemize{
+\item A scalar template containing \code{{identity}}, which will be expanded
+once for each group (e.g., \code{"You are simulating an American adult who politically identifies as a {identity}."}), or
+\item A character vector of length equal to \code{length(groups)}, where each
+element is the full context for the corresponding group identity.
+}}
 
-\item{n_simulations}{Integer. Number of repeated simulations per chapter (each simulation = 2 chat turns).}
+\item{question_text}{Character scalar. A question template containing the
+placeholder \code{{group}}, which will be replaced with each group label.
+Example: \code{"On a scale from 0 to 100, how warmly do you feel towards {group}s?"}}
+
+\item{n_simulations}{Integer. Number of repeated simulations per chapter per
+identity (each simulation = 2 chat turns).}
 
 \item{temperature}{Numeric. Sampling temperature passed to the chat backend.}
 
-\item{seed}{Integer. Random seed for reproducibility (incremented for each simulation).}
+\item{seed}{Integer. Random seed for reproducibility (incremented for each
+simulation).}
 
 \item{base_model}{Character. Model name to label results with.}
 
@@ -42,26 +53,59 @@ Example: "On a scale from 0 to 100, how warmly do you feel towards your politica
 
 \item{base_url}{Optional base url for API calls.}
 
-\item{excerpt_chars}{Integer. Number of characters to keep as excerpt in results.}
+\item{excerpt_chars}{Integer. Number of characters to keep as excerpt in
+results.}
 
-\item{include_tokens}{Logical. Return token counts if available (summed across both turns).}
+\item{include_tokens}{Logical. Return token counts if available (summed
+across both turns).}
 
-\item{include_cost}{Logical. Return cost info if available (summed across both turns).}
+\item{include_cost}{Logical. Return cost info if available (summed across
+both turns).}
 }
 \value{
-A tibble of results, or a named list of tibbles (one per book). Each row represents
-one simulation and includes: \code{chapter}, \code{sim}, \code{party}, \code{baseline_score} (pre-intervention),
-\code{score} (post-intervention), \code{chapter_excerpt}, \code{context}, and \code{question}.
-The object has class \code{nalanda} and model attributes (\code{model} with the model name,
-\code{temperature} with the temperature setting used).
+A tibble of results, or a named list of tibbles (one per book). Each
+row represents one simulation x identity combination and includes:
+\code{chapter}, \code{sim}, \code{identity}, \code{party}, and (depending on mode):
+\describe{
+\item{Per-group mode (\code{{group}} in question)}{Per-group raw ratings
+(\verb{pre_rating_\{group\}}, \verb{post_rating_\{group\}}), computed
+\code{pre_ingroup}, \code{pre_outgroup}, \code{post_ingroup}, \code{post_outgroup},
+and difference scores: \code{gap_pre}, \code{gap_post}, \code{delta_ingroup},
+\code{delta_outgroup}, and \code{delta_gap}.}
+\item{Single-question mode (no \code{{group}})}{\code{pre_rating}, \code{post_rating},
+\code{pre_outgroup}, \code{post_outgroup} (= ratings), \code{pre_ingroup = NA},
+\code{post_ingroup = NA}, and \code{delta_outgroup}.}
+}
+The object has class \code{nalanda} and model attributes.
 }
 \description{
-This function implements a two-turn sequential chat design to measure the effect
-of reading book chapters on attitudes. For each simulation, the function:
+This function implements a two-turn sequential chat design to measure the
+effect of reading book chapters on attitudes. For each simulation and each
+identity assignment, the function:
 \enumerate{
-\item Establishes a baseline by asking the model to choose a party and rate the outgroup
-\item Shows the chapter and asks for a post-intervention rating in the same chat session
+\item Establishes a baseline by assigning an identity, then asking for
+ratings of each group (ingroup first, outgroup second).
+\item Shows the chapter and asks for post-intervention ratings in the same
+chat session (same ordering: ingroup first, outgroup second).
 }
-This design creates a within-agent pre-post comparison, with conversation memory
-maintained between turns.
+This design creates a within-agent pre-post comparison, with conversation
+memory maintained between turns. Ingroup and outgroup columns are computed
+post-hoc from the assigned identity and the group labels.
+}
+\examples{
+# Per-group mode (asks about each group, ingroup first):
+make_baseline_prompt(
+  identity_context = "You are simulating an American Democrat.",
+  question_template = "How warmly do you feel towards {group}s?",
+  groups = c("Democrat", "Republican"),
+  identity_label = "Democrat"
+)
+
+# Single-question mode (asks once, as-is):
+make_baseline_prompt(
+  identity_context = "You are simulating an American Democrat.",
+  question_template = "How warmly do you feel towards your political outgroup?",
+  groups = c("Democrat", "Republican"),
+  identity_label = "Democrat"
+)
 }

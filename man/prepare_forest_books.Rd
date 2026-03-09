@@ -4,10 +4,20 @@
 \alias{prepare_forest_books}
 \title{Prepare book-level data for forest plotting}
 \usage{
-prepare_forest_books(summary_books, add_ci_label = TRUE, digits = 2)
+prepare_forest_books(
+  summary_books,
+  dv = "delta_gap",
+  add_ci_label = TRUE,
+  digits = 2
+)
 }
 \arguments{
-\item{summary_books}{A data frame containing at least the following columns:}
+\item{summary_books}{A data frame containing at least \code{book}, \code{sim}, and
+mean/sd columns matching the \code{dv} prefix pattern.}
+
+\item{dv}{Character. The variable prefix to use for the forest plot.
+Defaults to \code{"delta_gap"}. The function looks for
+\verb{mean_\{dv\}} and \verb{sd_\{dv\}} columns.}
 
 \item{add_ci_label}{Logical. Default is TRUE. If TRUE, a formatted
 character column \code{ci} is added containing the estimate and its
@@ -17,18 +27,12 @@ If FALSE, only numeric columns (\code{mean}, \code{se}, \code{lower}, \code{uppe
 are returned.}
 
 \item{digits}{Integer. Default is 2. Number of decimal places used
-when formatting the \code{ci} column. Ignored if \code{add_ci_label = FALSE}.
-\describe{
-\item{book}{Character string identifying the book.}
-\item{sim}{Number of simulations.}
-\item{mean_diff}{Mean reduction score.}
-\item{sd_diff}{Standard deviation of the reduction score.}
-}}
+when formatting the \code{ci} column. Ignored if \code{add_ci_label = FALSE}.}
 }
 \value{
 A tibble with added columns:
 \describe{
-\item{mean}{Mean effect (copied from \code{mean_diff}).}
+\item{mean}{Mean effect.}
 \item{se}{Standard error of the mean.}
 \item{lower}{Lower bound of the 95\% CI.}
 \item{upper}{Upper bound of the 95\% CI.}
@@ -36,12 +40,11 @@ A tibble with added columns:
 }
 \description{
 Computes standard errors and 95\% confidence intervals for book-level
-estimates of affective polarization reduction. This function assumes
-the input is already aggregated at the book level (e.g., using
+estimates. This function assumes the input is already aggregated at the
+book level (e.g., using
 \code{summarize_chapter_scores(..., aggregate_level = "book")}).
 }
 \details{
-Standard errors are computed as \code{sd_diff / sqrt(sim)}. Confidence
-intervals are calculated using a normal approximation
-(\verb{mean +/- 1.96 * SE}).
+Standard errors are computed as \code{sd / sqrt(sim)}. Confidence intervals
+are calculated using a normal approximation (\verb{mean +/- 1.96 * SE}).
 }
