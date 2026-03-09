@@ -97,18 +97,18 @@ plot_chapters_over_time <- function(
     dplyr::mutate(score = .data[[dv_column]])
   if (reverse_score) {
     df <- df |>
-      dplyr::mutate(score = score * -1)
+      dplyr::mutate(score = .data$score * -1)
   }
   df <- df |>
     dplyr::mutate(
       chapter_num = suppressWarnings(as.integer(stringr::str_extract(
-        chapter,
+         .data$chapter,
         "\\d+"
       )))
     ) |>
-    dplyr::arrange(book, chapter_num, sim) |>
-    dplyr::group_by(book) |>
-    dplyr::mutate(chapter_index = dplyr::dense_rank(chapter_num)) |>
+    dplyr::arrange(.data$book, .data$chapter_num, .data$sim) |>
+    dplyr::group_by(.data$book) |>
+    dplyr::mutate(chapter_index = dplyr::dense_rank(.data$chapter_num)) |>
     dplyr::ungroup()
 
   # Create a unique simulation ID to handle cases with multiple identities/parties per sim
@@ -127,16 +127,13 @@ plot_chapters_over_time <- function(
   }
 
   df_wide <- df |>
-    dplyr::mutate(time_var = paste0("T", chapter_index)) |>
+    dplyr::mutate(time_var = paste0("T", .data$chapter_index)) |>
     dplyr::select(
-      book,
-      sim_unique_id,
-      time_var,
-      score,
+      dplyr::all_of(c("book", "sim_unique_id", "time_var", "score")),
       dplyr::any_of("party")
     ) |>
     dplyr::distinct() |>
-    tidyr::pivot_wider(names_from = time_var, values_from = score)
+    tidyr::pivot_wider(names_from = "time_var", values_from = "score")
 
   response_cols <- grep("^T[0-9]+$", names(df_wide), value = TRUE)
 
@@ -145,7 +142,7 @@ plot_chapters_over_time <- function(
 
   # Update x-axis label if grouping by party
   if (group == "party" && is.null(facet)) {
-    book_name <- unique(df_wide$book)[1]
+    book_name <- unique(df_wide[["book"]])[1]
     xtitle <- paste0(xtitle, " (", book_name, ")")
   }
 
@@ -271,3 +268,5 @@ bind_simulation_results <- function(chapters) {
     chapters
   }
 }
+
+

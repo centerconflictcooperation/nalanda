@@ -31,12 +31,12 @@ rename_chapters <- function(folder) {
     base = basenames,
     order_score = order_score
   ) |>
-    dplyr::arrange(order_score)
+    dplyr::arrange(.data$order_score)
 
   # Create new filenames
   df <- df |>
     dplyr::mutate(
-      new_name = paste0("chapter", row_number(), ".txt"),
+      new_name = paste0("chapter", dplyr::row_number(), ".txt"),
       new_path = file.path(folder, new_name)
     )
 
@@ -45,3 +45,5 @@ rename_chapters <- function(folder) {
 
   return(df)
 }
+
+

@@ -86,26 +86,26 @@ summarize_chapter_scores <- function(
     dplyr::group_by(dplyr::across(dplyr::all_of(group_cols))) |>
     dplyr::summarise(
       sim = dplyr::n(),
-      mean_pre_ingroup = mean(pre_ingroup, na.rm = TRUE),
-      sd_pre_ingroup = sd(pre_ingroup, na.rm = TRUE),
-      mean_post_ingroup = mean(post_ingroup, na.rm = TRUE),
-      sd_post_ingroup = sd(post_ingroup, na.rm = TRUE),
-      mean_pre_outgroup = mean(pre_outgroup, na.rm = TRUE),
-      sd_pre_outgroup = sd(pre_outgroup, na.rm = TRUE),
-      mean_post_outgroup = mean(post_outgroup, na.rm = TRUE),
-      sd_post_outgroup = sd(post_outgroup, na.rm = TRUE),
-      mean_gap_pre = mean(gap_pre, na.rm = TRUE),
-      sd_gap_pre = sd(gap_pre, na.rm = TRUE),
-      mean_gap_post = mean(gap_post, na.rm = TRUE),
-      sd_gap_post = sd(gap_post, na.rm = TRUE),
-      mean_delta_outgroup = mean(delta_outgroup, na.rm = TRUE),
-      sd_delta_outgroup = sd(delta_outgroup, na.rm = TRUE),
-      mean_delta_ingroup = mean(delta_ingroup, na.rm = TRUE),
-      sd_delta_ingroup = sd(delta_ingroup, na.rm = TRUE),
-      mean_delta_gap = mean(delta_gap, na.rm = TRUE),
-      sd_delta_gap = sd(delta_gap, na.rm = TRUE),
+      mean_pre_ingroup = mean(.data$pre_ingroup, na.rm = TRUE),
+      sd_pre_ingroup = sd(.data$pre_ingroup, na.rm = TRUE),
+      mean_post_ingroup = mean(.data$post_ingroup, na.rm = TRUE),
+      sd_post_ingroup = sd(.data$post_ingroup, na.rm = TRUE),
+      mean_pre_outgroup = mean(.data$pre_outgroup, na.rm = TRUE),
+      sd_pre_outgroup = sd(.data$pre_outgroup, na.rm = TRUE),
+      mean_post_outgroup = mean(.data$post_outgroup, na.rm = TRUE),
+      sd_post_outgroup = sd(.data$post_outgroup, na.rm = TRUE),
+      mean_gap_pre = mean(.data$gap_pre, na.rm = TRUE),
+      sd_gap_pre = sd(.data$gap_pre, na.rm = TRUE),
+      mean_gap_post = mean(.data$gap_post, na.rm = TRUE),
+      sd_gap_post = sd(.data$gap_post, na.rm = TRUE),
+      mean_delta_outgroup = mean(.data$delta_outgroup, na.rm = TRUE),
+      sd_delta_outgroup = sd(.data$delta_outgroup, na.rm = TRUE),
+      mean_delta_ingroup = mean(.data$delta_ingroup, na.rm = TRUE),
+      sd_delta_ingroup = sd(.data$delta_ingroup, na.rm = TRUE),
+      mean_delta_gap = mean(.data$delta_gap, na.rm = TRUE),
+      sd_delta_gap = sd(.data$delta_gap, na.rm = TRUE),
       chapter_excerpt = if (aggregate_level == "chapter") {
-        dplyr::first(chapter_excerpt)
+        dplyr::first(.data$chapter_excerpt)
       } else {
         NA_character_
       },
@@ -115,17 +115,17 @@ summarize_chapter_scores <- function(
   # --- Add chapter ordering for chapter-level results ---
   if (aggregate_level == "chapter") {
     df <- df |>
-      dplyr::mutate(chapter_num = extract_chapter_num(chapter))
+      dplyr::mutate(chapter_num = extract_chapter_num(.data$chapter))
 
     if (has_book) {
       df <- df |>
-        dplyr::arrange(book, chapter_num, chapter) |>
-        dplyr::group_by(book) |>
+        dplyr::arrange(.data$book, .data$chapter_num, .data$chapter) |>
+        dplyr::group_by(.data$book) |>
         dplyr::mutate(chapter_index = dplyr::row_number()) |>
         dplyr::ungroup()
     } else {
       df <- df |>
-        dplyr::arrange(chapter_num, chapter) |>
+        dplyr::arrange(.data$chapter_num, .data$chapter) |>
         dplyr::mutate(chapter_index = dplyr::row_number())
     }
 
@@ -179,5 +179,6 @@ flatten_sim_results <- function(z) {
   # bind rows; if we added book columns above they will be preserved
   return(dplyr::bind_rows(dfs))
 }
+
 
 

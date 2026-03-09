@@ -17,10 +17,10 @@ plot_chapter_trajectories <- function(
 ) {
   ggplot2::ggplot(
     summary_df,
-    ggplot2::aes(x = chapter_index, y = .data[[dv]], group = book)
+    ggplot2::aes(x = .data$chapter_index, y = .data[[dv]], group = .data$book)
   ) +
-    ggplot2::geom_line(ggplot2::aes(linetype = book)) +
-    ggplot2::geom_point(ggplot2::aes(shape = book)) +
+    ggplot2::geom_line(ggplot2::aes(linetype = .data$book)) +
+    ggplot2::geom_point(ggplot2::aes(shape = .data$book)) +
     ggplot2::labs(
       x = "Chapter (order in book)",
       y = ytitle,
@@ -29,3 +29,4 @@ plot_chapter_trajectories <- function(
     ) +
     ggplot2::theme_classic()
 }
+

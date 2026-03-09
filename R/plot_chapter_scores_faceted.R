@@ -18,7 +18,7 @@ plot_chapter_scores_faceted <- function(
 
   ggplot2::ggplot(
     summary_df,
-    ggplot2::aes(x = chapter_index, y = .data[[mean_col]])
+    ggplot2::aes(x = .data$chapter_index, y = .data[[mean_col]])
   ) +
     ggplot2::geom_point() +
     ggplot2::geom_errorbar(
@@ -28,10 +28,11 @@ plot_chapter_scores_faceted <- function(
       ),
       width = 0.15
     ) +
-    ggplot2::facet_wrap(~book, scales = "free_x") +
+    ggplot2::facet_wrap(ggplot2::vars(.data$book), scales = "free_x") +
     ggplot2::labs(
       x = "Chapter (order in book)",
       y = ytitle
     ) +
     ggplot2::theme_classic()
 }
+
