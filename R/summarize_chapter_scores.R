@@ -87,23 +87,23 @@ summarize_chapter_scores <- function(
     dplyr::summarise(
       sim = dplyr::n(),
       mean_pre_ingroup = mean(.data$pre_ingroup, na.rm = TRUE),
-      sd_pre_ingroup = sd(.data$pre_ingroup, na.rm = TRUE),
+      sd_pre_ingroup = stats::sd(.data$pre_ingroup, na.rm = TRUE),
       mean_post_ingroup = mean(.data$post_ingroup, na.rm = TRUE),
-      sd_post_ingroup = sd(.data$post_ingroup, na.rm = TRUE),
+      sd_post_ingroup = stats::sd(.data$post_ingroup, na.rm = TRUE),
       mean_pre_outgroup = mean(.data$pre_outgroup, na.rm = TRUE),
-      sd_pre_outgroup = sd(.data$pre_outgroup, na.rm = TRUE),
+      sd_pre_outgroup = stats::sd(.data$pre_outgroup, na.rm = TRUE),
       mean_post_outgroup = mean(.data$post_outgroup, na.rm = TRUE),
-      sd_post_outgroup = sd(.data$post_outgroup, na.rm = TRUE),
+      sd_post_outgroup = stats::sd(.data$post_outgroup, na.rm = TRUE),
       mean_gap_pre = mean(.data$gap_pre, na.rm = TRUE),
-      sd_gap_pre = sd(.data$gap_pre, na.rm = TRUE),
+      sd_gap_pre = stats::sd(.data$gap_pre, na.rm = TRUE),
       mean_gap_post = mean(.data$gap_post, na.rm = TRUE),
-      sd_gap_post = sd(.data$gap_post, na.rm = TRUE),
+      sd_gap_post = stats::sd(.data$gap_post, na.rm = TRUE),
       mean_delta_outgroup = mean(.data$delta_outgroup, na.rm = TRUE),
-      sd_delta_outgroup = sd(.data$delta_outgroup, na.rm = TRUE),
+      sd_delta_outgroup = stats::sd(.data$delta_outgroup, na.rm = TRUE),
       mean_delta_ingroup = mean(.data$delta_ingroup, na.rm = TRUE),
-      sd_delta_ingroup = sd(.data$delta_ingroup, na.rm = TRUE),
+      sd_delta_ingroup = stats::sd(.data$delta_ingroup, na.rm = TRUE),
       mean_delta_gap = mean(.data$delta_gap, na.rm = TRUE),
-      sd_delta_gap = sd(.data$delta_gap, na.rm = TRUE),
+      sd_delta_gap = stats::sd(.data$delta_gap, na.rm = TRUE),
       chapter_excerpt = if (aggregate_level == "chapter") {
         dplyr::first(.data$chapter_excerpt)
       } else {
@@ -179,6 +179,7 @@ flatten_sim_results <- function(z) {
   # bind rows; if we added book columns above they will be preserved
   return(dplyr::bind_rows(dfs))
 }
+
 
 
 
