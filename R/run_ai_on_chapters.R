@@ -50,7 +50,7 @@
 #'     \item{Per-group mode (`{group}` in question)}{Per-group raw ratings
 #'       (`pre_rating_{group}`, `post_rating_{group}`), computed
 #'       `pre_ingroup`, `pre_outgroup`, `post_ingroup`, `post_outgroup`,
-#'       and difference scores: `gap_pre`, `gap_post`, `delta_ingroup`,
+#'       and difference scores: `pre_gap`, `post_gap`, `delta_ingroup`,
 #'       `delta_outgroup`, and `delta_gap`.}
 #'     \item{Single-question mode (no `{group}`)}{`pre_rating`, `post_rating`,
 #'       `pre_outgroup`, `post_outgroup` (= ratings), `pre_ingroup = NA`,
@@ -318,8 +318,8 @@ run_ai_on_chapters <- function(
 
     # Add computed difference columns
     if (per_group) {
-      out_tbl$gap_pre <- out_tbl$pre_ingroup - out_tbl$pre_outgroup
-      out_tbl$gap_post <- out_tbl$post_ingroup - out_tbl$post_outgroup
+      out_tbl$pre_gap <- out_tbl$pre_ingroup - out_tbl$pre_outgroup
+      out_tbl$post_gap <- out_tbl$post_ingroup - out_tbl$post_outgroup
       out_tbl$delta_ingroup <- out_tbl$post_ingroup - out_tbl$pre_ingroup
       out_tbl$delta_outgroup <- out_tbl$post_outgroup - out_tbl$pre_outgroup
       out_tbl$delta_gap <- out_tbl$delta_outgroup - out_tbl$delta_ingroup
@@ -512,3 +512,4 @@ make_post_prompt <- function(
     question_block
   )
 }
+

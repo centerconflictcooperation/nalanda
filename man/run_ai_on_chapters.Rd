@@ -70,7 +70,7 @@ row represents one simulation x identity combination and includes:
 \item{Per-group mode (\code{{group}} in question)}{Per-group raw ratings
 (\verb{pre_rating_\{group\}}, \verb{post_rating_\{group\}}), computed
 \code{pre_ingroup}, \code{pre_outgroup}, \code{post_ingroup}, \code{post_outgroup},
-and difference scores: \code{gap_pre}, \code{gap_post}, \code{delta_ingroup},
+and difference scores: \code{pre_gap}, \code{post_gap}, \code{delta_ingroup},
 \code{delta_outgroup}, and \code{delta_gap}.}
 \item{Single-question mode (no \code{{group}})}{\code{pre_rating}, \code{post_rating},
 \code{pre_outgroup}, \code{post_outgroup} (= ratings), \code{pre_ingroup = NA},

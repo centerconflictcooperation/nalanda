@@ -6,10 +6,12 @@
 #' @param chapters A data frame or list of simulation rows containing columns `book`, `chapter`, and the desired `dv`.
 #' @param dv Character. Name of the column to plot as the dependent variable (default: "pre_post_outgroup_difference").
 #' @param group The group by which to plot the variable
-#' @param xtitle Character. X-axis label.
-#' @param ytitle Character. Y-axis label.
+#' @param x_label Character. X-axis label.
+#' @param y_label Character. Y-axis label.
 #' @param plot_title Logical. Whether to include a title.
 #' @param plot_subtitle Optional plot subtitle.
+#' @param append_model_info Logical. If `TRUE` (default), append model and
+#'   temperature attributes to the subtitle (or create one if none is provided).
 #' @param ci_type Character. Type of confidence interval to pass to `rempsyc::plot_means_over_time`.
 #' @param legend.position Position for legend.
 #' @param groups.order Specifies the desired display order of the groups
@@ -38,10 +40,11 @@ plot_chapters_over_time <- function(
   chapters,
   dv = "delta_gap",
   group = "book",
-  xtitle = "Chapter",
-  ytitle = "Simulated scores",
+  x_label = "Chapter",
+  y_label = "Simulated scores",
   plot_title = TRUE,
   plot_subtitle = "",
+  append_model_info = TRUE,
   ci_type = "between",
   legend.position = "bottom",
   groups.order = "decreasing",
@@ -143,14 +146,14 @@ plot_chapters_over_time <- function(
   # Update x-axis label if grouping by party
   if (group == "party" && is.null(facet)) {
     book_name <- unique(df_wide[["book"]])[1]
-    xtitle <- paste0(xtitle, " (", book_name, ")")
+    x_label <- paste0(x_label, " (", book_name, ")")
   }
 
   p <- rempsyc::plot_means_over_time(
     data = df_wide,
     response = response_cols,
     group = group,
-    ytitle = ytitle,
+    ytitle = y_label,
     ci_type = ci_type,
     legend.position = legend.position,
     error_bars = error_bars,
@@ -160,7 +163,7 @@ plot_chapters_over_time <- function(
     facet = facet,
     facets.order = facets.order
   ) +
-    ggplot2::labs(x = xtitle) +
+    ggplot2::labs(x = x_label) +
     ggplot2::theme(
       axis.title = ggplot2::element_text(size = text_size),
       plot.title = ggplot2::element_text(size = text_size)
@@ -171,12 +174,7 @@ plot_chapters_over_time <- function(
         title = paste0(
           "Results of ",
           n_sims * 2,
-          " simulations per book per chapter",
-          " (model = '",
-          model_name %||% "unknown",
-          "'; temperature = ",
-          model_temp %||% "unknown",
-          ")"
+          " simulations per book per chapter"
         )
       )
   }
@@ -225,9 +223,28 @@ plot_chapters_over_time <- function(
       )
   }
 
+  subtitle_value <- NULL
   if (!missing(plot_subtitle)) {
+    subtitle_value <- plot_subtitle
+  }
+
+  if (isTRUE(append_model_info)) {
+    model_info <- paste0(
+      "Model: ",
+      model_name %||% "unknown",
+      "; Temp: ",
+      model_temp %||% "unknown"
+    )
+    subtitle_value <- if (!is.null(subtitle_value) && nzchar(subtitle_value)) {
+      paste0(subtitle_value, " | ", model_info)
+    } else {
+      model_info
+    }
+  }
+
+  if (!is.null(subtitle_value)) {
     p <- p +
-      ggplot2::labs(subtitle = plot_subtitle) +
+      ggplot2::labs(subtitle = subtitle_value) +
       ggplot2::theme(plot.subtitle = ggplot2::element_text(size = 16))
   }
 
@@ -268,5 +285,4 @@ bind_simulation_results <- function(chapters) {
     chapters
   }
 }
-
 

@@ -7,7 +7,7 @@
 plot_chapter_scores_faceted(
   summary_df,
   dv = "post_outgroup",
-  ytitle = "Simulated scores"
+  y_label = "Simulated scores"
 )
 }
 \arguments{
@@ -16,7 +16,7 @@ plot_chapter_scores_faceted(
 \item{dv}{Character. Column name prefix for mean and sd. For example,
 \code{"post_outgroup"} will plot \code{mean_post_outgroup} ± \code{sd_post_outgroup}.}
 
-\item{ytitle}{Character string for y-axis label.}
+\item{y_label}{Character string for y-axis label.}
 }
 \value{
 A ggplot2 object.

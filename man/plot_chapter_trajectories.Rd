@@ -7,7 +7,7 @@
 plot_chapter_trajectories(
   summary_df,
   dv = "mean_post_outgroup",
-  ytitle = "Simulated scores"
+  y_label = "Simulated scores"
 )
 }
 \arguments{
@@ -17,7 +17,7 @@ columns \code{chapter_index}, \code{mean_post_outgroup}, and \code{book}.}
 \item{dv}{Character. Column name to plot on the y-axis. Defaults to
 \code{"mean_post_outgroup"}.}
 
-\item{ytitle}{Character. Y-axis label.}
+\item{y_label}{Character. Y-axis label.}
 }
 \value{
 A ggplot2 object.

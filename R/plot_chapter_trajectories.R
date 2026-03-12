@@ -7,13 +7,13 @@
 #'   columns `chapter_index`, `mean_post_outgroup`, and `book`.
 #' @param dv Character. Column name to plot on the y-axis. Defaults to
 #'   `"mean_post_outgroup"`.
-#' @param ytitle Character. Y-axis label.
+#' @param y_label Character. Y-axis label.
 #' @return A ggplot2 object.
 #' @export
 plot_chapter_trajectories <- function(
   summary_df,
   dv = "mean_post_outgroup",
-  ytitle = "Simulated scores"
+  y_label = "Simulated scores"
 ) {
   ggplot2::ggplot(
     summary_df,
@@ -23,10 +23,11 @@ plot_chapter_trajectories <- function(
     ggplot2::geom_point(ggplot2::aes(shape = .data$book)) +
     ggplot2::labs(
       x = "Chapter (order in book)",
-      y = ytitle,
+      y = y_label,
       linetype = "Book",
       shape = "Book"
     ) +
     ggplot2::theme_classic()
 }
+
 

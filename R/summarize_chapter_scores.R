@@ -9,7 +9,7 @@
 #' @param x A data frame or list-like object containing simulation rows as
 #'   produced by run_ai_on_chapters(). Expected columns include chapter,
 #'   pre/post ingroup-outgroup fields, and the derived difference columns used
-#'   in summaries (gap_pre, gap_post, delta_outgroup, delta_ingroup, delta_gap).
+#'   in summaries (pre_gap, post_gap, delta_outgroup, delta_ingroup, delta_gap).
 #'   If book and party are present, the summary will include those groupings.
 #' @param aggregate_level Character. One of "chapter" (default) or "book".
 #'   When "book", results are aggregated to the book level.
@@ -94,10 +94,10 @@ summarize_chapter_scores <- function(
       sd_pre_outgroup = stats::sd(.data$pre_outgroup, na.rm = TRUE),
       mean_post_outgroup = mean(.data$post_outgroup, na.rm = TRUE),
       sd_post_outgroup = stats::sd(.data$post_outgroup, na.rm = TRUE),
-      mean_gap_pre = mean(.data$gap_pre, na.rm = TRUE),
-      sd_gap_pre = stats::sd(.data$gap_pre, na.rm = TRUE),
-      mean_gap_post = mean(.data$gap_post, na.rm = TRUE),
-      sd_gap_post = stats::sd(.data$gap_post, na.rm = TRUE),
+      mean_pre_gap = mean(.data$pre_gap, na.rm = TRUE),
+      sd_pre_gap = stats::sd(.data$pre_gap, na.rm = TRUE),
+      mean_post_gap = mean(.data$post_gap, na.rm = TRUE),
+      sd_post_gap = stats::sd(.data$post_gap, na.rm = TRUE),
       mean_delta_outgroup = mean(.data$delta_outgroup, na.rm = TRUE),
       sd_delta_outgroup = stats::sd(.data$delta_outgroup, na.rm = TRUE),
       mean_delta_ingroup = mean(.data$delta_ingroup, na.rm = TRUE),
@@ -129,7 +129,7 @@ summarize_chapter_scores <- function(
         dplyr::mutate(chapter_index = dplyr::row_number())
     }
 
-    df <- dplyr::select(df, -chapter_num)
+    df <- dplyr::select(df, -dplyr::all_of("chapter_num"))
   }
 
   attr(df, "model") <- model
@@ -179,6 +179,8 @@ flatten_sim_results <- function(z) {
   # bind rows; if we added book columns above they will be preserved
   return(dplyr::bind_rows(dfs))
 }
+
+
 
 
 

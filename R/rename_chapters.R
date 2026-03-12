@@ -37,7 +37,7 @@ rename_chapters <- function(folder) {
   df <- df |>
     dplyr::mutate(
       new_name = paste0("chapter", dplyr::row_number(), ".txt"),
-      new_path = file.path(folder, new_name)
+      new_path = file.path(folder, .data$new_name)
     )
 
   # Actually rename
@@ -45,6 +45,7 @@ rename_chapters <- function(folder) {
 
   return(df)
 }
+
 
 
 

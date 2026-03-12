@@ -8,10 +8,11 @@ plot_chapters_over_time(
   chapters,
   dv = "delta_gap",
   group = "book",
-  xtitle = "Chapter",
-  ytitle = "Simulated scores",
+  x_label = "Chapter",
+  y_label = "Simulated scores",
   plot_title = TRUE,
   plot_subtitle = "",
+  append_model_info = TRUE,
   ci_type = "between",
   legend.position = "bottom",
   groups.order = "decreasing",
@@ -32,13 +33,16 @@ plot_chapters_over_time(
 
 \item{group}{The group by which to plot the variable}
 
-\item{xtitle}{Character. X-axis label.}
+\item{x_label}{Character. X-axis label.}
 
-\item{ytitle}{Character. Y-axis label.}
+\item{y_label}{Character. Y-axis label.}
 
 \item{plot_title}{Logical. Whether to include a title.}
 
 \item{plot_subtitle}{Optional plot subtitle.}
+
+\item{append_model_info}{Logical. If \code{TRUE} (default), append model and
+temperature attributes to the subtitle (or create one if none is provided).}
 
 \item{ci_type}{Character. Type of confidence interval to pass to \code{rempsyc::plot_means_over_time}.}
 
