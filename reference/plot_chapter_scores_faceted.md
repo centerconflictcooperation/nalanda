@@ -9,7 +9,7 @@ bars.
 plot_chapter_scores_faceted(
   summary_df,
   dv = "post_outgroup",
-  ytitle = "Simulated scores"
+  y_label = "Simulated scores"
 )
 ```
 
@@ -25,7 +25,7 @@ plot_chapter_scores_faceted(
   Character. Column name prefix for mean and sd. For example,
   `"post_outgroup"` will plot `mean_post_outgroup` ± `sd_post_outgroup`.
 
-- ytitle:
+- y_label:
 
   Character string for y-axis label.
 

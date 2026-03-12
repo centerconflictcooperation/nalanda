@@ -23,7 +23,7 @@ summarize_chapter_scores(
   A data frame or list-like object containing simulation rows as
   produced by run_ai_on_chapters(). Expected columns include chapter,
   pre/post ingroup-outgroup fields, and the derived difference columns
-  used in summaries (gap_pre, gap_post, delta_outgroup, delta_ingroup,
+  used in summaries (pre_gap, post_gap, delta_outgroup, delta_ingroup,
   delta_gap). If book and party are present, the summary will include
   those groupings.
 

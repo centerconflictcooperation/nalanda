@@ -22,6 +22,8 @@
   : Create a forest plot of book-level polarization reduction effects
 - [`prepare_forest_books()`](https://centerconflictcooperation.github.io/nalanda/reference/prepare_forest_books.md)
   : Prepare book-level data for forest plotting
+- [`rank_weighted()`](https://centerconflictcooperation.github.io/nalanda/reference/rank_weighted.md)
+  : Rank rows using a weighted rubric
 - [`read_book_texts()`](https://centerconflictcooperation.github.io/nalanda/reference/read_book_texts.md)
   : Read book chapters into a nested list
 - [`rename_chapters()`](https://centerconflictcooperation.github.io/nalanda/reference/rename_chapters.md)

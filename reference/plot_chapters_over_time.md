@@ -10,10 +10,11 @@ plot_chapters_over_time(
   chapters,
   dv = "delta_gap",
   group = "book",
-  xtitle = "Chapter",
-  ytitle = "Simulated scores",
+  x_label = "Chapter",
+  y_label = "Simulated scores",
   plot_title = TRUE,
   plot_subtitle = "",
+  append_model_info = TRUE,
   ci_type = "between",
   legend.position = "bottom",
   groups.order = "decreasing",
@@ -44,11 +45,11 @@ plot_chapters_over_time(
 
   The group by which to plot the variable
 
-- xtitle:
+- x_label:
 
   Character. X-axis label.
 
-- ytitle:
+- y_label:
 
   Character. Y-axis label.
 
@@ -59,6 +60,11 @@ plot_chapters_over_time(
 - plot_subtitle:
 
   Optional plot subtitle.
+
+- append_model_info:
+
+  Logical. If `TRUE` (default), append model and temperature attributes
+  to the subtitle (or create one if none is provided).
 
 - ci_type:
 

@@ -114,7 +114,7 @@ represents one simulation x identity combination and includes:
 
   Per-group raw ratings (`pre_rating_{group}`, `post_rating_{group}`),
   computed `pre_ingroup`, `pre_outgroup`, `post_ingroup`,
-  `post_outgroup`, and difference scores: `gap_pre`, `gap_post`,
+  `post_outgroup`, and difference scores: `pre_gap`, `post_gap`,
   `delta_ingroup`, `delta_outgroup`, and `delta_gap`.
 
 - Single-question mode (no `{group}`):

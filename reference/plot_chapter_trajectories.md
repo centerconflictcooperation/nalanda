@@ -9,7 +9,7 @@ for each book.
 plot_chapter_trajectories(
   summary_df,
   dv = "mean_post_outgroup",
-  ytitle = "Simulated scores"
+  y_label = "Simulated scores"
 )
 ```
 
@@ -26,7 +26,7 @@ plot_chapter_trajectories(
   Character. Column name to plot on the y-axis. Defaults to
   `"mean_post_outgroup"`.
 
-- ytitle:
+- y_label:
 
   Character. Y-axis label.
 
