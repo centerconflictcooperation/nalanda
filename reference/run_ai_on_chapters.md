@@ -26,7 +26,7 @@ run_ai_on_chapters(
   n_simulations = 1,
   temperature = 0,
   seed = 42,
-  base_model = "gemini-2.5-flash-lite",
+  model = "gemini-2.5-flash-lite",
   virtual_key = getOption("nalanda.virtual_key"),
   base_url = getOption("nalanda.base_url"),
   excerpt_chars = 200,
@@ -80,17 +80,22 @@ run_ai_on_chapters(
   Integer. Random seed for reproducibility (incremented for each
   simulation).
 
-- base_model:
+- model:
 
-  Character. Model name to label results with.
+  Character. Model name for the chat backend (for example,
+  `"gemini-2.5-flash-lite"`). The value is passed directly to
+  `ellmer::chat_portkey(model = ...)`.
 
 - virtual_key:
 
-  Optional API key/virtual key prefix used by chat_portkey.
+  Optional legacy provider/integration key. Should look like
+  `"gemini-8c2498"` or similar. If supplied and `model` is not
+  fully-qualified (does not start with `"@"`), nalanda will build
+  `"@{virtual_key}/{model}"`.
 
 - base_url:
 
-  Optional base url for API calls.
+  Character. Base URL for API calls.
 
 - excerpt_chars:
 
@@ -124,6 +129,18 @@ represents one simulation x identity combination and includes:
   `delta_outgroup`.
 
 The object has class `nalanda` and model attributes.
+
+## Details
+
+Authentication uses `PORTKEY_API_KEY` via
+[`ellmer::chat_portkey()`](https://ellmer.tidyverse.org/reference/chat_portkey.html).
+Set it persistently in `.Renviron`:
+
+    usethis::edit_r_environ()
+    # Add a line like:
+    # PORTKEY_API_KEY=your_api_key_here
+
+Then restart your R session.
 
 ## Examples
 

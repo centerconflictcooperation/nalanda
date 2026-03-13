@@ -21,7 +21,7 @@ post-hoc from the assigned identity and the group labels."><meta property="og:im
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
 
 
-    <nav class="navbar navbar-expand-lg fixed-top bg-light" data-bs-theme="light" aria-label="Site navigation"><div class="container">
+    <nav class="navbar navbar-expand-lg fixed-top bg-light" data-bs-theme="default" aria-label="Site navigation"><div class="container">
 
     <a class="navbar-brand me-2" href="../index.html">nalanda</a>
 
@@ -33,8 +33,10 @@ post-hoc from the assigned identity and the group labels."><meta property="og:im
     </button>
 
     <div id="navbar" class="collapse navbar-collapse ms-3">
-      <ul class="navbar-nav me-auto"><li class="active nav-item"><a class="nav-link" href="../reference/index.html">Reference</a></li>
-<li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
+      <ul class="navbar-nav me-auto"><li class="nav-item"><a class="nav-link" href="../index.html"><span class="fa fa-home"></span></a></li>
+<li class="nav-item"><a class="nav-link" href="../articles/index.html">Tutorials</a></li>
+<li class="active nav-item"><a class="nav-link" href="../reference/index.html">Functions</a></li>
+<li class="nav-item"><a class="nav-link" href="../news/index.html">News</a></li>
       </ul><ul class="navbar-nav"><li class="nav-item"><form class="form-inline" role="search">
  <input class="form-control" type="search" name="search-input" id="search-input" autocomplete="off" aria-label="Search site" placeholder="Search for" data-search-index="../search.json"></form></li>
 <li class="nav-item"><a class="external-link nav-link" href="https://github.com/centerconflictcooperation/nalanda/" aria-label="GitHub"><span class="fa fab fa-github fa-lg"></span></a></li>
@@ -72,7 +74,7 @@ post-hoc from the assigned identity and the group labels.</p>
 <span>  n_simulations <span class="op">=</span> <span class="fl">1</span>,</span>
 <span>  temperature <span class="op">=</span> <span class="fl">0</span>,</span>
 <span>  seed <span class="op">=</span> <span class="fl">42</span>,</span>
-<span>  base_model <span class="op">=</span> <span class="st">"gemini-2.5-flash-lite"</span>,</span>
+<span>  model <span class="op">=</span> <span class="st">"gemini-2.5-flash-lite"</span>,</span>
 <span>  virtual_key <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/options.html" class="external-link">getOption</a></span><span class="op">(</span><span class="st">"nalanda.virtual_key"</span><span class="op">)</span>,</span>
 <span>  base_url <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/options.html" class="external-link">getOption</a></span><span class="op">(</span><span class="st">"nalanda.base_url"</span><span class="op">)</span>,</span>
 <span>  excerpt_chars <span class="op">=</span> <span class="fl">200</span>,</span>
@@ -123,16 +125,21 @@ identity (each simulation = 2 chat turns).</p></dd>
 simulation).</p></dd>
 
 
-<dt id="arg-base-model">base_model<a class="anchor" aria-label="anchor" href="#arg-base-model"></a></dt>
-<dd><p>Character. Model name to label results with.</p></dd>
+<dt id="arg-model">model<a class="anchor" aria-label="anchor" href="#arg-model"></a></dt>
+<dd><p>Character. Model name for the chat backend (for example,
+<code>"gemini-2.5-flash-lite"</code>). The value is passed directly to
+<code>ellmer::chat_portkey(model = ...)</code>.</p></dd>
 
 
 <dt id="arg-virtual-key">virtual_key<a class="anchor" aria-label="anchor" href="#arg-virtual-key"></a></dt>
-<dd><p>Optional API key/virtual key prefix used by chat_portkey.</p></dd>
+<dd><p>Optional legacy provider/integration key. Should look
+like <code>"gemini-8c2498"</code> or similar. If supplied and <code>model</code> is not
+fully-qualified (does not start with <code>"@"</code>), nalanda will build
+<code>"@{virtual_key}/{model}"</code>.</p></dd>
 
 
 <dt id="arg-base-url">base_url<a class="anchor" aria-label="anchor" href="#arg-base-url"></a></dt>
-<dd><p>Optional base url for API calls.</p></dd>
+<dd><p>Character. Base URL for API calls.</p></dd>
 
 
 <dt id="arg-excerpt-chars">excerpt_chars<a class="anchor" aria-label="anchor" href="#arg-excerpt-chars"></a></dt>
@@ -168,6 +175,14 @@ and difference scores: <code>pre_gap</code>, <code>post_gap</code>, <code>delta_
 
 
 </dl><p>The object has class <code>nalanda</code> and model attributes.</p>
+    </div>
+    <div class="section level2">
+    <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
+    <p>Authentication uses <code>PORTKEY_API_KEY</code> via <code><a href="https://ellmer.tidyverse.org/reference/chat_portkey.html" class="external-link">ellmer::chat_portkey()</a></code>. Set it
+persistently in <code>.Renviron</code>:</p><div class="sourceCode"><pre><code><span></span>
+<span><span class="fu">usethis</span><span class="fu">::</span><span class="fu">edit_r_environ</span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="co"># Add a line like:</span></span>
+<span><span class="co"># PORTKEY_API_KEY=your_api_key_here</span></span></code></pre></div><p>Then restart your R session.</p>
     </div>
 
     <div class="section level2">
