@@ -12,7 +12,7 @@ run_ai_on_chapters(
   n_simulations = 1,
   temperature = 0,
   seed = 42,
-  base_model = "gemini-2.5-flash-lite",
+  model = "gemini-2.5-flash-lite",
   virtual_key = getOption("nalanda.virtual_key"),
   base_url = getOption("nalanda.base_url"),
   excerpt_chars = 200,
@@ -47,11 +47,16 @@ identity (each simulation = 2 chat turns).}
 \item{seed}{Integer. Random seed for reproducibility (incremented for each
 simulation).}
 
-\item{base_model}{Character. Model name to label results with.}
+\item{model}{Character. Model name for the chat backend (for example,
+\code{"gemini-2.5-flash-lite"}). The value is passed directly to
+\code{ellmer::chat_portkey(model = ...)}.}
 
-\item{virtual_key}{Optional API key/virtual key prefix used by chat_portkey.}
+\item{virtual_key}{Optional legacy provider/integration key. Should look
+like \code{"gemini-8c2498"} or similar. If supplied and \code{model} is not
+fully-qualified (does not start with \code{"@"}), nalanda will build
+\code{"@{virtual_key}/{model}"}.}
 
-\item{base_url}{Optional base url for API calls.}
+\item{base_url}{Character. Base URL for API calls.}
 
 \item{excerpt_chars}{Integer. Number of characters to keep as excerpt in
 results.}
@@ -91,6 +96,16 @@ chat session (same ordering: ingroup first, outgroup second).
 This design creates a within-agent pre-post comparison, with conversation
 memory maintained between turns. Ingroup and outgroup columns are computed
 post-hoc from the assigned identity and the group labels.
+}
+\details{
+Authentication uses \code{PORTKEY_API_KEY} via \code{ellmer::chat_portkey()}. Set it
+persistently in \code{.Renviron}:
+\preformatted{
+usethis::edit_r_environ()
+# Add a line like:
+# PORTKEY_API_KEY=your_api_key_here
+}
+Then restart your R session.
 }
 \examples{
 # Per-group mode (asks about each group, ingroup first):

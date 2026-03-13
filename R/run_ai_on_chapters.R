@@ -34,15 +34,30 @@
 #' @param temperature Numeric. Sampling temperature passed to the chat backend.
 #' @param seed Integer. Random seed for reproducibility (incremented for each
 #'   simulation).
-#' @param base_model Character. Model name to label results with.
-#' @param virtual_key Optional API key/virtual key prefix used by chat_portkey.
-#' @param base_url Optional base url for API calls.
+#' @param model Character. Model name for the chat backend (for example,
+#'   `"gemini-2.5-flash-lite"`). The value is passed directly to
+#'   `ellmer::chat_portkey(model = ...)`.
+#' @param virtual_key Optional legacy provider/integration key. Should look
+#'   like `"gemini-8c2498"` or similar. If supplied and `model` is not
+#'   fully-qualified (does not start with `"@"`), nalanda will build
+#'   `"@{virtual_key}/{model}"`.
+#' @param base_url Character. Base URL for API calls.
 #' @param excerpt_chars Integer. Number of characters to keep as excerpt in
 #'   results.
 #' @param include_tokens Logical. Return token counts if available (summed
 #'   across both turns).
 #' @param include_cost Logical. Return cost info if available (summed across
 #'   both turns).
+#'
+#' @details
+#' Authentication uses `PORTKEY_API_KEY` via `ellmer::chat_portkey()`. Set it
+#' persistently in `.Renviron`:
+#' \preformatted{
+#' usethis::edit_r_environ()
+#' # Add a line like:
+#' # PORTKEY_API_KEY=your_api_key_here
+#' }
+#' Then restart your R session.
 #' @return A tibble of results, or a named list of tibbles (one per book). Each
 #'   row represents one simulation x identity combination and includes:
 #'   `chapter`, `sim`, `identity`, `party`, and (depending on mode):
@@ -83,7 +98,7 @@ run_ai_on_chapters <- function(
   n_simulations = 1,
   temperature = 0,
   seed = 42,
-  base_model = "gemini-2.5-flash-lite",
+  model = "gemini-2.5-flash-lite",
   virtual_key = getOption("nalanda.virtual_key"),
   base_url = getOption("nalanda.base_url"),
   excerpt_chars = 200,
@@ -144,8 +159,13 @@ run_ai_on_chapters <- function(
     width = 60
   )
 
-  # --- Build model string ---
-  model <- paste0("@", virtual_key, "/", base_model)
+  # --- Resolve model name ---
+  if (identical(model, "")) {
+    stop("`model` must be a non-empty string.")
+  }
+  if (!startsWith(model, "@") && !is.null(virtual_key) && nzchar(virtual_key)) {
+    model <- paste0("@", virtual_key, "/", model)
+  }
 
   # --- Normalise group labels for column names ---
   group_keys <- tolower(gsub(" ", "_", groups))
@@ -205,14 +225,33 @@ run_ai_on_chapters <- function(
         pb$tick(tokens = list(what = what_text))
 
         # Fresh chat instance per simulation
-        chat <- ellmer::chat_portkey(
-          model = model,
-          base_url = base_url,
-          params = ellmer::params(
-            temperature = temperature,
-            seed = seed + k - 1
+        chat <- tryCatch(
+          ellmer::chat_portkey(
+            model = model,
+            base_url = base_url,
+            params = ellmer::params(
+              temperature = temperature,
+              seed = seed + k - 1
+            ),
+            api_args = list(temperature = temperature, seed = seed + k - 1)
           ),
-          api_args = list(temperature = temperature, seed = seed + k - 1)
+          error = function(e) {
+            msg <- conditionMessage(e)
+            if (grepl("PORTKEY_VIRTUAL_KEY", msg, fixed = TRUE)) {
+              stop(
+                "Please provide `virtual_key` (or set ",
+                "`options(nalanda.virtual_key=...)`), which is currently ",
+                "Nalanda's officially supported method. ",
+                "Your installed `ellmer` expects `PORTKEY_VIRTUAL_KEY` when ",
+                "`model` is not fully-qualified. ",
+                "Alternative: use a fully-qualified model string in ",
+                "`model` (e.g., '@provider/model') or update ",
+                "`ellmer`.",
+                call. = FALSE
+              )
+            }
+            stop(e)
+          }
         )
 
         # --- Turn 1: Baseline ---
@@ -361,7 +400,7 @@ run_ai_on_chapters <- function(
       })
 
       # Set attributes on each book tibble so they survive individual saveRDS
-      attr(book_tbl, "model") <- base_model
+      attr(book_tbl, "model") <- model
       attr(book_tbl, "temperature") <- temperature
       book_tbl
     })
@@ -378,7 +417,7 @@ run_ai_on_chapters <- function(
   }
 
   class(out) <- c(class(out), "nalanda")
-  attr(out, "model") <- base_model
+  attr(out, "model") <- model
   attr(out, "temperature") <- temperature
   out
 }
@@ -512,4 +551,3 @@ make_post_prompt <- function(
     question_block
   )
 }
-

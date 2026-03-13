@@ -1,0 +1,108 @@
+---
+title: "Getting Started with Ellmer and Nalanda"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Getting Started: Ellmer Check First, Then Nalanda}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+This vignette provides a minimal, reliable path to get started:
+
+1. First verify your basic LLM setup with a small `ellmer` example.
+1. Then run a minimal `nalanda` example.
+
+## Step 1: Verify your connection with `ellmer`
+
+Install and load:
+
+```{r, eval = FALSE}
+install.packages("ellmer")
+library(ellmer)
+```
+
+Set your key in `.Renviron` (recommended):
+
+```{r, eval = FALSE}
+usethis::edit_r_environ()
+# Add:
+# PORTKEY_API_KEY=your_real_key_here
+```
+
+Restart R after editing `.Renviron`.
+
+<div style="border-left: 6px solid #1266f1; background-color: #eef5ff; padding: 12px 14px; margin: 16px 0;">
+<strong>NYU users:</strong> If you are affiliated with NYU, please contact
+<a href="mailto:Genai-research-support@nyu.edu">Genai-research-support@nyu.edu</a>
+to obtain your NYU Portkey API key.
+</div>
+
+Run a small smoke test directly with `ellmer`:
+
+```{r, eval = TRUE}
+library(ellmer)
+
+virtual_key = "gemini-8c2498" # portkey model choice
+model <- "gemini-2.5-flash-lite"
+model_string = paste0("@", virtual_key, "/", model)
+
+chat <- chat_portkey(
+  model = model_string,
+  base_url = "https://ai-gateway.apps.cloud.rt.nyu.edu/v1/"
+)
+
+chat$chat("Tell me one short joke about books.")
+```
+
+If this call returns successfully, your base configuration is working.
+
+## Step 2: Run a minimal `nalanda` workflow
+
+Once `ellmer` works, `nalanda::run_ai_on_chapters()` uses the same setup and
+returns structured outputs for chapter simulations.
+
+We also run the options for the `virtual_key` and `base_url` at the beginning of our script so we don't have to specify it every time we make a call to `run_ai_on_chapters()`.
+
+```{r, eval = TRUE}
+library(nalanda)
+
+options(
+  nalanda.virtual_key = "gemini-8c2498",
+  nalanda.base_url = "https://ai-gateway.apps.cloud.rt.nyu.edu/v1/"
+)
+
+demo_chapter <- "A short chapter about people from different groups cooperating."
+
+res <- run_ai_on_chapters(
+  book_texts = demo_chapter,
+  groups = c("Democrat", "Republican"),
+  context_text = "You are simulating an American adult who politically identifies as a {identity}.",
+  question_text = "On a scale from 0 to 100, how warmly do you feel towards {group}s?",
+  n_simulations = 1,
+  temperature = 0,
+  model = "gemini-2.5-flash-lite"
+)
+
+res
+
+# Inspect results with a scrollable interactive table for this vignette
+library(DT)
+
+DT::datatable(
+  res,
+  rownames = FALSE,
+  filter = "top",
+  options = list(
+    scrollX = TRUE,
+    pageLength = 10,
+    autoWidth = TRUE
+  )
+)
+```
