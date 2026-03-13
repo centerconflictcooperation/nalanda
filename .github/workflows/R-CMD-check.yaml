@@ -16,6 +16,7 @@ permissions: read-all
 jobs:
   R-CMD-check:
     runs-on: ${{ matrix.config.os }}
+    environment: PORTKEY_API_KEY
 
     name: ${{ matrix.config.os }} (${{ matrix.config.r }})
 

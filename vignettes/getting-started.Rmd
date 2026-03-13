@@ -2,7 +2,7 @@
 title: "Getting Started with Ellmer and Nalanda"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{Getting Started: Ellmer Check First, Then Nalanda}
+  %\VignetteIndexEntry{Getting Started with Ellmer and Nalanda}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
