@@ -2,25 +2,27 @@
 % Please edit documentation in R/run_ai_on_chapters.R
 \name{compute_run_ai_metrics}
 \alias{compute_run_ai_metrics}
-\title{Compute derived pre/post effect metrics from chapter simulation output}
+\title{Compute derived pre/post effect metrics from raw turn-level output}
 \usage{
 compute_run_ai_metrics(x, per_group = NULL)
 }
 \arguments{
-\item{x}{Tibble produced by the simulation runner with at least
-\code{pre_outgroup} and \code{post_outgroup} columns; in per-group mode also
-\code{pre_ingroup} and \code{post_ingroup}.}
+\item{x}{Tibble from \code{\link[=run_ai_on_chapters]{run_ai_on_chapters()}} with turn-level rows including
+\code{chapter}, \code{sim}, \code{identity}, \code{turn_type}, and \code{rating}.}
 
 \item{per_group}{Optional logical. Whether the run used per-group mode
 (\code{{group}} in question template). If \code{NULL} (default), mode is inferred
-from column names:
+from \code{target_group}:
 \itemize{
-\item per-group if any \verb{pre_rating_\{group\}} / \verb{post_rating_\{group\}} columns exist;
-\item single-question if \code{pre_rating} and \code{post_rating} exist.
+\item per-group if any non-missing \code{target_group} values exist;
+\item single-question if \code{target_group} is entirely missing.
 }}
 }
 \value{
-Input tibble with derived metric columns appended.
+A simulation-level tibble with derived metrics (for example
+\code{pre_outgroup}, \code{post_outgroup}, \code{delta_outgroup}, and in per-group mode
+also \code{pre_ingroup}, \code{post_ingroup}, \code{pre_gap}, \code{post_gap},
+\code{delta_ingroup}, \code{delta_gap}).
 }
 \description{
 Separates post-processing from model execution so users can re-compute

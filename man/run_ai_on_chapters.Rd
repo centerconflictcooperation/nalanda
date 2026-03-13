@@ -68,19 +68,12 @@ across both turns).}
 both turns).}
 }
 \value{
-A tibble of results, or a named list of tibbles (one per book). Each
-row represents one simulation x identity combination and includes:
-\code{chapter}, \code{sim}, \code{identity}, \code{party}, and (depending on mode) raw ratings:
-\describe{
-\item{Per-group mode (\code{{group}} in question)}{Per-group raw ratings
-(\verb{pre_rating_\{group\}}, \verb{post_rating_\{group\}}), plus
-\code{pre_ingroup}, \code{pre_outgroup}, \code{post_ingroup}, \code{post_outgroup}.}
-\item{Single-question mode (no \code{{group}})}{\code{pre_rating}, \code{post_rating},
-\code{pre_outgroup}, \code{post_outgroup} (= ratings), \code{pre_ingroup = NA},
-and \code{post_ingroup = NA}.}
-}
-Use \code{\link[=compute_run_ai_metrics]{compute_run_ai_metrics()}} to append derived metrics such as
-\code{pre_gap}, \code{post_gap}, \code{delta_ingroup}, \code{delta_outgroup}, and \code{delta_gap}.
+A tibble of raw turn-level ratings, or a named list of tibbles (one
+per book). Each row is one rating observation and includes:
+\code{chapter}, \code{sim}, \code{identity}, \code{turn_index}, \code{turn_type}, \code{target_group},
+and \code{rating}, plus prompt and metadata columns.
+Use \code{\link[=compute_run_ai_metrics]{compute_run_ai_metrics()}} to derive ingroup/outgroup summaries and
+gap/delta metrics.
 The object has class \code{nalanda} and model attributes.
 }
 \description{

@@ -58,19 +58,12 @@
 #' # PORTKEY_API_KEY=your_api_key_here
 #' }
 #' Then restart your R session.
-#' @return A tibble of results, or a named list of tibbles (one per book). Each
-#'   row represents one simulation x identity combination and includes:
-#'   `chapter`, `sim`, `identity`, `party`, and (depending on mode) raw ratings:
-#'   \describe{
-#'     \item{Per-group mode (`{group}` in question)}{Per-group raw ratings
-#'       (`pre_rating_{group}`, `post_rating_{group}`), plus
-#'       `pre_ingroup`, `pre_outgroup`, `post_ingroup`, `post_outgroup`.}
-#'     \item{Single-question mode (no `{group}`)}{`pre_rating`, `post_rating`,
-#'       `pre_outgroup`, `post_outgroup` (= ratings), `pre_ingroup = NA`,
-#'       and `post_ingroup = NA`.}
-#'   }
-#'   Use [compute_run_ai_metrics()] to append derived metrics such as
-#'   `pre_gap`, `post_gap`, `delta_ingroup`, `delta_outgroup`, and `delta_gap`.
+#' @return A tibble of raw turn-level ratings, or a named list of tibbles (one
+#'   per book). Each row is one rating observation and includes:
+#'   `chapter`, `sim`, `identity`, `turn_index`, `turn_type`, `target_group`,
+#'   and `rating`, plus prompt and metadata columns.
+#'   Use [compute_run_ai_metrics()] to derive ingroup/outgroup summaries and
+#'   gap/delta metrics.
 #'   The object has class `nalanda` and model attributes.
 #'
 #' @examples
@@ -167,7 +160,7 @@ run_ai_on_chapters <- function(
     model <- paste0("@", virtual_key, "/", model)
   }
 
-  # --- Normalise group labels for column names ---
+  # --- Normalise group labels for structured field names ---
   group_keys <- tolower(gsub(" ", "_", groups))
 
   # --- Build dynamic structured schemas from groups ---
@@ -278,71 +271,116 @@ run_ai_on_chapters <- function(
           type = type_post
         )
 
-        # --- Assemble row data ---
-        row <- list(
+        # --- Assemble long-format raw rows ---
+        base_fields <- list(
           chapter = chapter_id,
           sim = k,
           identity = identity_label,
           party = baseline_response$party,
           baseline_prompt = baseline_prompt,
-          post_prompt = post_prompt
+          post_prompt = post_prompt,
+          chapter_excerpt = excerpt
         )
 
         if (per_group) {
-          # Raw per-group ratings (pre and post)
-          for (gk in group_keys) {
+          for (g_idx in seq_along(groups)) {
+            g <- groups[[g_idx]]
+            gk <- group_keys[[g_idx]]
             field <- paste0("rating_", gk)
-            row[[paste0("pre_", field)]] <- baseline_response[[field]]
-            row[[paste0("post_", field)]] <- post_response[[field]]
-          }
 
-          # Post-hoc ingroup/outgroup computation
-          ingroup_key <- paste0("rating_", group_keys[id_idx])
-          outgroup_keys <- setdiff(
-            paste0("rating_", group_keys),
-            ingroup_key
+            row_pre <- c(
+              base_fields,
+              list(
+                turn_index = 1L,
+                turn_type = "baseline",
+                target_group = g,
+                rating = baseline_response[[field]]
+              )
+            )
+            row_post <- c(
+              base_fields,
+              list(
+                turn_index = 2L,
+                turn_type = "post",
+                target_group = g,
+                rating = post_response[[field]]
+              )
+            )
+
+            if (include_tokens) {
+              row_pre$input_tokens <- if (!is.null(baseline_response$input_tokens)) {
+                baseline_response$input_tokens
+              } else {
+                NA_real_
+              }
+              row_post$input_tokens <- if (!is.null(post_response$input_tokens)) {
+                post_response$input_tokens
+              } else {
+                NA_real_
+              }
+            }
+            if (include_cost) {
+              row_pre$cost <- if (!is.null(baseline_response$cost)) {
+                baseline_response$cost
+              } else {
+                NA_real_
+              }
+              row_post$cost <- if (!is.null(post_response$cost)) {
+                post_response$cost
+              } else {
+                NA_real_
+              }
+            }
+
+            all_rows <- c(all_rows, list(row_pre, row_post))
+          }
+        } else {
+          row_pre <- c(
+            base_fields,
+            list(
+              turn_index = 1L,
+              turn_type = "baseline",
+              target_group = NA_character_,
+              rating = baseline_response$rating
+            )
+          )
+          row_post <- c(
+            base_fields,
+            list(
+              turn_index = 2L,
+              turn_type = "post",
+              target_group = NA_character_,
+              rating = post_response$rating
+            )
           )
 
-          row$pre_ingroup <- baseline_response[[ingroup_key]]
-          row$post_ingroup <- post_response[[ingroup_key]]
-          # For 2 groups, outgroup is the other one; for >2, average
-          row$pre_outgroup <- mean(vapply(
-            outgroup_keys,
-            function(ok) baseline_response[[ok]],
-            numeric(1)
-          ))
-          row$post_outgroup <- mean(vapply(
-            outgroup_keys,
-            function(ok) post_response[[ok]],
-            numeric(1)
-          ))
-        } else {
-          # Single-question mode: rating = outgroup, ingroup = NA
-          row$pre_rating <- baseline_response$rating
-          row$post_rating <- post_response$rating
-          row$pre_ingroup <- NA_real_
-          row$post_ingroup <- NA_real_
-          row$pre_outgroup <- baseline_response$rating
-          row$post_outgroup <- post_response$rating
-        }
-
-        # Tokens and cost
-        if (include_tokens) {
-          row$input_tokens <- if (!is.null(baseline_response$input_tokens)) {
-            baseline_response$input_tokens + post_response$input_tokens
-          } else {
-            NA_real_
+          if (include_tokens) {
+            row_pre$input_tokens <- if (!is.null(baseline_response$input_tokens)) {
+              baseline_response$input_tokens
+            } else {
+              NA_real_
+            }
+            row_post$input_tokens <- if (!is.null(post_response$input_tokens)) {
+              post_response$input_tokens
+            } else {
+              NA_real_
+            }
           }
-        }
-        if (include_cost) {
-          row$cost <- if (!is.null(baseline_response$cost)) {
-            baseline_response$cost + post_response$cost
-          } else {
-            NA_real_
+          if (include_cost) {
+            row_pre$cost <- if (!is.null(baseline_response$cost)) {
+              baseline_response$cost
+            } else {
+              NA_real_
+            }
+            row_post$cost <- if (!is.null(post_response$cost)) {
+              post_response$cost
+            } else {
+              NA_real_
+            }
           }
-        }
 
-        all_rows <- c(all_rows, list(row))
+          all_rows <- c(all_rows, list(row_pre, row_post))
+        }
       }
     }
 
@@ -355,11 +393,14 @@ run_ai_on_chapters <- function(
       )
     ))
 
-    # Add metadata columns
-    out_tbl$chapter_excerpt <- excerpt
-
     if (!is.null(book)) {
       out_tbl <- tibble::add_column(out_tbl, book = book, .before = 1)
+    }
+
+    long_cols <- c("baseline_prompt", "post_prompt", "chapter_excerpt")
+    present_long <- intersect(long_cols, names(out_tbl))
+    if (length(present_long) > 0) {
+      out_tbl <- out_tbl[, c(setdiff(names(out_tbl), present_long), present_long)]
     }
 
     out_tbl
@@ -411,67 +452,131 @@ run_ai_on_chapters <- function(
   out
 }
 
-#' Compute derived pre/post effect metrics from chapter simulation output
+#' Compute derived pre/post effect metrics from raw turn-level output
 #'
 #' Separates post-processing from model execution so users can re-compute
 #' metrics without re-running API calls.
 #'
-#' @param x Tibble produced by the simulation runner with at least
-#'   `pre_outgroup` and `post_outgroup` columns; in per-group mode also
-#'   `pre_ingroup` and `post_ingroup`.
+#' @param x Tibble from [run_ai_on_chapters()] with turn-level rows including
+#'   `chapter`, `sim`, `identity`, `turn_type`, and `rating`.
 #' @param per_group Optional logical. Whether the run used per-group mode
 #'   (`{group}` in question template). If `NULL` (default), mode is inferred
-#'   from column names:
+#'   from `target_group`:
 #'   \itemize{
-#'     \item per-group if any `pre_rating_{group}` / `post_rating_{group}` columns exist;
-#'     \item single-question if `pre_rating` and `post_rating` exist.
+#'     \item per-group if any non-missing `target_group` values exist;
+#'     \item single-question if `target_group` is entirely missing.
 #'   }
-#' @return Input tibble with derived metric columns appended.
+#' @return A simulation-level tibble with derived metrics (for example
+#'   `pre_outgroup`, `post_outgroup`, `delta_outgroup`, and in per-group mode
+#'   also `pre_ingroup`, `post_ingroup`, `pre_gap`, `post_gap`,
+#'   `delta_ingroup`, `delta_gap`).
 #' @export
 compute_run_ai_metrics <- function(x, per_group = NULL) {
-  if (!("pre_outgroup" %in% names(x)) || !("post_outgroup" %in% names(x))) {
+  required_cols <- c("chapter", "sim", "identity", "turn_type", "rating")
+  missing_cols <- setdiff(required_cols, names(x))
+  if (length(missing_cols) > 0) {
     stop(
-      "`x` must include `pre_outgroup` and `post_outgroup` columns."
+      "`x` is missing required columns: ",
+      paste(missing_cols, collapse = ", "),
+      "."
     )
+  }
+  if (!("target_group" %in% names(x))) {
+    x$target_group <- NA_character_
   }
 
   if (is.null(per_group)) {
-    has_per_group_cols <- any(grepl("^pre_rating_.+", names(x))) ||
-      any(grepl("^post_rating_.+", names(x)))
-    has_single_cols <- all(c("pre_rating", "post_rating") %in% names(x))
+    per_group <- any(!is.na(x$target_group) & nzchar(as.character(x$target_group)))
+  }
 
-    if (has_per_group_cols) {
-      per_group <- TRUE
-    } else if (has_single_cols) {
-      per_group <- FALSE
+  id_cols <- c("chapter", "sim", "identity")
+  optional_id <- c(
+    "book",
+    "party",
+    "baseline_prompt",
+    "post_prompt",
+    "chapter_excerpt"
+  )
+  id_cols <- c(id_cols, intersect(optional_id, names(x)))
+
+  # Aggregate tokens/cost at simulation level if present.
+  include_token_col <- "input_tokens" %in% names(x)
+  include_cost_col <- "cost" %in% names(x)
+
+  # Build one row per simulation unit.
+  unit_key <- interaction(x[id_cols], drop = TRUE, lex.order = TRUE)
+  unit_indices <- split(seq_len(nrow(x)), unit_key)
+  rows <- vector("list", length(unit_indices))
+  row_i <- 0L
+  for (idx in unit_indices) {
+    row_i <- row_i + 1L
+    xi <- x[idx, , drop = FALSE]
+    row <- as.list(xi[1, id_cols, drop = FALSE])
+
+    pre <- xi[xi$turn_type == "baseline", , drop = FALSE]
+    post <- xi[xi$turn_type == "post", , drop = FALSE]
+
+    if (nrow(pre) == 0 || nrow(post) == 0) {
+      stop("Each simulation unit must include both baseline and post turns.")
+    }
+
+    if (include_token_col) {
+      row$input_tokens <- sum(as.numeric(xi$input_tokens), na.rm = TRUE)
+    }
+    if (include_cost_col) {
+      row$cost <- sum(as.numeric(xi$cost), na.rm = TRUE)
+    }
+
+    if (isTRUE(per_group)) {
+      identity_label <- as.character(row$identity)
+
+      row$pre_ingroup <- mean(
+        as.numeric(pre$rating[as.character(pre$target_group) == identity_label]),
+        na.rm = TRUE
+      )
+      row$post_ingroup <- mean(
+        as.numeric(post$rating[as.character(post$target_group) == identity_label]),
+        na.rm = TRUE
+      )
+      row$pre_outgroup <- mean(
+        as.numeric(pre$rating[as.character(pre$target_group) != identity_label]),
+        na.rm = TRUE
+      )
+      row$post_outgroup <- mean(
+        as.numeric(post$rating[as.character(post$target_group) != identity_label]),
+        na.rm = TRUE
+      )
+
+      row$pre_gap <- row$pre_ingroup - row$pre_outgroup
+      row$post_gap <- row$post_ingroup - row$post_outgroup
+      row$delta_ingroup <- row$post_ingroup - row$pre_ingroup
+      row$delta_outgroup <- row$post_outgroup - row$pre_outgroup
+      row$delta_gap <- row$delta_outgroup - row$delta_ingroup
     } else {
-      stop(
-        "Could not infer mode from `x`. Please provide `per_group = TRUE/FALSE`."
-      )
-    }
-  }
-
-  if (isTRUE(per_group)) {
-    required <- c("pre_ingroup", "post_ingroup")
-    missing_cols <- setdiff(required, names(x))
-    if (length(missing_cols) > 0) {
-      stop(
-        "`x` is missing required per-group columns: ",
-        paste(missing_cols, collapse = ", "),
-        "."
-      )
+      row$pre_rating <- mean(as.numeric(pre$rating), na.rm = TRUE)
+      row$post_rating <- mean(as.numeric(post$rating), na.rm = TRUE)
+      row$pre_ingroup <- NA_real_
+      row$post_ingroup <- NA_real_
+      row$pre_outgroup <- row$pre_rating
+      row$post_outgroup <- row$post_rating
+      row$delta_outgroup <- row$post_outgroup - row$pre_outgroup
     }
 
-    x$pre_gap <- x$pre_ingroup - x$pre_outgroup
-    x$post_gap <- x$post_ingroup - x$post_outgroup
-    x$delta_ingroup <- x$post_ingroup - x$pre_ingroup
-    x$delta_outgroup <- x$post_outgroup - x$pre_outgroup
-    x$delta_gap <- x$delta_outgroup - x$delta_ingroup
-  } else {
-    x$delta_outgroup <- x$post_outgroup - x$pre_outgroup
+    rows[[row_i]] <- row
   }
 
-  x
+  out <- tibble::as_tibble(do.call(
+    rbind.data.frame,
+    lapply(rows, function(r) as.data.frame(r, stringsAsFactors = FALSE))
+  ))
+
+  long_cols <- c("baseline_prompt", "post_prompt", "chapter_excerpt")
+  present_long <- intersect(long_cols, names(out))
+  if (length(present_long) > 0) {
+    out <- out[, c(setdiff(names(out), present_long), present_long)]
+  }
+
+  out
 }
 
 # --- Prompt builders ---
