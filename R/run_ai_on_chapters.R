@@ -60,17 +60,17 @@
 #' Then restart your R session.
 #' @return A tibble of results, or a named list of tibbles (one per book). Each
 #'   row represents one simulation x identity combination and includes:
-#'   `chapter`, `sim`, `identity`, `party`, and (depending on mode):
+#'   `chapter`, `sim`, `identity`, `party`, and (depending on mode) raw ratings:
 #'   \describe{
 #'     \item{Per-group mode (`{group}` in question)}{Per-group raw ratings
-#'       (`pre_rating_{group}`, `post_rating_{group}`), computed
-#'       `pre_ingroup`, `pre_outgroup`, `post_ingroup`, `post_outgroup`,
-#'       and difference scores: `pre_gap`, `post_gap`, `delta_ingroup`,
-#'       `delta_outgroup`, and `delta_gap`.}
+#'       (`pre_rating_{group}`, `post_rating_{group}`), plus
+#'       `pre_ingroup`, `pre_outgroup`, `post_ingroup`, `post_outgroup`.}
 #'     \item{Single-question mode (no `{group}`)}{`pre_rating`, `post_rating`,
 #'       `pre_outgroup`, `post_outgroup` (= ratings), `pre_ingroup = NA`,
-#'       `post_ingroup = NA`, and `delta_outgroup`.}
+#'       and `post_ingroup = NA`.}
 #'   }
+#'   Use [compute_run_ai_metrics()] to append derived metrics such as
+#'   `pre_gap`, `post_gap`, `delta_ingroup`, `delta_outgroup`, and `delta_gap`.
 #'   The object has class `nalanda` and model attributes.
 #'
 #' @examples
@@ -355,17 +355,6 @@ run_ai_on_chapters <- function(
       )
     ))
 
-    # Add computed difference columns
-    if (per_group) {
-      out_tbl$pre_gap <- out_tbl$pre_ingroup - out_tbl$pre_outgroup
-      out_tbl$post_gap <- out_tbl$post_ingroup - out_tbl$post_outgroup
-      out_tbl$delta_ingroup <- out_tbl$post_ingroup - out_tbl$pre_ingroup
-      out_tbl$delta_outgroup <- out_tbl$post_outgroup - out_tbl$pre_outgroup
-      out_tbl$delta_gap <- out_tbl$delta_outgroup - out_tbl$delta_ingroup
-    } else {
-      out_tbl$delta_outgroup <- out_tbl$post_outgroup - out_tbl$pre_outgroup
-    }
-
     # Add metadata columns
     out_tbl$chapter_excerpt <- excerpt
 
@@ -420,6 +409,69 @@ run_ai_on_chapters <- function(
   attr(out, "model") <- model
   attr(out, "temperature") <- temperature
   out
+}
+
+#' Compute derived pre/post effect metrics from chapter simulation output
+#'
+#' Separates post-processing from model execution so users can re-compute
+#' metrics without re-running API calls.
+#'
+#' @param x Tibble produced by the simulation runner with at least
+#'   `pre_outgroup` and `post_outgroup` columns; in per-group mode also
+#'   `pre_ingroup` and `post_ingroup`.
+#' @param per_group Optional logical. Whether the run used per-group mode
+#'   (`{group}` in question template). If `NULL` (default), mode is inferred
+#'   from column names:
+#'   \itemize{
+#'     \item per-group if any `pre_rating_{group}` / `post_rating_{group}` columns exist;
+#'     \item single-question if `pre_rating` and `post_rating` exist.
+#'   }
+#' @return Input tibble with derived metric columns appended.
+#' @export
+compute_run_ai_metrics <- function(x, per_group = NULL) {
+  if (!("pre_outgroup" %in% names(x)) || !("post_outgroup" %in% names(x))) {
+    stop(
+      "`x` must include `pre_outgroup` and `post_outgroup` columns."
+    )
+  }
+
+  if (is.null(per_group)) {
+    has_per_group_cols <- any(grepl("^pre_rating_.+", names(x))) ||
+      any(grepl("^post_rating_.+", names(x)))
+    has_single_cols <- all(c("pre_rating", "post_rating") %in% names(x))
+
+    if (has_per_group_cols) {
+      per_group <- TRUE
+    } else if (has_single_cols) {
+      per_group <- FALSE
+    } else {
+      stop(
+        "Could not infer mode from `x`. Please provide `per_group = TRUE/FALSE`."
+      )
+    }
+  }
+
+  if (isTRUE(per_group)) {
+    required <- c("pre_ingroup", "post_ingroup")
+    missing_cols <- setdiff(required, names(x))
+    if (length(missing_cols) > 0) {
+      stop(
+        "`x` is missing required per-group columns: ",
+        paste(missing_cols, collapse = ", "),
+        "."
+      )
+    }
+
+    x$pre_gap <- x$pre_ingroup - x$pre_outgroup
+    x$post_gap <- x$post_ingroup - x$post_outgroup
+    x$delta_ingroup <- x$post_ingroup - x$pre_ingroup
+    x$delta_outgroup <- x$post_outgroup - x$pre_outgroup
+    x$delta_gap <- x$delta_outgroup - x$delta_ingroup
+  } else {
+    x$delta_outgroup <- x$post_outgroup - x$pre_outgroup
+  }
+
+  x
 }
 
 # --- Prompt builders ---
