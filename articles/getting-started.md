@@ -91,16 +91,8 @@ res
 ## #   chapter_excerpt <chr>
 ```
 
-## Step 3: Inspect a real example output in a scrollable interactive table
-
-The output can be wide.
-[`DT::datatable()`](https://rdrr.io/pkg/DT/man/datatable.html) with
-horizontal scrolling is helpful. For website builds, we load a recorded
-example generated from a real API run on the NYU network. To refresh it,
-run `data-raw/refresh-getting-started-example.R` and commit
-`inst/extdata/getting-started-res.rds`.
-
 ``` r
+# Inspect a real example output in a scrollable interactive table
 library(DT)
 
 DT::datatable(

@@ -154,18 +154,9 @@ need to repeat the same arguments in each call.</p>
 <span><span class="co">## # ℹ 11 more variables: post_rating_republican &lt;int&gt;, pre_ingroup &lt;int&gt;, post_ingroup &lt;int&gt;, pre_outgroup &lt;dbl&gt;,</span></span>
 <span><span class="co">## #   post_outgroup &lt;dbl&gt;, pre_gap &lt;dbl&gt;, post_gap &lt;dbl&gt;, delta_ingroup &lt;int&gt;, delta_outgroup &lt;dbl&gt;, delta_gap &lt;dbl&gt;,</span></span>
 <span><span class="co">## #   chapter_excerpt &lt;chr&gt;</span></span></code></pre></div>
-</div>
-<div class="section level2">
-<h2 id="step-3-inspect-a-real-example-output-in-a-scrollable-interactive-table">Step 3: Inspect a real example output in a scrollable interactive
-table<a class="anchor" aria-label="anchor" href="#step-3-inspect-a-real-example-output-in-a-scrollable-interactive-table"></a>
-</h2>
-<p>The output can be wide. <code><a href="https://rdrr.io/pkg/DT/man/datatable.html" class="external-link">DT::datatable()</a></code> with horizontal
-scrolling is helpful. For website builds, we load a recorded example
-generated from a real API run on the NYU network. To refresh it, run
-<code>data-raw/refresh-getting-started-example.R</code> and commit
-<code>inst/extdata/getting-started-res.rds</code>.</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/rstudio/DT" class="external-link">DT</a></span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="co"># Inspect a real example output in a scrollable interactive table</span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/rstudio/DT" class="external-link">DT</a></span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu">DT</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/DT/man/datatable.html" class="external-link">datatable</a></span><span class="op">(</span></span>
 <span>  <span class="va">res</span>,</span>
