@@ -46,7 +46,7 @@ to obtain your NYU Portkey API key.
 
 Run a small smoke test directly with `ellmer`:
 
-```{r, eval = TRUE}
+```{r, eval = FALSE}
 library(ellmer)
 
 virtual_key = "gemini-8c2498" # portkey model choice
@@ -59,6 +59,10 @@ chat <- chat_portkey(
 )
 
 chat$chat("Tell me one short joke about books.")
+
+## Why did the book go to therapy?
+## 
+## Because it had too many issues!
 ```
 
 If this call returns successfully, your base configuration is working.
@@ -68,13 +72,14 @@ If this call returns successfully, your base configuration is working.
 Once `ellmer` works, `nalanda::run_ai_on_chapters()` uses the same setup and
 returns structured outputs for chapter simulations.
 
-We also run the options for the `virtual_key` and `base_url` at the beginning of our script so we don't have to specify it every time we make a call to `run_ai_on_chapters()`.
+We also set package options at the beginning of a script so we do not need to
+repeat the same arguments in each call.
 
-```{r, eval = TRUE}
+```{r, eval = FALSE}
 library(nalanda)
 
 options(
-  nalanda.virtual_key = "gemini-8c2498",
+  nalanda.model_provider = "gemini-8c2498",
   nalanda.base_url = "https://ai-gateway.apps.cloud.rt.nyu.edu/v1/"
 )
 
@@ -91,8 +96,45 @@ res <- run_ai_on_chapters(
 )
 
 res
+## # A tibble: 2 × 20
+##   chapter     sim identity party baseline_prompt post_prompt pre_rating_democrat post_rating_democrat pre_rating_republican
+##   <chr>     <int> <chr>    <chr> <chr>           <chr>                     <int>                <int>                 <int>
+## 1 chapter_1     1 Democrat Demo… You are simula… "You have …                  85                   85                    20
+## 2 chapter_1     1 Republi… Repu… You are simula… "You have …                  25                   40                    85
+## # ℹ 11 more variables: post_rating_republican <int>, pre_ingroup <int>, post_ingroup <int>, pre_outgroup <dbl>,
+## #   post_outgroup <dbl>, pre_gap <dbl>, post_gap <dbl>, delta_ingroup <int>, delta_outgroup <dbl>, delta_gap <dbl>,
+## #   chapter_excerpt <chr>
+```
 
-# Inspect results with a scrollable interactive table for this vignette
+## Step 3: Inspect a real example output in a scrollable interactive table
+
+The output can be wide. `DT::datatable()` with horizontal scrolling is helpful.
+For website builds, we load a recorded example generated from a real API run on
+the NYU network. To refresh it, run
+`data-raw/refresh-getting-started-example.R` and commit
+`inst/extdata/getting-started-res.rds`.
+
+```{r, echo=FALSE}
+res_path <- system.file("extdata", "getting-started-res.rds", package = "nalanda")
+if (nzchar(res_path) && file.exists(res_path)) {
+  res <- readRDS(res_path)
+} else {
+  res <- tibble::tibble(
+    chapter = "chapter_1",
+    sim = 1L,
+    identity = "Democrat",
+    party = "Democrat",
+    pre_rating_democrat = 72,
+    pre_rating_republican = 45,
+    post_rating_democrat = 74,
+    post_rating_republican = 51,
+    pre_gap = 27,
+    post_gap = 23
+  )
+}
+```
+
+```{r}
 library(DT)
 
 DT::datatable(

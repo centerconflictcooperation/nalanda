@@ -1,4 +1,15 @@
 url: https://centerconflictcooperation.github.io/nalanda/
+navbar:
+  type: default
+  toc: true
+  left:
+  - icon: fa-home
+    href: index.html
+  - text: Tutorials
+    href: articles/index.html
+  - text: Functions
+    href: reference/index.html
+  - text: News
+    href: news/index.html
 template:
   bootstrap: 5
-
