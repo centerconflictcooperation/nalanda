@@ -113,22 +113,24 @@ run_ai_on_chapters(
 
 A tibble of results, or a named list of tibbles (one per book). Each row
 represents one simulation x identity combination and includes:
-`chapter`, `sim`, `identity`, `party`, and (depending on mode):
+`chapter`, `sim`, `identity`, `party`, and (depending on mode) raw
+ratings:
 
 - Per-group mode (`{group}` in question):
 
   Per-group raw ratings (`pre_rating_{group}`, `post_rating_{group}`),
-  computed `pre_ingroup`, `pre_outgroup`, `post_ingroup`,
-  `post_outgroup`, and difference scores: `pre_gap`, `post_gap`,
-  `delta_ingroup`, `delta_outgroup`, and `delta_gap`.
+  plus `pre_ingroup`, `pre_outgroup`, `post_ingroup`, `post_outgroup`.
 
 - Single-question mode (no `{group}`):
 
   `pre_rating`, `post_rating`, `pre_outgroup`, `post_outgroup` (=
-  ratings), `pre_ingroup = NA`, `post_ingroup = NA`, and
-  `delta_outgroup`.
+  ratings), `pre_ingroup = NA`, and `post_ingroup = NA`.
 
-The object has class `nalanda` and model attributes.
+Use
+[`compute_run_ai_metrics()`](https://centerconflictcooperation.github.io/nalanda/reference/compute_run_ai_metrics.md)
+to append derived metrics such as `pre_gap`, `post_gap`,
+`delta_ingroup`, `delta_outgroup`, and `delta_gap`. The object has class
+`nalanda` and model attributes.
 
 ## Details
 

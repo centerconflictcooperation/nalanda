@@ -25,7 +25,7 @@ post-hoc from the assigned identity and the group labels."><meta property="og:im
 
     <a class="navbar-brand me-2" href="../index.html">nalanda</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.1.1</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -161,20 +161,20 @@ both turns).</p></dd>
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
     <p>A tibble of results, or a named list of tibbles (one per book). Each
 row represents one simulation x identity combination and includes:
-<code>chapter</code>, <code>sim</code>, <code>identity</code>, <code>party</code>, and (depending on mode):</p><dl><dt>Per-group mode (<code>{group}</code> in question)</dt>
+<code>chapter</code>, <code>sim</code>, <code>identity</code>, <code>party</code>, and (depending on mode) raw ratings:</p><dl><dt>Per-group mode (<code>{group}</code> in question)</dt>
 <dd><p>Per-group raw ratings
-(<code>pre_rating_{group}</code>, <code>post_rating_{group}</code>), computed
-<code>pre_ingroup</code>, <code>pre_outgroup</code>, <code>post_ingroup</code>, <code>post_outgroup</code>,
-and difference scores: <code>pre_gap</code>, <code>post_gap</code>, <code>delta_ingroup</code>,
-<code>delta_outgroup</code>, and <code>delta_gap</code>.</p></dd>
+(<code>pre_rating_{group}</code>, <code>post_rating_{group}</code>), plus
+<code>pre_ingroup</code>, <code>pre_outgroup</code>, <code>post_ingroup</code>, <code>post_outgroup</code>.</p></dd>
 
 <dt>Single-question mode (no <code>{group}</code>)</dt>
 <dd><p><code>pre_rating</code>, <code>post_rating</code>,
 <code>pre_outgroup</code>, <code>post_outgroup</code> (= ratings), <code>pre_ingroup = NA</code>,
-<code>post_ingroup = NA</code>, and <code>delta_outgroup</code>.</p></dd>
+and <code>post_ingroup = NA</code>.</p></dd>
 
 
-</dl><p>The object has class <code>nalanda</code> and model attributes.</p>
+</dl><p>Use <code><a href="compute_run_ai_metrics.html">compute_run_ai_metrics()</a></code> to append derived metrics such as
+<code>pre_gap</code>, <code>post_gap</code>, <code>delta_ingroup</code>, <code>delta_outgroup</code>, and <code>delta_gap</code>.
+The object has class <code>nalanda</code> and model attributes.</p>
     </div>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>

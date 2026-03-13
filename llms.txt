@@ -55,6 +55,9 @@ Projects](https://mindandlife-europe.org/2024-eva-recipients-projects/)
 
 ## All functions
 
+- [`compute_run_ai_metrics()`](https://centerconflictcooperation.github.io/nalanda/reference/compute_run_ai_metrics.md)
+  : Compute derived pre/post effect metrics from chapter simulation
+  output
 - [`fix_text_file()`](https://centerconflictcooperation.github.io/nalanda/reference/fix_text_file.md)
   : Fix text file encoding and normalize punctuation/whitespace
 - [`list_book_chapters()`](https://centerconflictcooperation.github.io/nalanda/reference/list_book_chapters.md)
