@@ -64,7 +64,7 @@ need to repeat the same arguments in each call.
 library(nalanda)
 
 options(
-  nalanda.model_provider = "gemini-8c2498",
+  nalanda.virtual_key = "gemini-8c2498",
   nalanda.base_url = "https://ai-gateway.apps.cloud.rt.nyu.edu/v1/"
 )
 
