@@ -1,4 +1,4 @@
-# Compute derived pre/post effect metrics from chapter simulation output
+# Compute derived pre/post effect metrics from raw turn-level output
 
 Separates post-processing from model execution so users can re-compute
 metrics without re-running API calls.
@@ -13,21 +13,24 @@ compute_run_ai_metrics(x, per_group = NULL)
 
 - x:
 
-  Tibble produced by the simulation runner with at least `pre_outgroup`
-  and `post_outgroup` columns; in per-group mode also `pre_ingroup` and
-  `post_ingroup`.
+  Tibble from
+  [`run_ai_on_chapters()`](https://centerconflictcooperation.github.io/nalanda/reference/run_ai_on_chapters.md)
+  with turn-level rows including `chapter`, `sim`, `identity`,
+  `turn_type`, and `rating`.
 
 - per_group:
 
   Optional logical. Whether the run used per-group mode (`{group}` in
-  question template). If `NULL` (default), mode is inferred from column
-  names:
+  question template). If `NULL` (default), mode is inferred from
+  `target_group`:
 
-  - per-group if any `pre_rating_{group}` / `post_rating_{group}`
-    columns exist;
+  - per-group if any non-missing `target_group` values exist;
 
-  - single-question if `pre_rating` and `post_rating` exist.
+  - single-question if `target_group` is entirely missing.
 
 ## Value
 
-Input tibble with derived metric columns appended.
+A simulation-level tibble with derived metrics (for example
+`pre_outgroup`, `post_outgroup`, `delta_outgroup`, and in per-group mode
+also `pre_ingroup`, `post_ingroup`, `pre_gap`, `post_gap`,
+`delta_ingroup`, `delta_gap`).
