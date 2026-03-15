@@ -24,6 +24,12 @@ plot_chapters_over_time(
   reverse_score = FALSE,
   error_bars = TRUE,
   neutrality_line = TRUE,
+  point_images = NULL,
+  image_size = 0.04,
+  image_nudge_x = 0,
+  image_nudge_y = 0,
+  image_jitter_width = 0,
+  image_jitter_height = 0,
   facet = NULL,
   facets.order = "increasing"
 )
@@ -109,6 +115,41 @@ plot_chapters_over_time(
 - neutrality_line:
 
   Logical. Add a horizontal neutrality line at 50.
+
+- point_images:
+
+  Optional named list mapping group levels to image file paths (PNG
+  recommended). When supplied, the point markers are replaced with the
+  corresponding images, and the legend labels are updated to show the
+  matching image alongside the group name when `ggtext` is installed.
+  Example:
+  `list(Democrat = "logos/dem.png", Republican = "logos/rep.png")`.
+
+- image_size:
+
+  Numeric. Size of images when `point_images` is used. Passed to
+  [`ggimage::geom_image()`](https://rdrr.io/pkg/ggimage/man/geom_image.html).
+  Defaults to `0.04`.
+
+- image_nudge_x:
+
+  Numeric. Horizontal offset applied to point images only. Defaults to
+  `0`.
+
+- image_nudge_y:
+
+  Numeric. Vertical offset applied to point images only. Defaults to
+  `0`.
+
+- image_jitter_width:
+
+  Numeric. Horizontal jitter width applied to point images only.
+  Defaults to `0`.
+
+- image_jitter_height:
+
+  Numeric. Vertical jitter height applied to point images only. Defaults
+  to `0`.
 
 - facet:
 

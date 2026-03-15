@@ -61,6 +61,12 @@ for the wide-format response variables.</p>
 <span>  reverse_score <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  error_bars <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  neutrality_line <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  point_images <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  image_size <span class="op">=</span> <span class="fl">0.04</span>,</span>
+<span>  image_nudge_x <span class="op">=</span> <span class="fl">0</span>,</span>
+<span>  image_nudge_y <span class="op">=</span> <span class="fl">0</span>,</span>
+<span>  image_jitter_width <span class="op">=</span> <span class="fl">0</span>,</span>
+<span>  image_jitter_height <span class="op">=</span> <span class="fl">0</span>,</span>
 <span>  facet <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  facets.order <span class="op">=</span> <span class="st">"increasing"</span></span>
 <span><span class="op">)</span></span></code></pre></div>
@@ -144,6 +150,39 @@ Defaults to 4. Adjust to improve readability depending on output format.</p></dd
 
 <dt id="arg-neutrality-line">neutrality_line<a class="anchor" aria-label="anchor" href="#arg-neutrality-line"></a></dt>
 <dd><p>Logical. Add a horizontal neutrality line at 50.</p></dd>
+
+
+<dt id="arg-point-images">point_images<a class="anchor" aria-label="anchor" href="#arg-point-images"></a></dt>
+<dd><p>Optional named list mapping group levels to image file
+paths (PNG recommended). When supplied, the point markers are replaced with
+the corresponding images, and the legend labels are updated to show the
+matching image alongside the group name when <code>ggtext</code> is installed. Example:
+<code>list(Democrat = "logos/dem.png", Republican = "logos/rep.png")</code>.</p></dd>
+
+
+<dt id="arg-image-size">image_size<a class="anchor" aria-label="anchor" href="#arg-image-size"></a></dt>
+<dd><p>Numeric. Size of images when <code>point_images</code> is used.
+Passed to <code><a href="https://rdrr.io/pkg/ggimage/man/geom_image.html" class="external-link">ggimage::geom_image()</a></code>. Defaults to <code>0.04</code>.</p></dd>
+
+
+<dt id="arg-image-nudge-x">image_nudge_x<a class="anchor" aria-label="anchor" href="#arg-image-nudge-x"></a></dt>
+<dd><p>Numeric. Horizontal offset applied to point images only.
+Defaults to <code>0</code>.</p></dd>
+
+
+<dt id="arg-image-nudge-y">image_nudge_y<a class="anchor" aria-label="anchor" href="#arg-image-nudge-y"></a></dt>
+<dd><p>Numeric. Vertical offset applied to point images only.
+Defaults to <code>0</code>.</p></dd>
+
+
+<dt id="arg-image-jitter-width">image_jitter_width<a class="anchor" aria-label="anchor" href="#arg-image-jitter-width"></a></dt>
+<dd><p>Numeric. Horizontal jitter width applied to point
+images only. Defaults to <code>0</code>.</p></dd>
+
+
+<dt id="arg-image-jitter-height">image_jitter_height<a class="anchor" aria-label="anchor" href="#arg-image-jitter-height"></a></dt>
+<dd><p>Numeric. Vertical jitter height applied to point
+images only. Defaults to <code>0</code>.</p></dd>
 
 
 <dt id="arg-facet">facet<a class="anchor" aria-label="anchor" href="#arg-facet"></a></dt>
