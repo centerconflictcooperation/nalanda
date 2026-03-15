@@ -126,7 +126,7 @@ plot_chapters_over_time <- function(
   df <- df |>
     dplyr::mutate(
       chapter_num = suppressWarnings(as.integer(stringr::str_extract(
-         .data$chapter,
+        .data$chapter,
         "\\d+"
       )))
     ) |>
@@ -340,21 +340,24 @@ bind_simulation_results <- function(chapters) {
 #' @param facet Character or `NULL`. Name of the facet variable.
 #' @return The modified ggplot object with images instead of points.
 #' @keywords internal
-add_point_images <- function(p,
-                             group,
-                             point_images,
-                             image_size = 0.04,
-                             image_nudge_x = 0,
-                             image_nudge_y = 0,
-                             image_jitter_width = 0,
-                             image_jitter_height = 0,
-                             facet = NULL) {
+add_point_images <- function(
+  p,
+  group,
+  point_images,
+  image_size = 0.04,
+  image_nudge_x = 0,
+  image_nudge_y = 0,
+  image_jitter_width = 0,
+  image_jitter_height = 0,
+  facet = NULL
+) {
   # Retrieve the plot data (data_summary from rempsyc)
   plot_data <- p$data
 
   # Map group levels to image paths (ensure it's a character vector, not a list)
-  plot_data$image <- unlist(unname(point_images[as.character(plot_data[[group]])]))
-
+  plot_data$image <- unlist(unname(point_images[as.character(plot_data[[
+    group
+  ]])]))
 
   # Validate that all groups were matched
   if (any(is.na(plot_data$image))) {
@@ -370,9 +373,13 @@ add_point_images <- function(p,
   }
 
   # Remove existing geom_point layer(s)
-  point_idx <- which(vapply(p$layers, function(l) {
-    inherits(l$geom, "GeomPoint")
-  }, logical(1)))
+  point_idx <- which(vapply(
+    p$layers,
+    function(l) {
+      inherits(l$geom, "GeomPoint")
+    },
+    logical(1)
+  ))
   if (length(point_idx) > 0) {
     p$layers[point_idx] <- NULL
   }
@@ -390,7 +397,9 @@ add_point_images <- function(p,
   }
 
   # Keep image positioning explicit so logos can be nudged or jittered
-  plot_data$x_image <- if (isTRUE(image_nudge_x != 0 || image_jitter_width > 0)) {
+  plot_data$x_image <- if (
+    isTRUE(image_nudge_x != 0 || image_jitter_width > 0)
+  ) {
     x_base + image_nudge_x
   } else {
     x_base
@@ -428,17 +437,23 @@ add_image_legend_labels <- function(p, point_images) {
     return(p)
   }
 
-  image_labels <- vapply(names(point_images), function(group_name) {
-    image_path <- normalizePath(
-      point_images[[group_name]],
-      winslash = "/",
-      mustWork = FALSE
-    )
-    paste0(
-      "<img src='", image_path, "' width='30'/> ",
-      group_name
-    )
-  }, character(1))
+  image_labels <- vapply(
+    names(point_images),
+    function(group_name) {
+      image_path <- normalizePath(
+        point_images[[group_name]],
+        winslash = "/",
+        mustWork = FALSE
+      )
+      paste0(
+        "<img src='",
+        image_path,
+        "' width='20' style='vertical-align:middle;'/> ",
+        group_name
+      )
+    },
+    character(1)
+  )
 
   colour_scale <- p$scales$get_scales("colour")
   if (!is.null(colour_scale)) {
@@ -454,11 +469,17 @@ add_image_legend_labels <- function(p, point_images) {
     )
   }
 
-  p + ggplot2::theme(
-    legend.text = ggtext::element_markdown(),
-    legend.key.width = grid::unit(0.01, "pt"),
-    legend.key.height = grid::unit(24, "pt")
-  ) +
+  p +
+    ggplot2::theme(
+      legend.text = ggtext::element_markdown(
+        margin = ggplot2::margin(t = 0, r = 0, b = 0, l = 0)
+      ),
+      legend.key.width = grid::unit(0.01, "pt"),
+      legend.key.height = grid::unit(20, "pt"),
+      legend.spacing.x = grid::unit(6, "pt"),
+      legend.margin = ggplot2::margin(t = -6, r = 0, b = 0, l = 0),
+      legend.box.margin = ggplot2::margin(t = -8, r = 0, b = 0, l = 0)
+    ) +
     ggplot2::guides(
       shape = "none",
       linetype = "none"
