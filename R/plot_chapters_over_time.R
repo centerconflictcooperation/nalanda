@@ -29,6 +29,21 @@
 #' @param error_bars Logical. Show error bars.
 #' @param neutrality_line Logical. Add a horizontal neutrality line at 50.
 #' @param facet The variable by which to facet grid.
+#' @param point_images Optional named list mapping group levels to image file
+#'   paths (PNG recommended). When supplied, the point markers are replaced with
+#'   the corresponding images, and the legend labels are updated to show the
+#'   matching image alongside the group name when `ggtext` is installed. Example:
+#'   `list(Democrat = "logos/dem.png", Republican = "logos/rep.png")`.
+#' @param image_size Numeric. Size of images when `point_images` is used.
+#'   Passed to [ggimage::geom_image()]. Defaults to `0.04`.
+#' @param image_nudge_x Numeric. Horizontal offset applied to point images only.
+#'   Defaults to `0`.
+#' @param image_nudge_y Numeric. Vertical offset applied to point images only.
+#'   Defaults to `0`.
+#' @param image_jitter_width Numeric. Horizontal jitter width applied to point
+#'   images only. Defaults to `0`.
+#' @param image_jitter_height Numeric. Vertical jitter height applied to point
+#'   images only. Defaults to `0`.
 #' @param facets.order Specifies the desired display order of facet panels.
 #'   Either provide the levels directly, or a string: "increasing" or
 #'   "decreasing", to order panels based on the average value of the
@@ -54,6 +69,12 @@ plot_chapters_over_time <- function(
   reverse_score = FALSE,
   error_bars = TRUE,
   neutrality_line = TRUE,
+  point_images = NULL,
+  image_size = 0.04,
+  image_nudge_x = 0,
+  image_nudge_y = 0,
+  image_jitter_width = 0,
+  image_jitter_height = 0,
   facet = NULL,
   facets.order = "increasing"
 ) {
@@ -273,6 +294,26 @@ plot_chapters_over_time <- function(
     p <- p + ggplot2::facet_wrap(stats::as.formula(paste("~", facet)))
   }
 
+  # Replace point markers with images if requested
+  if (!is.null(point_images)) {
+    rlang::check_installed("ggimage", reason = "for point_images support.")
+    p <- add_point_images(
+      p = p,
+      group = group,
+      point_images = point_images,
+      image_size = image_size,
+      image_nudge_x = image_nudge_x,
+      image_nudge_y = image_nudge_y,
+      image_jitter_width = image_jitter_width,
+      image_jitter_height = image_jitter_height,
+      facet = facet
+    )
+    p <- add_image_legend_labels(
+      p = p,
+      point_images = point_images
+    )
+  }
+
   p
 }
 
@@ -286,3 +327,140 @@ bind_simulation_results <- function(chapters) {
   }
 }
 
+#' Replace point markers with images on a ggplot
+#'
+#' @param p A ggplot object produced by `plot_chapters_over_time()`.
+#' @param group Character. Name of the grouping variable.
+#' @param point_images Named list mapping group levels to image file paths.
+#' @param image_size Numeric. Size passed to [ggimage::geom_image()].
+#' @param image_nudge_x Numeric. Horizontal offset applied to point images.
+#' @param image_nudge_y Numeric. Vertical offset applied to point images.
+#' @param image_jitter_width Numeric. Horizontal jitter width for point images.
+#' @param image_jitter_height Numeric. Vertical jitter height for point images.
+#' @param facet Character or `NULL`. Name of the facet variable.
+#' @return The modified ggplot object with images instead of points.
+#' @keywords internal
+add_point_images <- function(p,
+                             group,
+                             point_images,
+                             image_size = 0.04,
+                             image_nudge_x = 0,
+                             image_nudge_y = 0,
+                             image_jitter_width = 0,
+                             image_jitter_height = 0,
+                             facet = NULL) {
+  # Retrieve the plot data (data_summary from rempsyc)
+  plot_data <- p$data
+
+  # Map group levels to image paths (ensure it's a character vector, not a list)
+  plot_data$image <- unlist(unname(point_images[as.character(plot_data[[group]])]))
+
+
+  # Validate that all groups were matched
+  if (any(is.na(plot_data$image))) {
+    missing <- setdiff(
+      unique(as.character(plot_data[[group]])),
+      names(point_images)
+    )
+    warning(
+      "No image path found for group level(s): ",
+      paste(missing, collapse = ", "),
+      ". Those points will not display images."
+    )
+  }
+
+  # Remove existing geom_point layer(s)
+  point_idx <- which(vapply(p$layers, function(l) {
+    inherits(l$geom, "GeomPoint")
+  }, logical(1)))
+  if (length(point_idx) > 0) {
+    p$layers[point_idx] <- NULL
+  }
+
+  # Convert discrete time positions only when image offsets are requested
+  x_base <- plot_data$Time
+  if (isTRUE(image_nudge_x != 0 || image_jitter_width > 0)) {
+    x_base <- if (is.factor(plot_data$Time)) {
+      as.numeric(plot_data$Time)
+    } else if (is.character(plot_data$Time)) {
+      suppressWarnings(as.numeric(plot_data$Time))
+    } else {
+      plot_data$Time
+    }
+  }
+
+  # Keep image positioning explicit so logos can be nudged or jittered
+  plot_data$x_image <- if (isTRUE(image_nudge_x != 0 || image_jitter_width > 0)) {
+    x_base + image_nudge_x
+  } else {
+    x_base
+  }
+  plot_data$y_image <- plot_data$value + image_nudge_y
+
+  if (isTRUE(image_jitter_width > 0 || image_jitter_height > 0)) {
+    plot_data$x_image <- jitter(
+      plot_data$x_image,
+      amount = image_jitter_width
+    )
+    plot_data$y_image <- jitter(
+      plot_data$y_image,
+      amount = image_jitter_height
+    )
+  }
+
+  p <- p +
+    ggimage::geom_image(
+      data = plot_data,
+      mapping = ggplot2::aes(
+        x = .data$x_image,
+        y = .data$y_image,
+        image = .data$image
+      ),
+      size = image_size,
+      inherit.aes = FALSE
+    )
+
+  p
+}
+
+add_image_legend_labels <- function(p, point_images) {
+  if (!requireNamespace("ggtext", quietly = TRUE)) {
+    return(p)
+  }
+
+  image_labels <- vapply(names(point_images), function(group_name) {
+    image_path <- normalizePath(
+      point_images[[group_name]],
+      winslash = "/",
+      mustWork = FALSE
+    )
+    paste0(
+      "<img src='", image_path, "' width='30'/> ",
+      group_name
+    )
+  }, character(1))
+
+  colour_scale <- p$scales$get_scales("colour")
+  if (!is.null(colour_scale)) {
+    colour_scale$labels <- image_labels
+    colour_scale$guide <- ggplot2::guide_legend(
+      override.aes = list(
+        alpha = 0,
+        linewidth = 0,
+        linetype = 0,
+        shape = NA,
+        size = 0
+      )
+    )
+  }
+
+  p + ggplot2::theme(
+    legend.text = ggtext::element_markdown(),
+    legend.key.width = grid::unit(0.01, "pt"),
+    legend.key.height = grid::unit(24, "pt")
+  ) +
+    ggplot2::guides(
+      shape = "none",
+      linetype = "none"
+    )
+}

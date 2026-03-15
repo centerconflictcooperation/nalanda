@@ -22,6 +22,12 @@ plot_chapters_over_time(
   reverse_score = FALSE,
   error_bars = TRUE,
   neutrality_line = TRUE,
+  point_images = NULL,
+  image_size = 0.04,
+  image_nudge_x = 0,
+  image_nudge_y = 0,
+  image_jitter_width = 0,
+  image_jitter_height = 0,
   facet = NULL,
   facets.order = "increasing"
 )
@@ -68,6 +74,27 @@ Defaults to 4. Adjust to improve readability depending on output format.}
 \item{error_bars}{Logical. Show error bars.}
 
 \item{neutrality_line}{Logical. Add a horizontal neutrality line at 50.}
+
+\item{point_images}{Optional named list mapping group levels to image file
+paths (PNG recommended). When supplied, the point markers are replaced with
+the corresponding images, and the legend labels are updated to show the
+matching image alongside the group name when \code{ggtext} is installed. Example:
+\code{list(Democrat = "logos/dem.png", Republican = "logos/rep.png")}.}
+
+\item{image_size}{Numeric. Size of images when \code{point_images} is used.
+Passed to \code{\link[ggimage:geom_image]{ggimage::geom_image()}}. Defaults to \code{0.04}.}
+
+\item{image_nudge_x}{Numeric. Horizontal offset applied to point images only.
+Defaults to \code{0}.}
+
+\item{image_nudge_y}{Numeric. Vertical offset applied to point images only.
+Defaults to \code{0}.}
+
+\item{image_jitter_width}{Numeric. Horizontal jitter width applied to point
+images only. Defaults to \code{0}.}
+
+\item{image_jitter_height}{Numeric. Vertical jitter height applied to point
+images only. Defaults to \code{0}.}
 
 \item{facet}{The variable by which to facet grid.}
 

@@ -24,6 +24,8 @@ Imports:
     forestplot
 Suggests: 
     DT,
+    ggimage,
+    ggtext,
     knitr,
     rmarkdown,
     Rmisc,
