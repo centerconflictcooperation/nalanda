@@ -4,7 +4,7 @@ Aggregate simulation results by chapter (and book, if present) computing
 number of simulations, means and SDs for core model outputs. In the
 current schema, this includes ingroup/outgroup pre-post ratings plus
 delta and gap metrics (for example delta_outgroup, delta_ingroup, and
-delta_gap). Retains a chapter excerpt at chapter level.
+delta_gap).
 
 ## Usage
 

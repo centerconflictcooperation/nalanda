@@ -62,7 +62,7 @@
 <div class="section level2">
 <h2 id="overview">Overview<a class="anchor" aria-label="anchor" href="#overview"></a>
 </h2>
-<p>The <strong>nalanda</strong> package provides tools and utilities for analyzing research data related to books, reading, and prosocial behavior. The package aims to facilitate the exploration of how books and shared learning experiences can foster prosociality and cooperation in communities.</p>
+<p>The <strong>nalanda</strong> package provides tools for simulating, summarizing, and plotting chapter-level AI reading responses. It is designed for workflows that ask whether books shift prosocial attitudes, outgroup warmth, and affective polarization across chapters or across whole books.</p>
 </div>
 <div class="section level2">
 <h2 id="installation">Installation<a class="anchor" aria-label="anchor" href="#installation"></a>
@@ -75,21 +75,78 @@
 <span>    <span class="st">'https://cloud.r-project.org'</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
-<h2 id="example">Example<a class="anchor" aria-label="anchor" href="#example"></a>
+<h2 id="example-workflow">Example workflow<a class="anchor" aria-label="anchor" href="#example-workflow"></a>
 </h2>
-<p>The package includes a simple function to explore historical facts about Nalanda University:</p>
+<p>This example uses the bundled <code>toy_sim_results</code> dataset so it renders quickly and does not require running live AI simulations.</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://centerconflictcooperation.github.io/nalanda/">nalanda</a></span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># Get a random fact about Nalanda University</span></span>
-<span><span class="fu"><a href="reference/nalanda.html">nalanda</a></span><span class="op">(</span><span class="op">)</span></span>
-<span><span class="co">#&gt; [1] "Xuanzang, the 7th-century Chinese monk and scholar, studied at Nalanda for several years and documented its curriculum."</span></span></code></pre></div>
+<span><span class="va">img_paths</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
+<span>  Democrat <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/normalizePath.html" class="external-link">normalizePath</a></span><span class="op">(</span><span class="st">"man/figures/dem.png"</span><span class="op">)</span>,</span>
+<span>  Republican <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/normalizePath.html" class="external-link">normalizePath</a></span><span class="op">(</span><span class="st">"man/figures/rep.png"</span><span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">toy_sim_results</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"book"</span>, <span class="st">"chapter"</span>, <span class="st">"sim"</span>, <span class="st">"party"</span>, <span class="st">"delta_gap"</span><span class="op">)</span><span class="op">]</span><span class="op">)</span></span>
+<span><span class="co">#&gt;             book   chapter sim    party delta_gap</span></span>
+<span><span class="co">#&gt; 1 Bridge Stories chapter_1   1 Democrat        -3</span></span>
+<span><span class="co">#&gt; 2  Common Ground chapter_1   1 Democrat        -4</span></span>
+<span><span class="co">#&gt; 3 Bridge Stories chapter_2   1 Democrat        -6</span></span>
+<span><span class="co">#&gt; 4  Common Ground chapter_2   1 Democrat        -6</span></span>
+<span><span class="co">#&gt; 5 Bridge Stories chapter_3   1 Democrat        -9</span></span>
+<span><span class="co">#&gt; 6  Common Ground chapter_3   1 Democrat        -5</span></span></code></pre></div>
+<p>Use the raw chapter-level results directly with the time-series plotting helper:</p>
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="reference/plot_chapters_over_time.html">plot_chapters_over_time</a></span><span class="op">(</span></span>
+<span>  chapters <span class="op">=</span> <span class="va">toy_sim_results</span>,</span>
+<span>  dv <span class="op">=</span> <span class="st">"delta_gap"</span>,</span>
+<span>  group <span class="op">=</span> <span class="st">"party"</span>,</span>
+<span>  y_label <span class="op">=</span> <span class="st">"Affective Polarization (Delta Gap)"</span>,</span>
+<span>  plot_subtitle <span class="op">=</span> <span class="st">"Bundled toy data: 2 simulations per party"</span>,</span>
+<span>  plot_title <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  error_bars <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  reverse_score <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  groups.order <span class="op">=</span> <span class="st">"none"</span>,</span>
+<span>  facet <span class="op">=</span> <span class="st">"book"</span>,</span>
+<span>  facets.order <span class="op">=</span> <span class="st">"decreasing"</span>,</span>
+<span>  line_width <span class="op">=</span> <span class="fl">1.2</span>,</span>
+<span>  point_images <span class="op">=</span> <span class="va">img_paths</span>,</span>
+<span>  image_size <span class="op">=</span> <span class="fl">0.09</span></span>
+<span><span class="op">)</span></span>
+<span><span class="co">#&gt; Scale for shape is already present.</span></span>
+<span><span class="co">#&gt; Adding another scale for shape, which will replace the existing scale.</span></span></code></pre></div>
+<div class="figure">
+<img src="reference/figures/README-pressure-1.png" alt="Synthetic chapter-level trajectories of affective polarization change by party." width="100%"><p class="caption">
+Synthetic chapter-level trajectories of affective polarization change by party.
+</p>
+</div>
+<p>The same workflow scales to:</p>
+<ul>
+<li>summary tables via <code><a href="reference/summarize_chapter_scores.html">summarize_chapter_scores()</a></code>
+</li>
+<li>results returned by <code><a href="reference/run_ai_on_chapters.html">run_ai_on_chapters()</a></code>
+</li>
+<li>saved <code>.rds</code> simulation outputs</li>
+<li>book-level summaries via <code>summarize_chapter_scores(..., aggregate_level = "book")</code>
+</li>
+<li>visualization with <code><a href="reference/plot_chapter_trajectories.html">plot_chapter_trajectories()</a></code>, <code><a href="reference/plot_chapters_over_time.html">plot_chapters_over_time()</a></code>, and <code><a href="reference/plot_forest_books.html">plot_forest_books()</a></code>
+</li>
+</ul>
+<p>For API setup and a live minimal simulation example, see the vignette:</p>
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/vignette.html" class="external-link">vignette</a></span><span class="op">(</span><span class="st">"getting-started"</span>, package <span class="op">=</span> <span class="st">"nalanda"</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="about-the-name">About the Name<a class="anchor" aria-label="anchor" href="#about-the-name"></a>
 </h2>
 <p>The package is named after <a href="https://en.wikipedia.org/wiki/Nalanda" class="external-link">Nalanda Mahavihara</a>, one of the most renowned centers of learning in ancient India. Founded in the 5th century CE, Nalanda was a Buddhist monastic university that attracted scholars from across Asia and became a symbol of knowledge, wisdom, and the pursuit of learning through texts and collaboration.</p>
 <p>This name is particularly fitting for a package related to the study of books and prosociality, reflecting the historical significance of Nalanda as a center for both scholarly texts and the cooperative exchange of ideas. The connection resonates with contemporary research on how books and shared learning can foster prosocial behavior and cooperation.</p>
+<p>The package also includes a small helper to explore historical facts about Nalanda University:</p>
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://centerconflictcooperation.github.io/nalanda/">nalanda</a></span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Get a random fact about Nalanda University</span></span>
+<span><span class="fu"><a href="reference/nalanda.html">nalanda</a></span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="co">#&gt; [1] "Nalanda remained an active center of learning for roughly 700 years until the 12th century."</span></span></code></pre></div>
 <p>Learn more about related research on books, learning, and prosociality: <a href="https://mindandlife-europe.org/2024-eva-recipients-projects/" class="external-link">Mind and Life Europe - 2024 EVA Recipients &amp; Projects</a></p>
 </div>
 </div>

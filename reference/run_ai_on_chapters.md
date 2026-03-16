@@ -99,7 +99,8 @@ run_ai_on_chapters(
 
 - excerpt_chars:
 
-  Integer. Number of characters to keep as excerpt in results.
+  Integer. Number of chapter characters to retain in the stored
+  post-prompt preview shown in results.
 
 - include_tokens:
 
