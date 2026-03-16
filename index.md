@@ -14,8 +14,10 @@ You can install the development version of nalanda from
 [GitHub](https://github.com/) with:
 
 ``` r
-# install.packages("pak")
-pak::pak("centerconflictcooperation/nalanda")
+install.packages(
+  'nalanda', repos = c(
+    'https://centerconflictcooperation.r-universe.dev', 
+    'https://cloud.r-project.org'))
 ```
 
 ## Example
@@ -28,7 +30,7 @@ library(nalanda)
 
 # Get a random fact about Nalanda University
 nalanda()
-#> [1] "The Nalanda library, known as Dharmaganja, was reputed to house hundreds of thousands of manuscripts."
+#> [1] "Xuanzang, the 7th-century Chinese monk and scholar, studied at Nalanda for several years and documented its curriculum."
 ```
 
 ## About the Name

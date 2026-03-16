@@ -69,8 +69,10 @@
 </h2>
 <p>You can install the development version of nalanda from <a href="https://github.com/" class="external-link">GitHub</a> with:</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># install.packages("pak")</span></span>
-<span><span class="fu">pak</span><span class="fu">::</span><span class="fu"><a href="https://pak.r-lib.org/reference/pak.html" class="external-link">pak</a></span><span class="op">(</span><span class="st">"centerconflictcooperation/nalanda"</span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span></span>
+<span>  <span class="st">'nalanda'</span>, repos <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span></span>
+<span>    <span class="st">'https://centerconflictcooperation.r-universe.dev'</span>, </span>
+<span>    <span class="st">'https://cloud.r-project.org'</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="example">Example<a class="anchor" aria-label="anchor" href="#example"></a>
@@ -81,7 +83,7 @@
 <span></span>
 <span><span class="co"># Get a random fact about Nalanda University</span></span>
 <span><span class="fu"><a href="reference/nalanda.html">nalanda</a></span><span class="op">(</span><span class="op">)</span></span>
-<span><span class="co">#&gt; [1] "The Nalanda library, known as Dharmaganja, was reputed to house hundreds of thousands of manuscripts."</span></span></code></pre></div>
+<span><span class="co">#&gt; [1] "Xuanzang, the 7th-century Chinese monk and scholar, studied at Nalanda for several years and documented its curriculum."</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="about-the-name">About the Name<a class="anchor" aria-label="anchor" href="#about-the-name"></a>
