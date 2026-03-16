@@ -88,8 +88,8 @@ plot_chapters_over_time <- function(
   # Fallback: check first list element (covers lapply(files, readRDS) workflow)
   if (is.null(model_name) && is.list(chapters) && length(chapters) > 0) {
     first <- chapters[[1]]
-    model_name <- model_name %||% attr(first, "model")
-    model_temp <- model_temp %||% attr(first, "temperature")
+    model_name <- rlang::`%||%`(model_name, attr(first, "model"))
+    model_temp <- rlang::`%||%`(model_temp, attr(first, "temperature"))
   }
 
   df <- bind_simulation_results(chapters)
@@ -254,9 +254,9 @@ plot_chapters_over_time <- function(
   if (isTRUE(append_model_info)) {
     model_info <- paste0(
       "Model: ",
-      model_name %||% "unknown",
+      rlang::`%||%`(model_name, "unknown"),
       "; Temp: ",
-      model_temp %||% "unknown"
+      rlang::`%||%`(model_temp, "unknown")
     )
     subtitle_value <- if (!is.null(subtitle_value) && nzchar(subtitle_value)) {
       paste0(subtitle_value, " | ", model_info)
