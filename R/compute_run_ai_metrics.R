@@ -18,6 +18,10 @@
 #'   `delta_ingroup`, `delta_gap`).
 #' @export
 compute_run_ai_metrics <- function(x, per_group = NULL) {
+  model <- attr(x, "model")
+  temperature <- attr(x, "temperature")
+  chapter_excerpts <- attr(x, "chapter_excerpts")
+
   required_cols <- c("chapter", "sim", "identity", "turn_type", "rating")
   missing_cols <- setdiff(required_cols, names(x))
   if (length(missing_cols) > 0) {
@@ -40,8 +44,7 @@ compute_run_ai_metrics <- function(x, per_group = NULL) {
     "book",
     "party",
     "baseline_prompt",
-    "post_prompt",
-    "chapter_excerpt"
+    "post_prompt"
   )
   id_cols <- c(id_cols, intersect(optional_id, names(x)))
 
@@ -116,11 +119,14 @@ compute_run_ai_metrics <- function(x, per_group = NULL) {
     lapply(rows, function(r) as.data.frame(r, stringsAsFactors = FALSE))
   ))
 
-  long_cols <- c("baseline_prompt", "post_prompt", "chapter_excerpt")
+  long_cols <- c("baseline_prompt", "post_prompt")
   present_long <- intersect(long_cols, names(out))
   if (length(present_long) > 0) {
     out <- out[, c(setdiff(names(out), present_long), present_long)]
   }
 
+  attr(out, "model") <- model
+  attr(out, "temperature") <- temperature
+  attr(out, "chapter_excerpts") <- chapter_excerpts
   out
 }

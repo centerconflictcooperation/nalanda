@@ -22,6 +22,43 @@ test_that("make_post_prompt keeps chapter text and question", {
   expect_match(out, "How warmly do you feel towards your outgroup\\?")
 })
 
+test_that("make_post_prompt_preview stores a cropped chapter preview", {
+  chapter_text <- paste0(strrep("A", 80), strrep("B", 80))
+
+  out <- nalanda:::make_post_prompt_preview(
+    chapter_text = chapter_text,
+    question_template = "How warmly do you feel towards your outgroup?",
+    groups = c("Democrat", "Republican"),
+    identity_label = "Democrat",
+    excerpt_chars = 40
+  )
+
+  expect_match(out, strrep("A", 20), fixed = TRUE)
+  expect_match(out, "\\[\\.\\.\\. chapter text cropped for storage \\.\\.\\.\\]")
+  expect_match(out, strrep("B", 20), fixed = TRUE)
+  expect_match(out, "How warmly do you feel towards your outgroup\\?")
+})
+
+test_that("summarize_chapter_scores tolerates missing chapter excerpt", {
+  x <- tibble::tibble(
+    book = c("Book A", "Book A"),
+    chapter = c("chapter_1", "chapter_1"),
+    pre_ingroup = c(60, 62),
+    post_ingroup = c(64, 66),
+    pre_outgroup = c(40, 42),
+    post_outgroup = c(48, 50),
+    pre_gap = c(20, 20),
+    post_gap = c(16, 16),
+    delta_outgroup = c(8, 8),
+    delta_ingroup = c(4, 4),
+    delta_gap = c(4, 4)
+  )
+
+  out <- summarize_chapter_scores(x)
+
+  expect_false("chapter_excerpt" %in% names(out))
+})
+
 test_that("summarize_chapter_scores computes chapter summaries and keeps attrs", {
   x <- tibble::tibble(
     book = c("Book A", "Book A", "Book A", "Book A"),
@@ -34,18 +71,23 @@ test_that("summarize_chapter_scores computes chapter summaries and keeps attrs",
     post_gap = c(16, 16, 11, 11),
     delta_outgroup = c(8, 8, 4, 4),
     delta_ingroup = c(4, 4, 2, 2),
-    delta_gap = c(4, 4, 2, 2),
-    chapter_excerpt = c("x", "x", "y", "y")
+    delta_gap = c(4, 4, 2, 2)
   )
   attr(x, "model") <- "test-model"
   attr(x, "temperature") <- 0
+  attr(x, "chapter_excerpts") <- tibble::tibble(
+    book = "Book A",
+    chapter = c("chapter_1", "chapter_2"),
+    chapter_excerpt = c("x", "y")
+  )
 
   out <- summarize_chapter_scores(x)
 
   expect_equal(nrow(out), 2)
   expect_true(all(
-    c("mean_delta_gap", "sd_delta_gap", "chapter_index") %in% names(out)
+    c("mean_delta_gap", "sd_delta_gap", "chapter_index", "chapter_excerpt") %in% names(out)
   ))
+  expect_equal(out$chapter_excerpt, c("x", "y"))
   expect_equal(attr(out, "model"), "test-model")
   expect_equal(attr(out, "temperature"), 0)
 })
@@ -70,7 +112,34 @@ test_that("summarize_chapter_scores supports book-level aggregation", {
 
   expect_equal(nrow(out), 1)
   expect_true(all(c("book", "mean_delta_gap", "sim") %in% names(out)))
-  expect_true(all(is.na(out$chapter_excerpt)))
+  expect_false("chapter_excerpt" %in% names(out))
+})
+
+test_that("compute_run_ai_metrics preserves chapter excerpt index", {
+  x <- tibble::tibble(
+    chapter = c("chapter_1", "chapter_1"),
+    sim = c(1, 1),
+    identity = c("Democrat", "Democrat"),
+    turn_type = c("baseline", "post"),
+    target_group = c(NA_character_, NA_character_),
+    rating = c(40, 45)
+  )
+  attr(x, "chapter_excerpts") <- tibble::tibble(
+    chapter = "chapter_1",
+    chapter_excerpt = "preview"
+  )
+
+  out <- compute_run_ai_metrics(x)
+
+  expect_equal(
+    attr(out, "chapter_excerpts"),
+    attr(x, "chapter_excerpts")
+  )
+})
+
+test_that("toy_sim_results is exported package data", {
+  expect_true("toy_sim_results" %in% getNamespaceExports("nalanda"))
+  expect_true(exists("toy_sim_results", envir = asNamespace("nalanda"), inherits = FALSE))
 })
 
 test_that("summarize_chapter_scores does not split by identity when by_party = FALSE", {

@@ -42,8 +42,8 @@
 #'   fully-qualified (does not start with `"@"`), nalanda will build
 #'   `"@{virtual_key}/{model}"`.
 #' @param base_url Character. Base URL for API calls.
-#' @param excerpt_chars Integer. Number of characters to keep as excerpt in
-#'   results.
+#' @param excerpt_chars Integer. Number of chapter characters to retain in the
+#'   stored post-prompt preview shown in results.
 #' @param include_tokens Logical. Return token counts if available (summed
 #'   across both turns).
 #' @param include_cost Logical. Return cost info if available (summed across
@@ -190,8 +190,7 @@ run_ai_on_chapters <- function(
 
   # --- Core simulation helper (closure over all params) ---
   run_simulate_chapter <- function(chapter_text, chapter_id, book = NULL) {
-    excerpt <- substr(chapter_text, 1, excerpt_chars)
-
+    chapter_excerpt <- chapter_text
     # Run one simulation for each identity assignment × n_simulations
     all_rows <- list()
 
@@ -260,14 +259,21 @@ run_ai_on_chapters <- function(
         )
 
         # --- Turn 2: Post-intervention ---
-        post_prompt <- make_post_prompt(
+        full_post_prompt <- make_post_prompt(
           chapter_text,
           question_text,
           groups,
           identity_label
         )
+        post_prompt <- make_post_prompt_preview(
+          chapter_text = chapter_text,
+          question_template = question_text,
+          groups = groups,
+          identity_label = identity_label,
+          excerpt_chars = excerpt_chars
+        )
         post_response <- chat$chat_structured(
-          post_prompt,
+          full_post_prompt,
           type = type_post
         )
 
@@ -278,8 +284,7 @@ run_ai_on_chapters <- function(
           identity = identity_label,
           party = baseline_response$party,
           baseline_prompt = baseline_prompt,
-          post_prompt = post_prompt,
-          chapter_excerpt = excerpt
+          post_prompt = post_prompt
         )
 
         if (per_group) {
@@ -397,7 +402,13 @@ run_ai_on_chapters <- function(
       out_tbl <- tibble::add_column(out_tbl, book = book, .before = 1)
     }
 
-    long_cols <- c("baseline_prompt", "post_prompt", "chapter_excerpt")
+    attr(out_tbl, "chapter_excerpts") <- tibble::tibble(
+      chapter = chapter_id,
+      chapter_excerpt = chapter_excerpt,
+      book = if (is.null(book)) NA_character_ else book
+    )
+
+    long_cols <- c("baseline_prompt", "post_prompt")
     present_long <- intersect(long_cols, names(out_tbl))
     if (length(present_long) > 0) {
       out_tbl <- out_tbl[, c(setdiff(names(out_tbl), present_long), present_long)]
@@ -432,6 +443,11 @@ run_ai_on_chapters <- function(
       # Set attributes on each book tibble so they survive individual saveRDS
       attr(book_tbl, "model") <- model
       attr(book_tbl, "temperature") <- temperature
+      attr(book_tbl, "chapter_excerpts") <- tibble::tibble(
+        book = book,
+        chapter = names(chapter_texts),
+        chapter_excerpt = unname(chapter_texts)
+      )
       book_tbl
     })
 
@@ -579,5 +595,50 @@ make_post_prompt <- function(
     "\n\n",
     "You have now just finished reading the book chapter. Now that this is done:\n",
     question_block
+  )
+}
+
+make_post_prompt_preview <- function(
+  chapter_text,
+  question_template,
+  groups,
+  identity_label,
+  excerpt_chars = 200
+) {
+  compact_chapter <- compact_chapter_text(
+    chapter_text,
+    excerpt_chars = excerpt_chars
+  )
+
+  make_post_prompt(
+    chapter_text = compact_chapter,
+    question_template = question_template,
+    groups = groups,
+    identity_label = identity_label
+  )
+}
+
+compact_chapter_text <- function(chapter_text, excerpt_chars = 200) {
+  if (!is.character(chapter_text) || length(chapter_text) != 1) {
+    stop("`chapter_text` must be a single character string.")
+  }
+
+  excerpt_chars <- as.integer(excerpt_chars[[1]])
+  if (is.na(excerpt_chars) || excerpt_chars < 1) {
+    stop("`excerpt_chars` must be a positive integer.")
+  }
+
+  n_chars <- nchar(chapter_text, type = "chars", allowNA = FALSE, keepNA = FALSE)
+  if (n_chars <= excerpt_chars) {
+    return(chapter_text)
+  }
+
+  head_chars <- max(1L, floor(excerpt_chars / 2))
+  tail_chars <- max(1L, excerpt_chars - head_chars)
+
+  paste0(
+    substr(chapter_text, 1, head_chars),
+    "\n\n[... chapter text cropped for storage ...]\n\n",
+    substr(chapter_text, n_chars - tail_chars + 1L, n_chars)
   )
 }

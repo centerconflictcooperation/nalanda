@@ -4,7 +4,6 @@
 #' number of simulations, means and SDs for core model outputs. In the current
 #' schema, this includes ingroup/outgroup pre-post ratings plus delta and gap
 #' metrics (for example delta_outgroup, delta_ingroup, and delta_gap).
-#' Retains a chapter excerpt at chapter level.
 #'
 #' @param x A data frame or list-like object containing simulation rows as
 #'   produced by run_ai_on_chapters(). Expected columns include chapter,
@@ -26,6 +25,7 @@ summarize_chapter_scores <- function(
   aggregate_level <- match.arg(aggregate_level)
   model <- attr(x, "model")
   temperature <- attr(x, "temperature")
+  chapter_excerpts <- chapter_excerpt_index(x)
 
   # Fallback: check first list element (covers lapply(files, readRDS) workflow)
   if (is.null(model) && is.list(x) && !inherits(x, "data.frame") &&
@@ -104,13 +104,18 @@ summarize_chapter_scores <- function(
       sd_delta_ingroup = stats::sd(.data$delta_ingroup, na.rm = TRUE),
       mean_delta_gap = mean(.data$delta_gap, na.rm = TRUE),
       sd_delta_gap = stats::sd(.data$delta_gap, na.rm = TRUE),
-      chapter_excerpt = if (aggregate_level == "chapter") {
-        dplyr::first(.data$chapter_excerpt)
-      } else {
-        NA_character_
-      },
       .groups = "drop"
     )
+
+  if (aggregate_level == "chapter" && nrow(chapter_excerpts) > 0) {
+    join_cols <- intersect(c("book", "chapter"), names(df))
+    excerpt_cols <- unique(c(join_cols, "chapter_excerpt"))
+    df <- dplyr::left_join(
+      df,
+      dplyr::select(chapter_excerpts, dplyr::all_of(excerpt_cols)),
+      by = join_cols
+    )
+  }
 
   # --- Add chapter ordering for chapter-level results ---
   if (aggregate_level == "chapter") {
@@ -135,6 +140,26 @@ summarize_chapter_scores <- function(
   attr(df, "model") <- model
   attr(df, "temperature") <- temperature
   df
+}
+
+chapter_excerpt_index <- function(x) {
+  index <- attr(x, "chapter_excerpts")
+  if (inherits(index, "data.frame")) {
+    return(tibble::as_tibble(index))
+  }
+
+  if (is.list(x) && !inherits(x, "data.frame")) {
+    collected <- Filter(
+      function(tbl) inherits(tbl, "data.frame") && nrow(tbl) > 0,
+      lapply(x, chapter_excerpt_index)
+    )
+    if (length(collected) == 0) {
+      return(tibble::tibble())
+    }
+    return(dplyr::bind_rows(collected))
+  }
+
+  tibble::tibble()
 }
 
 # helper to robustly flatten various nested formats produced by run_ai_on_chapters

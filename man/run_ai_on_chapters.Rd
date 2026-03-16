@@ -58,8 +58,8 @@ fully-qualified (does not start with \code{"@"}), nalanda will build
 
 \item{base_url}{Character. Base URL for API calls.}
 
-\item{excerpt_chars}{Integer. Number of characters to keep as excerpt in
-results.}
+\item{excerpt_chars}{Integer. Number of chapter characters to retain in the
+stored post-prompt preview shown in results.}
 
 \item{include_tokens}{Logical. Return token counts if available (summed
 across both turns).}
