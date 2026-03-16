@@ -39,8 +39,10 @@ plot_chapters_over_time(
 
 - chapters:
 
-  A data frame or list of simulation rows containing columns `book`,
-  `chapter`, and the desired `dv`.
+  A data frame or list of processed simulation rows, typically returned
+  by
+  [`compute_run_ai_metrics()`](https://centerconflictcooperation.github.io/nalanda/reference/compute_run_ai_metrics.md),
+  containing columns `book`, `chapter`, and the desired `dv`.
 
 - dv:
 

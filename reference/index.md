@@ -36,5 +36,7 @@
   : Save a forest plot to PNG and PDF formats
 - [`summarize_chapter_scores()`](https://centerconflictcooperation.github.io/nalanda/reference/summarize_chapter_scores.md)
   : Summarize simulated chapter scores
+- [`toy_run_ai_turns`](https://centerconflictcooperation.github.io/nalanda/reference/toy_run_ai_turns.md)
+  : Toy raw turn-level AI simulation output
 - [`toy_sim_results`](https://centerconflictcooperation.github.io/nalanda/reference/toy_sim_results.md)
   : Toy simulated chapter results
