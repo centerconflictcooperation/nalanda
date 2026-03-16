@@ -22,10 +22,13 @@ The **nalanda** package provides tools and utilities for analyzing research data
 ## Installation
 
 You can install the development version of nalanda from [GitHub](https://github.com/) with:
- 
-``` r
-# install.packages("pak")
-pak::pak("centerconflictcooperation/nalanda")
+
+```{r, eval=FALSE}
+install.packages(
+  'nalanda', repos = c(
+    'https://centerconflictcooperation.r-universe.dev', 
+    'https://cloud.r-project.org'))
+
 ```
 
 ## Example
