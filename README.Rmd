@@ -33,31 +33,43 @@ install.packages(
 
 ## Example workflow
 
-This example uses a small synthetic dataset so it renders quickly and does not require running live AI simulations.
+This example uses the bundled `toy_sim_results` dataset so it renders quickly and does not require running live AI simulations.
 
 ```{r}
 library(nalanda)
 
-summary_chapters <- summarize_chapter_scores(toy_sim_results)
+img_paths <- list(
+  Democrat = normalizePath("man/figures/dem.png"),
+  Republican = normalizePath("man/figures/rep.png")
+)
 
-summary_chapters[, c(
-  "book", "chapter", "sim",
-  "mean_post_outgroup", "mean_delta_gap"
-)]
+head(toy_sim_results[, c("book", "chapter", "sim", "party", "delta_gap")])
 ```
 
-Use the summarized output directly with the plotting helpers:
+Use the raw chapter-level results directly with the time-series plotting helper:
 
-```{r pressure, fig.cap="Synthetic chapter-level summary of post-reading outgroup scores."}
-plot_chapter_scores_faceted(
-  summary_chapters,
-  dv = "post_outgroup",
-  y_label = "Mean outgroup rating"
+```{r pressure, fig.cap="Synthetic chapter-level trajectories of affective polarization change by party.", fig.width=10, fig.height=7, out.width="100%"}
+plot_chapters_over_time(
+  chapters = toy_sim_results,
+  dv = "delta_gap",
+  group = "party",
+  y_label = "Affective Polarization (Delta Gap)",
+  plot_subtitle = "Bundled toy data: 2 simulations per party",
+  plot_title = TRUE,
+  error_bars = FALSE,
+  reverse_score = TRUE,
+  groups.order = "none",
+  facet = "book",
+  facets.order = "decreasing",
+  line_width = 1.2,
+  point_images = img_paths,
+  image_size = 0.09
 )
 ```
 
 The same workflow scales to:
 
+- summary tables via `summarize_chapter_scores()`
 - results returned by `run_ai_on_chapters()`
 - saved `.rds` simulation outputs
 - book-level summaries via `summarize_chapter_scores(..., aggregate_level = "book")`

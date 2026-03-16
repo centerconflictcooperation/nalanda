@@ -137,9 +137,14 @@ test_that("compute_run_ai_metrics preserves chapter excerpt index", {
   )
 })
 
-test_that("toy_sim_results is exported package data", {
-  expect_true("toy_sim_results" %in% getNamespaceExports("nalanda"))
-  expect_true(exists("toy_sim_results", envir = asNamespace("nalanda"), inherits = FALSE))
+test_that("toy_sim_results is available as package data", {
+  data_env <- new.env(parent = emptyenv())
+  utils::data("toy_sim_results", package = "nalanda", envir = data_env)
+
+  expect_true(exists("toy_sim_results", envir = data_env, inherits = FALSE))
+  expect_s3_class(data_env$toy_sim_results, "data.frame")
+  expect_equal(attr(data_env$toy_sim_results, "model"), "gemini-2.5-flash-lite")
+  expect_equal(attr(data_env$toy_sim_results, "temperature"), 0)
 })
 
 test_that("summarize_chapter_scores does not split by identity when by_party = FALSE", {

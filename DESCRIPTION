@@ -26,6 +26,7 @@ Suggests:
     DT,
     ggimage,
     ggtext,
+    gridtext,
     knitr,
     rmarkdown,
     Rmisc,

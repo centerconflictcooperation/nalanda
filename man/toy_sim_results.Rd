@@ -5,7 +5,7 @@
 \alias{toy_sim_results}
 \title{Toy simulated chapter results}
 \format{
-A tibble with 8 rows and 15 variables:
+A tibble with 32 rows and 15 variables:
 \describe{
 \item{book}{Book title.}
 \item{chapter}{Chapter identifier.}
@@ -34,6 +34,7 @@ toy_sim_results
 A small synthetic dataset that mimics the row-level structure returned by
 \code{\link[=run_ai_on_chapters]{run_ai_on_chapters()}}. It is intended for examples, documentation, and
 testing plotting and summarization workflows without running live AI
-simulations.
+simulations. The object also includes \code{model} and \code{temperature} attributes
+so plotting helpers can display realistic metadata in subtitles.
 }
 \keyword{datasets}

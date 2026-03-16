@@ -272,21 +272,23 @@ plot_chapters_over_time <- function(
   if (group %in% names(df_wide)) {
     group_levels <- tolower(levels(as.factor(df_wide[[group]])))
     if (all(group_levels %in% c("democrat", "republican"))) {
-      p <- p +
-        ggplot2::scale_colour_manual(
-          values = c("Democrat" = "#00AEF3", "Republican" = "#E81B23")
-        ) +
-        ggplot2::scale_shape_manual(
-          values = c("Democrat" = 21, "Republican" = 24)
-        ) +
-        ggplot2::theme(
-          panel.spacing = ggplot2::unit(1.2, "lines"),
-          axis.line = ggplot2::element_line(linewidth = 0.6),
-          axis.ticks = ggplot2::element_line(linewidth = 0.6),
-          strip.background = ggplot2::element_blank(),
-          strip.text = ggplot2::element_text(face = "plain")
-        ) +
-        ggplot2::labs(colour = NULL, shape = NULL, linetype = NULL)
+      p <- suppress_party_shape_scale_message(
+        p +
+          ggplot2::scale_colour_manual(
+            values = c("Democrat" = "#00AEF3", "Republican" = "#E81B23")
+          ) +
+          ggplot2::scale_shape_manual(
+            values = c("Democrat" = 21, "Republican" = 24)
+          ) +
+          ggplot2::theme(
+            panel.spacing = ggplot2::unit(1.2, "lines"),
+            axis.line = ggplot2::element_line(linewidth = 0.6),
+            axis.ticks = ggplot2::element_line(linewidth = 0.6),
+            strip.background = ggplot2::element_blank(),
+            strip.text = ggplot2::element_text(face = "plain")
+          ) +
+          ggplot2::labs(colour = NULL, shape = NULL, linetype = NULL)
+      )
     }
   }
   # Optional faceting
@@ -325,6 +327,18 @@ bind_simulation_results <- function(chapters) {
   } else {
     chapters
   }
+}
+
+suppress_party_shape_scale_message <- function(plot_object) {
+  withCallingHandlers(
+    plot_object,
+    message = function(m) {
+      msg <- conditionMessage(m)
+      if (grepl("^Scale for shape is already present\\.", msg)) {
+        invokeRestart("muffleMessage")
+      }
+    }
+  )
 }
 
 #' Replace point markers with images on a ggplot

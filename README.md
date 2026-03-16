@@ -25,49 +25,65 @@ install.packages(
 
 ## Example workflow
 
-This example uses a small synthetic dataset so it renders quickly and
-does not require running live AI simulations.
+This example uses the bundled `toy_sim_results` dataset so it renders
+quickly and does not require running live AI simulations.
 
 ``` r
 library(nalanda)
 
-summary_chapters <- summarize_chapter_scores(toy_sim_results)
+img_paths <- list(
+  Democrat = normalizePath("man/figures/dem.png"),
+  Republican = normalizePath("man/figures/rep.png")
+)
 
-summary_chapters[, c(
-  "book", "chapter", "sim",
-  "mean_post_outgroup", "mean_delta_gap"
-)]
-#> # A tibble: 4 × 5
-#>   book           chapter     sim mean_post_outgroup mean_delta_gap
-#>   <chr>          <chr>     <int>              <dbl>          <dbl>
-#> 1 Bridge Stories chapter_1     2               48             -7  
-#> 2 Bridge Stories chapter_2     2               51.5           -7.5
-#> 3 Common Ground  chapter_1     2               51.5           -4.5
-#> 4 Common Ground  chapter_2     2               55.5           -6
+head(toy_sim_results[, c("book", "chapter", "sim", "party", "delta_gap")])
+#>             book   chapter sim    party delta_gap
+#> 1 Bridge Stories chapter_1   1 Democrat        -3
+#> 2  Common Ground chapter_1   1 Democrat        -4
+#> 3 Bridge Stories chapter_2   1 Democrat        -6
+#> 4  Common Ground chapter_2   1 Democrat        -6
+#> 5 Bridge Stories chapter_3   1 Democrat        -9
+#> 6  Common Ground chapter_3   1 Democrat        -5
 ```
 
-Use the summarized output directly with the plotting helpers:
+Use the raw chapter-level results directly with the time-series plotting
+helper:
 
 ``` r
-plot_chapter_scores_faceted(
-  summary_chapters,
-  dv = "post_outgroup",
-  y_label = "Mean outgroup rating"
+plot_chapters_over_time(
+  chapters = toy_sim_results,
+  dv = "delta_gap",
+  group = "party",
+  y_label = "Affective Polarization (Delta Gap)",
+  plot_subtitle = "Bundled toy data: 2 simulations per party",
+  plot_title = TRUE,
+  error_bars = FALSE,
+  reverse_score = TRUE,
+  groups.order = "none",
+  facet = "book",
+  facets.order = "decreasing",
+  line_width = 1.2,
+  point_images = img_paths,
+  image_size = 0.09
 )
+#> Scale for shape is already present.
+#> Adding another scale for shape, which will replace the existing scale.
 ```
 
 <div class="figure">
 
-<img src="man/figures/README-pressure-1.png" alt="Synthetic chapter-level summary of post-reading outgroup scores." width="100%" />
+<img src="man/figures/README-pressure-1.png" alt="Synthetic chapter-level trajectories of affective polarization change by party." width="100%" />
 <p class="caption">
 
-Synthetic chapter-level summary of post-reading outgroup scores.
+Synthetic chapter-level trajectories of affective polarization change by
+party.
 </p>
 
 </div>
 
 The same workflow scales to:
 
+- summary tables via `summarize_chapter_scores()`
 - results returned by `run_ai_on_chapters()`
 - saved `.rds` simulation outputs
 - book-level summaries via
@@ -105,7 +121,7 @@ library(nalanda)
 
 # Get a random fact about Nalanda University
 nalanda()
-#> [1] "Xuanzang, the 7th-century Chinese monk and scholar, studied at Nalanda for several years and documented its curriculum."
+#> [1] "Nalanda remained an active center of learning for roughly 700 years until the 12th century."
 ```
 
 Learn more about related research on books, learning, and prosociality:
