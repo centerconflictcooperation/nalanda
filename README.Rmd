@@ -33,7 +33,29 @@ install.packages(
 
 ## Example workflow
 
-This example uses the bundled `toy_sim_results` dataset so it renders quickly and does not require running live AI simulations.
+The main workflow has three steps:
+
+1. run `run_ai_on_chapters()` to get raw turn-level output
+2. convert the raw turns to chapter-level metrics with `compute_run_ai_metrics()`
+3. summarize or plot the processed results
+
+This README uses bundled toy data so it renders quickly and does not require live API calls.
+
+```{r, eval=FALSE}
+library(nalanda)
+
+raw_turns <- run_ai_on_chapters(
+  book_texts = "A short chapter about people from different groups cooperating.",
+  groups = c("Democrat", "Republican"),
+  context_text = "You are simulating an American adult who politically identifies as a {identity}.",
+  question_text = "On a scale from 0 to 100, how warmly do you feel towards {group}s?",
+  n_simulations = 2,
+  temperature = 0,
+  model = "gemini-2.5-flash-lite"
+)
+
+chapter_results <- compute_run_ai_metrics(raw_turns)
+```
 
 ```{r}
 library(nalanda)
@@ -43,14 +65,16 @@ img_paths <- list(
   Republican = normalizePath("man/figures/rep.png")
 )
 
-head(toy_sim_results[, c("book", "chapter", "sim", "party", "delta_gap")])
+chapter_results <- compute_run_ai_metrics(toy_run_ai_turns)
+
+head(chapter_results[, c("book", "chapter", "sim", "party", "delta_gap")])
 ```
 
-Use the raw chapter-level results directly with the time-series plotting helper:
+Use the processed chapter-level results directly with the time-series plotting helper:
 
 ```{r pressure, fig.cap="Synthetic chapter-level trajectories of affective polarization change by party.", fig.width=10, fig.height=7, out.width="100%"}
 plot_chapters_over_time(
-  chapters = toy_sim_results,
+  chapters = chapter_results,
   dv = "delta_gap",
   group = "party",
   y_label = "Affective Polarization (Delta Gap)",
@@ -69,8 +93,8 @@ plot_chapters_over_time(
 
 The same workflow scales to:
 
+- raw turn-level output from `run_ai_on_chapters()` after processing with `compute_run_ai_metrics()`
 - summary tables via `summarize_chapter_scores()`
-- results returned by `run_ai_on_chapters()`
 - saved `.rds` simulation outputs
 - book-level summaries via `summarize_chapter_scores(..., aggregate_level = "book")`
 - visualization with `plot_chapter_trajectories()`, `plot_chapters_over_time()`, and `plot_forest_books()`

@@ -3,7 +3,9 @@
 #' Create a plot showing means over chapter timepoints using rempsyc::plot_means_over_time
 #' for the wide-format response variables.
 #'
-#' @param chapters A data frame or list of simulation rows containing columns `book`, `chapter`, and the desired `dv`.
+#' @param chapters A data frame or list of processed simulation rows, typically
+#'   returned by [compute_run_ai_metrics()], containing columns `book`,
+#'   `chapter`, and the desired `dv`.
 #' @param dv Character. Name of the column to plot as the dependent variable (default: "pre_post_outgroup_difference").
 #' @param group The group by which to plot the variable
 #' @param x_label Character. X-axis label.

@@ -25,8 +25,31 @@ install.packages(
 
 ## Example workflow
 
-This example uses the bundled `toy_sim_results` dataset so it renders
-quickly and does not require running live AI simulations.
+The main workflow has three steps:
+
+1.  run `run_ai_on_chapters()` to get raw turn-level output
+2.  convert the raw turns to chapter-level metrics with
+    `compute_run_ai_metrics()`
+3.  summarize or plot the processed results
+
+This README uses bundled toy data so it renders quickly and does not
+require live API calls.
+
+``` r
+library(nalanda)
+
+raw_turns <- run_ai_on_chapters(
+  book_texts = "A short chapter about people from different groups cooperating.",
+  groups = c("Democrat", "Republican"),
+  context_text = "You are simulating an American adult who politically identifies as a {identity}.",
+  question_text = "On a scale from 0 to 100, how warmly do you feel towards {group}s?",
+  n_simulations = 2,
+  temperature = 0,
+  model = "gemini-2.5-flash-lite"
+)
+
+chapter_results <- compute_run_ai_metrics(raw_turns)
+```
 
 ``` r
 library(nalanda)
@@ -36,22 +59,26 @@ img_paths <- list(
   Republican = normalizePath("man/figures/rep.png")
 )
 
-head(toy_sim_results[, c("book", "chapter", "sim", "party", "delta_gap")])
-#>             book   chapter sim    party delta_gap
-#> 1 Bridge Stories chapter_1   1 Democrat        -3
-#> 2  Common Ground chapter_1   1 Democrat        -4
-#> 3 Bridge Stories chapter_2   1 Democrat        -6
-#> 4  Common Ground chapter_2   1 Democrat        -6
-#> 5 Bridge Stories chapter_3   1 Democrat        -9
-#> 6  Common Ground chapter_3   1 Democrat        -5
+chapter_results <- compute_run_ai_metrics(toy_run_ai_turns)
+
+head(chapter_results[, c("book", "chapter", "sim", "party", "delta_gap")])
+#> # A tibble: 6 × 5
+#>   book           chapter     sim party      delta_gap
+#>   <chr>          <chr>     <int> <chr>          <dbl>
+#> 1 Bridge Stories chapter_1     1 Democrat         3  
+#> 2 Common Ground  chapter_1     1 Democrat         4  
+#> 3 Bridge Stories chapter_1     1 Republican      11  
+#> 4 Common Ground  chapter_1     1 Republican       5  
+#> 5 Bridge Stories chapter_1     2 Democrat         3.5
+#> 6 Common Ground  chapter_1     2 Democrat         4.5
 ```
 
-Use the raw chapter-level results directly with the time-series plotting
-helper:
+Use the processed chapter-level results directly with the time-series
+plotting helper:
 
 ``` r
 plot_chapters_over_time(
-  chapters = toy_sim_results,
+  chapters = chapter_results,
   dv = "delta_gap",
   group = "party",
   y_label = "Affective Polarization (Delta Gap)",
@@ -66,8 +93,6 @@ plot_chapters_over_time(
   point_images = img_paths,
   image_size = 0.09
 )
-#> Scale for shape is already present.
-#> Adding another scale for shape, which will replace the existing scale.
 ```
 
 <div class="figure">
@@ -83,8 +108,9 @@ party.
 
 The same workflow scales to:
 
+- raw turn-level output from `run_ai_on_chapters()` after processing
+  with `compute_run_ai_metrics()`
 - summary tables via `summarize_chapter_scores()`
-- results returned by `run_ai_on_chapters()`
 - saved `.rds` simulation outputs
 - book-level summaries via
   `summarize_chapter_scores(..., aggregate_level = "book")`
@@ -121,7 +147,7 @@ library(nalanda)
 
 # Get a random fact about Nalanda University
 nalanda()
-#> [1] "Nalanda remained an active center of learning for roughly 700 years until the 12th century."
+#> [1] "Nalanda was one of the world's first residential universities, hosting thousands of students and teachers."
 ```
 
 Learn more about related research on books, learning, and prosociality:

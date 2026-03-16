@@ -62,6 +62,79 @@ toy_sim_results <- tibble::as_tibble(toy_sim_results) |>
 
 attr(toy_sim_results, "model") <- "gemini-2.5-flash-lite"
 attr(toy_sim_results, "temperature") <- 0
+attr(toy_sim_results, "out.attrs") <- NULL
+
+other_party <- function(x) ifelse(x == "Democrat", "Republican", "Democrat")
+
+toy_run_ai_turns <- dplyr::bind_rows(
+  toy_sim_results |>
+    dplyr::transmute(
+      book, chapter, sim, identity, party,
+      turn_index = 1L,
+      turn_type = "baseline",
+      target_group = identity,
+      rating = pre_ingroup,
+      baseline_prompt = paste0(
+        "You are simulating an American adult who politically identifies as a ",
+        identity,
+        ". How warmly do you feel towards ", identity,
+        "s? How warmly do you feel towards ", other_party(identity), "s?"
+      ),
+      post_prompt = paste0("Chapter text preview: ", chapter_excerpt)
+    ),
+  toy_sim_results |>
+    dplyr::transmute(
+      book, chapter, sim, identity, party,
+      turn_index = 1L,
+      turn_type = "baseline",
+      target_group = other_party(identity),
+      rating = pre_outgroup,
+      baseline_prompt = paste0(
+        "You are simulating an American adult who politically identifies as a ",
+        identity,
+        ". How warmly do you feel towards ", identity,
+        "s? How warmly do you feel towards ", other_party(identity), "s?"
+      ),
+      post_prompt = paste0("Chapter text preview: ", chapter_excerpt)
+    ),
+  toy_sim_results |>
+    dplyr::transmute(
+      book, chapter, sim, identity, party,
+      turn_index = 2L,
+      turn_type = "post",
+      target_group = identity,
+      rating = post_ingroup,
+      baseline_prompt = paste0(
+        "You are simulating an American adult who politically identifies as a ",
+        identity,
+        ". How warmly do you feel towards ", identity,
+        "s? How warmly do you feel towards ", other_party(identity), "s?"
+      ),
+      post_prompt = paste0("Chapter text preview: ", chapter_excerpt)
+    ),
+  toy_sim_results |>
+    dplyr::transmute(
+      book, chapter, sim, identity, party,
+      turn_index = 2L,
+      turn_type = "post",
+      target_group = other_party(identity),
+      rating = post_outgroup,
+      baseline_prompt = paste0(
+        "You are simulating an American adult who politically identifies as a ",
+        identity,
+        ". How warmly do you feel towards ", identity,
+        "s? How warmly do you feel towards ", other_party(identity), "s?"
+      ),
+      post_prompt = paste0("Chapter text preview: ", chapter_excerpt)
+    )
+) |>
+  dplyr::arrange(book, chapter, sim, identity, turn_index, target_group)
+
+attr(toy_run_ai_turns, "model") <- "gemini-2.5-flash-lite"
+attr(toy_run_ai_turns, "temperature") <- 0
+attr(toy_run_ai_turns, "chapter_excerpts") <- toy_sim_results |>
+  dplyr::distinct(book, chapter, chapter_excerpt)
 
 dir.create("data", showWarnings = FALSE)
+save(toy_run_ai_turns, file = "data/toy_run_ai_turns.rda", compress = "bzip2")
 save(toy_sim_results, file = "data/toy_sim_results.rda", compress = "bzip2")
