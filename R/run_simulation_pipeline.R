@@ -14,16 +14,11 @@ run_simulation_pipeline <- function(
   include_tokens,
   include_cost,
   executor,
+  require_groups = TRUE,
   ...
 ) {
-  if (missing(groups) || length(groups) < 2) {
-    stop("`groups` must be a character vector with at least 2 group labels.")
-  }
   if (missing(question_text) || length(question_text) != 1) {
     stop("`question_text` must be a single character string.")
-  }
-  if (missing(context_text)) {
-    stop("Please provide `context_text`.")
   }
   if (n_simulations < 1) {
     stop("`n_simulations` must be >= 1.")
@@ -31,9 +26,22 @@ run_simulation_pipeline <- function(
   if (identical(model, "")) {
     stop("`model` must be a non-empty string.")
   }
-  per_group <- grepl("\\{group\\}", question_text)
+  if (missing(groups) || is.null(groups) || length(groups) == 0) {
+    if (isTRUE(require_groups)) {
+      stop("`groups` must be a character vector with at least 2 group labels.")
+    }
+    groups <- NA_character_
+  }
+  if (isTRUE(require_groups) && length(groups) < 2) {
+    stop("`groups` must be a character vector with at least 2 group labels.")
+  }
 
-  if (length(context_text) == 1 && grepl("\\{identity\\}", context_text)) {
+  per_group <- grepl("\\{group\\}", question_text) && !all(is.na(groups))
+
+  if (missing(context_text) || is.null(context_text)) {
+    context_text <- rep("", length(groups))
+  }
+  if (length(context_text) == 1 && grepl("\\{identity\\}", context_text) && !all(is.na(groups))) {
     context_text <- vapply(
       groups,
       function(g) {
@@ -42,6 +50,8 @@ run_simulation_pipeline <- function(
       character(1),
       USE.NAMES = FALSE
     )
+  } else if (length(context_text) == 1 && length(groups) > 1) {
+    context_text <- rep(context_text, length(groups))
   }
   if (length(context_text) != length(groups)) {
     stop(
@@ -199,4 +209,111 @@ new_portkey_chat <- function(model, base_url, temperature, seed) {
       stop(e)
     }
   )
+}
+
+group_keys_from_groups <- function(groups) {
+  tolower(gsub(" ", "_", groups))
+}
+
+build_structured_type <- function(groups, include_party = TRUE) {
+  group_keys <- group_keys_from_groups(groups)
+  fields <- list()
+  if (isTRUE(include_party)) {
+    fields$party <- ellmer::type_string()
+  }
+  for (gk in group_keys) {
+    fields[[paste0("rating_", gk)]] <- ellmer::type_number()
+  }
+  do.call(ellmer::type_object, fields)
+}
+
+build_single_rating_type <- function(include_party = TRUE) {
+  if (isTRUE(include_party)) {
+    return(ellmer::type_object(
+      party = ellmer::type_string(),
+      rating = ellmer::type_number()
+    ))
+  }
+
+  ellmer::type_object(rating = ellmer::type_number())
+}
+
+build_turn_types <- function(per_group, groups, include_party_first = TRUE) {
+  if (isTRUE(per_group)) {
+    return(list(
+      first = build_structured_type(groups, include_party = include_party_first),
+      second = build_structured_type(groups, include_party = FALSE)
+    ))
+  }
+
+  list(
+    first = build_single_rating_type(include_party = include_party_first),
+    second = build_single_rating_type(include_party = FALSE)
+  )
+}
+
+format_progress_label <- function(book, chapter, identity, sim) {
+  if (!is.na(book) && nzchar(book)) {
+    paste0(book, " - ", chapter, " [", identity, "] (sim ", sim, ")")
+  } else {
+    paste0(chapter, " [", identity, "] (sim ", sim, ")")
+  }
+}
+
+make_result_base_fields <- function(book, chapter, sim, identity, party, extra = list()) {
+  fields <- c(
+    list(
+      chapter = chapter,
+      sim = sim,
+      identity = identity,
+      party = party
+    ),
+    extra
+  )
+
+  if (!is.na(book) && nzchar(book)) {
+    fields <- c(list(book = book), fields)
+  }
+
+  fields
+}
+
+attach_usage_fields <- function(row, response, include_tokens, include_cost) {
+  if (isTRUE(include_tokens) && !is.null(response$input_tokens)) {
+    row$input_tokens <- response$input_tokens
+  }
+  if (isTRUE(include_cost) && !is.null(response$cost)) {
+    row$cost <- response$cost
+  }
+  row
+}
+
+finalize_simulation_output <- function(out_rows, long_cols, chapter_jobs) {
+  out_tbl <- tibble::as_tibble(do.call(
+    rbind.data.frame,
+    lapply(out_rows, function(r) as.data.frame(r, stringsAsFactors = FALSE))
+  ))
+
+  present_long <- intersect(long_cols, names(out_tbl))
+  if (length(present_long) > 0) {
+    out_tbl <- out_tbl[, c(setdiff(names(out_tbl), present_long), present_long)]
+  }
+
+  chapter_excerpts <- chapter_jobs_to_excerpt_index(chapter_jobs)
+
+  if (all(is.na(chapter_jobs$book))) {
+    out <- out_tbl
+  } else {
+    out <- split(out_tbl, out_tbl$book)
+    out <- lapply(out, tibble::as_tibble)
+    for (book_name in names(out)) {
+      attr(out[[book_name]], "chapter_excerpts") <- dplyr::filter(
+        chapter_excerpts,
+        .data$book == book_name
+      )
+    }
+  }
+
+  attr(out, "chapter_excerpts") <- chapter_excerpts
+  out
 }

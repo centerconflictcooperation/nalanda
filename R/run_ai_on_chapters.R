@@ -115,43 +115,6 @@ run_ai_on_chapters <- function(
   integration <- route$integration
   virtual_key <- route$virtual_key
 
-  # --- Input validation ---
-  if (missing(groups) || length(groups) < 2) {
-    stop("`groups` must be a character vector with at least 2 group labels.")
-  }
-  if (missing(question_text) || length(question_text) != 1) {
-    stop("`question_text` must be a single character string.")
-  }
-
-  # Detect mode: per-group (question asked per group) vs single-question
-  per_group <- grepl("\\{group\\}", question_text)
-  if (missing(context_text)) {
-    stop("Please provide `context_text`.")
-  }
-  if (n_simulations < 1) {
-    stop("`n_simulations` must be >= 1.")
-  }
-
-  # --- Expand context_text from template if scalar ---
-  if (length(context_text) == 1 && grepl("\\{identity\\}", context_text)) {
-    context_text <- vapply(
-      groups,
-      function(g) {
-        gsub("\\{identity\\}", g, context_text)
-      },
-      character(1),
-      USE.NAMES = FALSE
-    )
-  }
-  if (length(context_text) != length(groups)) {
-    stop(
-      "`context_text` must be either a scalar template with `{identity}` or ",
-      "a vector of length equal to `length(groups)` (",
-      length(groups),
-      ")."
-    )
-  }
-
   if (is.list(book_texts)) {
     book_names <- names(book_texts)
     for (i in seq_along(book_texts)) {
@@ -165,127 +128,84 @@ run_ai_on_chapters <- function(
     }
   }
 
-  # --- Calculate total steps for progress bar ---
-  total_chapters <- 0
-  if (is.character(book_texts)) {
-    total_chapters <- 1
-  } else if (is.list(book_texts)) {
-    total_chapters <- sum(vapply(book_texts, length, integer(1)))
-  }
-
-  total_steps <- total_chapters * n_simulations * length(groups)
-
-  pb <- progress::progress_bar$new(
-    format = "  running [:bar] :percent eta: :eta :what",
-    total = total_steps,
-    clear = FALSE,
-    width = 60
+  out <- run_simulation_pipeline(
+    book_texts = book_texts,
+    groups = groups,
+    context_text = context_text,
+    question_text = question_text,
+    n_simulations = n_simulations,
+    temperature = temperature,
+    seed = seed,
+    model = model,
+    integration = integration,
+    virtual_key = virtual_key,
+    base_url = base_url,
+    excerpt_chars = excerpt_chars,
+    include_tokens = include_tokens,
+    include_cost = include_cost,
+    executor = execute_two_turn_pipeline
   )
 
-  # --- Resolve model name ---
-  if (identical(model, "")) {
-    stop("`model` must be a non-empty string.")
-  }
-  if (!startsWith(model, "@")) {
-    prefix <- NULL
-    if (!is.null(integration) && nzchar(integration)) {
-      prefix <- integration
-    } else if (!is.null(virtual_key) && nzchar(virtual_key)) {
-      prefix <- virtual_key
-    }
-    if (!is.null(prefix)) {
-      model <- paste0("@", prefix, "/", model)
+  if (is.list(out) && !inherits(out, "data.frame")) {
+    for (nm in names(out)) {
+      attr(out[[nm]], "model") <- normalize_model_name(attr(out[[nm]], "model"))
     }
   }
+  attr(out, "model") <- normalize_model_name(attr(out, "model"))
+  out
+}
 
-  # --- Normalise group labels for structured field names ---
-  group_keys <- tolower(gsub(" ", "_", groups))
+execute_two_turn_pipeline <- function(
+  chapter_jobs,
+  groups,
+  context_text,
+  per_group,
+  question_text,
+  n_simulations,
+  temperature,
+  seed,
+  model,
+  base_url,
+  excerpt_chars,
+  include_tokens,
+  include_cost,
+  pb
+) {
+  group_keys <- group_keys_from_groups(groups)
+  turn_types <- build_turn_types(
+    per_group = per_group,
+    groups = groups,
+    include_party_first = TRUE
+  )
+  type_baseline <- turn_types$first
+  type_post <- turn_types$second
 
-  # --- Build dynamic structured schemas from groups ---
-  if (per_group) {
-    # Per-group mode: one rating field per group
-    baseline_fields <- list(party = ellmer::type_string())
-    for (gk in group_keys) {
-      baseline_fields[[paste0("rating_", gk)]] <- ellmer::type_number()
-    }
-    type_baseline <- do.call(ellmer::type_object, baseline_fields)
+  all_rows <- list()
+  all_row_i <- 0L
 
-    post_fields <- list()
-    for (gk in group_keys) {
-      post_fields[[paste0("rating_", gk)]] <- ellmer::type_number()
-    }
-    type_post <- do.call(ellmer::type_object, post_fields)
-  } else {
-    # Single-question mode: one rating field
-    type_baseline <- ellmer::type_object(
-      party = ellmer::type_string(),
-      rating = ellmer::type_number()
-    )
-    type_post <- ellmer::type_object(
-      rating = ellmer::type_number()
-    )
-  }
-
-  # --- Core simulation helper (closure over all params) ---
-  run_simulate_chapter <- function(chapter_text, chapter_id, book = NULL) {
-    chapter_excerpt <- chapter_text
-    # Run one simulation for each identity assignment × n_simulations
-    all_rows <- list()
+  for (chapter_i in seq_len(nrow(chapter_jobs))) {
+    chapter_job <- chapter_jobs[chapter_i, , drop = FALSE]
 
     for (id_idx in seq_along(groups)) {
-      identity_label <- groups[id_idx]
-      identity_context <- context_text[id_idx]
+      identity_label <- groups[[id_idx]]
+      identity_context <- context_text[[id_idx]]
 
       for (k in seq_len(n_simulations)) {
-        # Progress bar
-        what_text <- if (!is.null(book)) {
-          paste0(
-            book,
-            " - ",
-            chapter_id,
-            " [",
-            identity_label,
-            "] (sim ",
-            k,
-            ")"
-          )
-        } else {
-          paste0(chapter_id, " [", identity_label, "] (sim ", k, ")")
-        }
+        what_text <- format_progress_label(
+          book = chapter_job$book[[1]],
+          chapter = chapter_job$chapter[[1]],
+          identity = identity_label,
+          sim = k
+        )
         pb$tick(tokens = list(what = what_text))
 
-        # Fresh chat instance per simulation
-        chat <- tryCatch(
-          ellmer::chat_portkey(
-            model = model,
-            base_url = base_url,
-            params = ellmer::params(
-              temperature = temperature,
-              seed = seed + k - 1
-            ),
-            api_args = list(temperature = temperature, seed = seed + k - 1)
-          ),
-          error = function(e) {
-            msg <- conditionMessage(e)
-            if (grepl("PORTKEY_VIRTUAL_KEY", msg, fixed = TRUE)) {
-              stop(
-                "Please provide `integration` (or set ",
-                "`options(nalanda.integration=...)`). ",
-                "If you are still using the older NYU setup, `virtual_key` ",
-                "and `options(nalanda.virtual_key=...)` are also supported. ",
-                "Your installed `ellmer` expects `PORTKEY_VIRTUAL_KEY` when ",
-                "`model` is not fully-qualified. ",
-                "Alternative: use a fully-qualified model string in ",
-                "`model` (e.g., '@provider/model') or update ",
-                "`ellmer`.",
-                call. = FALSE
-              )
-            }
-            stop(e)
-          }
+        chat <- new_portkey_chat(
+          model = model,
+          base_url = base_url,
+          temperature = temperature,
+          seed = seed + k - 1L
         )
 
-        # --- Turn 1: Baseline ---
         baseline_prompt <- make_baseline_prompt(
           identity_context,
           question_text,
@@ -297,15 +217,14 @@ run_ai_on_chapters <- function(
           type = type_baseline
         )
 
-        # --- Turn 2: Post-intervention ---
         full_post_prompt <- make_post_prompt(
-          chapter_text,
+          chapter_job$chapter_text[[1]],
           question_text,
           groups,
           identity_label
         )
         post_prompt <- make_post_prompt_preview(
-          chapter_text = chapter_text,
+          chapter_text = chapter_job$chapter_text[[1]],
           question_template = question_text,
           groups = groups,
           identity_label = identity_label,
@@ -316,70 +235,48 @@ run_ai_on_chapters <- function(
           type = type_post
         )
 
-        # --- Assemble long-format raw rows ---
-        base_fields <- list(
-          chapter = chapter_id,
+        base_fields <- make_result_base_fields(
+          book = chapter_job$book[[1]],
+          chapter = chapter_job$chapter[[1]],
           sim = k,
           identity = identity_label,
           party = baseline_response$party,
-          baseline_prompt = baseline_prompt,
-          post_prompt = post_prompt
+          extra = list(
+            baseline_prompt = baseline_prompt,
+            post_prompt = post_prompt
+          )
         )
 
         if (per_group) {
           for (g_idx in seq_along(groups)) {
-            g <- groups[[g_idx]]
-            gk <- group_keys[[g_idx]]
-            field <- paste0("rating_", gk)
+            field <- paste0("rating_", group_keys[[g_idx]])
 
-            row_pre <- c(
+            row_pre <- attach_usage_fields(c(
               base_fields,
               list(
                 turn_index = 1L,
                 turn_type = "baseline",
-                target_group = g,
+                target_group = groups[[g_idx]],
                 rating = baseline_response[[field]]
               )
-            )
-            row_post <- c(
+            ), baseline_response, include_tokens, include_cost)
+            row_post <- attach_usage_fields(c(
               base_fields,
               list(
                 turn_index = 2L,
                 turn_type = "post",
-                target_group = g,
+                target_group = groups[[g_idx]],
                 rating = post_response[[field]]
               )
-            )
+            ), post_response, include_tokens, include_cost)
 
-            if (include_tokens) {
-              row_pre$input_tokens <- if (!is.null(baseline_response$input_tokens)) {
-                baseline_response$input_tokens
-              } else {
-                NA_real_
-              }
-              row_post$input_tokens <- if (!is.null(post_response$input_tokens)) {
-                post_response$input_tokens
-              } else {
-                NA_real_
-              }
-            }
-            if (include_cost) {
-              row_pre$cost <- if (!is.null(baseline_response$cost)) {
-                baseline_response$cost
-              } else {
-                NA_real_
-              }
-              row_post$cost <- if (!is.null(post_response$cost)) {
-                post_response$cost
-              } else {
-                NA_real_
-              }
-            }
-
-            all_rows <- c(all_rows, list(row_pre, row_post))
+            all_row_i <- all_row_i + 1L
+            all_rows[[all_row_i]] <- row_pre
+            all_row_i <- all_row_i + 1L
+            all_rows[[all_row_i]] <- row_post
           }
         } else {
-          row_pre <- c(
+          row_pre <- attach_usage_fields(c(
             base_fields,
             list(
               turn_index = 1L,
@@ -387,8 +284,8 @@ run_ai_on_chapters <- function(
               target_group = NA_character_,
               rating = baseline_response$rating
             )
-          )
-          row_post <- c(
+          ), baseline_response, include_tokens, include_cost)
+          row_post <- attach_usage_fields(c(
             base_fields,
             list(
               turn_index = 2L,
@@ -396,120 +293,23 @@ run_ai_on_chapters <- function(
               target_group = NA_character_,
               rating = post_response$rating
             )
-          )
+          ), post_response, include_tokens, include_cost)
 
-          if (include_tokens) {
-            row_pre$input_tokens <- if (!is.null(baseline_response$input_tokens)) {
-              baseline_response$input_tokens
-            } else {
-              NA_real_
-            }
-            row_post$input_tokens <- if (!is.null(post_response$input_tokens)) {
-              post_response$input_tokens
-            } else {
-              NA_real_
-            }
-          }
-          if (include_cost) {
-            row_pre$cost <- if (!is.null(baseline_response$cost)) {
-              baseline_response$cost
-            } else {
-              NA_real_
-            }
-            row_post$cost <- if (!is.null(post_response$cost)) {
-              post_response$cost
-            } else {
-              NA_real_
-            }
-          }
-
-          all_rows <- c(all_rows, list(row_pre, row_post))
+          all_row_i <- all_row_i + 1L
+          all_rows[[all_row_i]] <- row_pre
+          all_row_i <- all_row_i + 1L
+          all_rows[[all_row_i]] <- row_post
         }
       }
     }
-
-    # Convert list of rows to tibble
-    out_tbl <- tibble::as_tibble(do.call(
-      rbind.data.frame,
-      lapply(
-        all_rows,
-        function(r) as.data.frame(r, stringsAsFactors = FALSE)
-      )
-    ))
-
-    if (!is.null(book)) {
-      out_tbl <- tibble::add_column(out_tbl, book = book, .before = 1)
-    }
-
-    attr(out_tbl, "chapter_excerpts") <- tibble::tibble(
-      chapter = chapter_id,
-      chapter_excerpt = chapter_excerpt,
-      book = if (is.null(book)) NA_character_ else book
-    )
-
-    long_cols <- c("baseline_prompt", "post_prompt")
-    present_long <- intersect(long_cols, names(out_tbl))
-    if (length(present_long) > 0) {
-      out_tbl <- out_tbl[, c(setdiff(names(out_tbl), present_long), present_long)]
-    }
-
-    out_tbl
   }
 
-  # --- Dispatch based on book_texts type ---
-  if (is.character(book_texts) && length(book_texts) == 1) {
-    chapter_text <- book_texts[[1]]
-    chapter_id <- if (!is.null(names(book_texts))) {
-      names(book_texts)[1]
-    } else {
-      "chapter_1"
-    }
-    out <- run_simulate_chapter(chapter_text, chapter_id)
-  } else if (is.list(book_texts)) {
-    book_names <- names(book_texts)
-    out_list <- purrr::map(seq_along(book_texts), function(i) {
-      book <- if (is.null(book_names)) paste0("book_", i) else book_names[[i]]
-      chapter_texts <- unlist(book_texts[[i]], use.names = TRUE)
-
-      book_tbl <- purrr::map_dfr(seq_along(chapter_texts), function(j) {
-        run_simulate_chapter(
-          chapter_text = chapter_texts[[j]],
-          chapter_id = names(chapter_texts)[j],
-          book = book
-        )
-      })
-
-      # Set attributes on each book tibble so they survive individual saveRDS
-      attr(book_tbl, "model") <- normalize_model_name(model)
-      attr(book_tbl, "temperature") <- temperature
-      attr(book_tbl, "n_simulations") <- n_simulations
-      attr(book_tbl, "chapter_excerpts") <- tibble::tibble(
-        book = book,
-        chapter = names(chapter_texts),
-        chapter_excerpt = unname(chapter_texts)
-      )
-      book_tbl
-    })
-
-    if (!is.null(book_names)) {
-      names(out_list) <- book_names
-    }
-    out <- out_list
-  } else {
-    stop(
-      "`book_texts` must be either a single chapter text or ",
-      "a nested list like `read_book_texts()`."
-    )
-  }
-
-  class(out) <- c(class(out), "nalanda")
-  attr(out, "model") <- normalize_model_name(model)
-  attr(out, "temperature") <- temperature
-  attr(out, "n_simulations") <- n_simulations
-  out
+  finalize_simulation_output(
+    out_rows = all_rows,
+    long_cols = c("baseline_prompt", "post_prompt"),
+    chapter_jobs = chapter_jobs
+  )
 }
-
-# --- Prompt builders ---
 
 #' Build the baseline (Turn 1) prompt
 #'
@@ -551,11 +351,7 @@ make_baseline_prompt <- function(
   identity_label
 ) {
   if (grepl("\\{group\\}", question_template)) {
-    # Per-group mode: ingroup first, then outgroups
-    ordered_groups <- c(
-      identity_label,
-      setdiff(groups, identity_label)
-    )
+    ordered_groups <- c(identity_label, setdiff(groups, identity_label))
     question_block <- paste(
       vapply(
         ordered_groups,
@@ -566,7 +362,6 @@ make_baseline_prompt <- function(
       collapse = " "
     )
   } else {
-    # Single-question mode
     question_block <- question_template
   }
 
@@ -611,11 +406,7 @@ make_post_prompt <- function(
   identity_label
 ) {
   if (grepl("\\{group\\}", question_template)) {
-    # Per-group mode: ingroup first, then outgroups
-    ordered_groups <- c(
-      identity_label,
-      setdiff(groups, identity_label)
-    )
+    ordered_groups <- c(identity_label, setdiff(groups, identity_label))
     question_block <- paste(
       vapply(
         ordered_groups,
@@ -626,7 +417,6 @@ make_post_prompt <- function(
       collapse = " "
     )
   } else {
-    # Single-question mode
     question_block <- question_template
   }
 

@@ -388,6 +388,31 @@ test_that("compute_run_ai_metrics_one_turn handles single-question mode", {
   expect_true(all(is.na(out$gap)))
 })
 
+test_that("build_simulate_treatment_prompt interpolates intervention text and identity", {
+  out <- nalanda:::build_simulate_treatment_prompt(
+    prompt_template = "Read this:\n{intervention_text}\nScore it as {identity}.",
+    intervention_text = "BOOK TEXT",
+    identity_context = "You are a Democrat.",
+    identity_label = "Democrat"
+  )
+
+  expect_match(out, "You are a Democrat\\.")
+  expect_match(out, "BOOK TEXT")
+  expect_match(out, "Democrat")
+})
+
+test_that("build_simulate_treatment_prompt works without identity", {
+  out <- nalanda:::build_simulate_treatment_prompt(
+    prompt_template = "Read this:\n{intervention_text}\nScore it.",
+    intervention_text = "BOOK TEXT",
+    identity_context = "",
+    identity_label = NA_character_
+  )
+
+  expect_match(out, "BOOK TEXT")
+  expect_false(grepl("\\{identity\\}|\\{group\\}", out))
+})
+
 test_that("toy_sim_results is available as package data", {
   data_env <- new.env(parent = emptyenv())
   utils::data("toy_sim_results", package = "nalanda", envir = data_env)

@@ -117,18 +117,11 @@ execute_one_turn_pipeline <- function(
   max_active,
   rpm
 ) {
-  group_keys <- tolower(gsub(" ", "_", groups))
-  if (per_group) {
-    response_fields <- list(party = ellmer::type_string())
-    for (gk in group_keys) {
-      response_fields[[paste0("rating_", gk)]] <- ellmer::type_number()
-    }
-    type_response <- do.call(ellmer::type_object, response_fields)
+  group_keys <- group_keys_from_groups(groups)
+  type_response <- if (isTRUE(per_group)) {
+    build_structured_type(groups, include_party = TRUE)
   } else {
-    type_response <- ellmer::type_object(
-      party = ellmer::type_string(),
-      rating = ellmer::type_number()
-    )
+    build_single_rating_type(include_party = TRUE)
   }
 
   all_rows <- list()
@@ -206,71 +199,50 @@ execute_one_turn_pipeline <- function(
     for (i in seq_along(prompt_jobs)) {
       meta <- prompt_jobs[[i]]
       response <- response_list[[i]]
-      what_text <- if (!is.na(meta$book) && nzchar(meta$book)) {
-        paste0(
-          meta$book,
-          " - ",
-          meta$chapter,
-          " [",
-          meta$identity,
-          "] (sim ",
-          meta$sim,
-          ")"
-        )
-      } else {
-        paste0(meta$chapter, " [", meta$identity, "] (sim ", meta$sim, ")")
-      }
+      what_text <- format_progress_label(
+        book = meta$book,
+        chapter = meta$chapter,
+        identity = meta$identity,
+        sim = meta$sim
+      )
       pb$tick(tokens = list(what = what_text))
 
-      base_fields <- list(
+      base_fields <- make_result_base_fields(
+        book = meta$book,
         chapter = meta$chapter,
         sim = meta$sim,
         identity = meta$identity,
         party = response$party,
-        turn_index = 1L,
-        turn_type = "single",
-        prompt = meta$prompt
+        extra = list(
+          turn_index = 1L,
+          turn_type = "single",
+          prompt = meta$prompt
+        )
       )
-
-      if (!is.na(meta$book) && nzchar(meta$book)) {
-        base_fields <- c(list(book = meta$book), base_fields)
-      }
 
       if (per_group) {
         for (g_idx in seq_along(groups)) {
           g <- groups[[g_idx]]
           field <- paste0("rating_", group_keys[[g_idx]])
-          row <- c(
+          row <- attach_usage_fields(c(
             base_fields,
             list(
               target_group = g,
               rating = response[[field]]
             )
-          )
-          if (include_tokens && !is.null(response$input_tokens)) {
-            row$input_tokens <- response$input_tokens
-          }
-          if (include_cost && !is.null(response$cost)) {
-            row$cost <- response$cost
-          }
+          ), response, include_tokens, include_cost)
 
           all_row_i <- all_row_i + 1L
           all_rows[[all_row_i]] <- row
         }
       } else {
-        row <- c(
+        row <- attach_usage_fields(c(
           base_fields,
           list(
             target_group = NA_character_,
             rating = response$rating
           )
-        )
-        if (include_tokens && !is.null(response$input_tokens)) {
-          row$input_tokens <- response$input_tokens
-        }
-        if (include_cost && !is.null(response$cost)) {
-          row$cost <- response$cost
-        }
+        ), response, include_tokens, include_cost)
 
         all_row_i <- all_row_i + 1L
         all_rows[[all_row_i]] <- row
@@ -278,37 +250,11 @@ execute_one_turn_pipeline <- function(
     }
   }
 
-  out_tbl <- tibble::as_tibble(do.call(
-    rbind.data.frame,
-    lapply(
-      all_rows,
-      function(r) as.data.frame(r, stringsAsFactors = FALSE)
-    )
-  ))
-
-  long_cols <- intersect("prompt", names(out_tbl))
-  if (length(long_cols) > 0) {
-    out_tbl <- out_tbl[, c(setdiff(names(out_tbl), long_cols), long_cols)]
-  }
-
-  chapter_excerpts <- chapter_jobs_to_excerpt_index(chapter_jobs)
-
-  if (all(is.na(chapter_jobs$book))) {
-    out <- out_tbl
-  } else {
-    out <- split(out_tbl, out_tbl$book)
-    out <- lapply(out, tibble::as_tibble)
-
-    for (book_name in names(out)) {
-      attr(out[[book_name]], "chapter_excerpts") <- dplyr::filter(
-        chapter_excerpts,
-        .data$book == book_name
-      )
-    }
-  }
-
-  attr(out, "chapter_excerpts") <- chapter_excerpts
-  out
+  finalize_simulation_output(
+    out_rows = all_rows,
+    long_cols = "prompt",
+    chapter_jobs = chapter_jobs
+  )
 }
 
 #' Compute one-turn ingroup/outgroup metrics from raw output
