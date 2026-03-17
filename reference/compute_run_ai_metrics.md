@@ -13,10 +13,13 @@ compute_run_ai_metrics(x, per_group = NULL)
 
 - x:
 
-  Tibble from
+  A data frame or list-like object from
   [`run_ai_on_chapters()`](https://centerconflictcooperation.github.io/nalanda/reference/run_ai_on_chapters.md)
   with turn-level rows including `chapter`, `sim`, `identity`,
-  `turn_type`, and `rating`.
+  `turn_type`, and `rating`. If a list is supplied, the function will
+  attempt to combine its data-frame elements with
+  [`dplyr::bind_rows()`](https://dplyr.tidyverse.org/reference/bind_rows.html)
+  before computing metrics.
 
 - per_group:
 

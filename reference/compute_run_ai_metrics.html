@@ -9,7 +9,7 @@ metrics without re-running API calls."><meta property="og:image" content="https:
 
     <a class="navbar-brand me-2" href="../index.html">nalanda</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.1.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.1.2</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -51,8 +51,10 @@ metrics without re-running API calls.</p>
 
 
 <dl><dt id="arg-x">x<a class="anchor" aria-label="anchor" href="#arg-x"></a></dt>
-<dd><p>Tibble from <code><a href="run_ai_on_chapters.html">run_ai_on_chapters()</a></code> with turn-level rows including
-<code>chapter</code>, <code>sim</code>, <code>identity</code>, <code>turn_type</code>, and <code>rating</code>.</p></dd>
+<dd><p>A data frame or list-like object from <code><a href="run_ai_on_chapters.html">run_ai_on_chapters()</a></code> with
+turn-level rows including <code>chapter</code>, <code>sim</code>, <code>identity</code>, <code>turn_type</code>, and
+<code>rating</code>. If a list is supplied, the function will attempt to combine its
+data-frame elements with <code><a href="https://dplyr.tidyverse.org/reference/bind_rows.html" class="external-link">dplyr::bind_rows()</a></code> before computing metrics.</p></dd>
 
 
 <dt id="arg-per-group">per_group<a class="anchor" aria-label="anchor" href="#arg-per-group"></a></dt>

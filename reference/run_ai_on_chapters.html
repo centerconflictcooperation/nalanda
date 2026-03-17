@@ -25,7 +25,7 @@ post-hoc from the assigned identity and the group labels."><meta property="og:im
 
     <a class="navbar-brand me-2" href="../index.html">nalanda</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.1.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.1.2</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -75,6 +75,7 @@ post-hoc from the assigned identity and the group labels.</p>
 <span>  temperature <span class="op">=</span> <span class="fl">0</span>,</span>
 <span>  seed <span class="op">=</span> <span class="fl">42</span>,</span>
 <span>  model <span class="op">=</span> <span class="st">"gemini-2.5-flash-lite"</span>,</span>
+<span>  integration <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/options.html" class="external-link">getOption</a></span><span class="op">(</span><span class="st">"nalanda.integration"</span><span class="op">)</span>,</span>
 <span>  virtual_key <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/options.html" class="external-link">getOption</a></span><span class="op">(</span><span class="st">"nalanda.virtual_key"</span><span class="op">)</span>,</span>
 <span>  base_url <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/options.html" class="external-link">getOption</a></span><span class="op">(</span><span class="st">"nalanda.base_url"</span><span class="op">)</span>,</span>
 <span>  excerpt_chars <span class="op">=</span> <span class="fl">200</span>,</span>
@@ -131,11 +132,18 @@ simulation).</p></dd>
 <code>ellmer::chat_portkey(model = ...)</code>.</p></dd>
 
 
+<dt id="arg-integration">integration<a class="anchor" aria-label="anchor" href="#arg-integration"></a></dt>
+<dd><p>Optional integration/provider slug. Should look like
+<code>"vertexai"</code> or similar. If supplied and <code>model</code> is not fully-qualified
+(does not start with <code>"@"</code>), nalanda will build <code>"@{integration}/{model}"</code>.
+Preferred for new Portkey/NYU setups.</p></dd>
+
+
 <dt id="arg-virtual-key">virtual_key<a class="anchor" aria-label="anchor" href="#arg-virtual-key"></a></dt>
-<dd><p>Optional legacy provider/integration key. Should look
-like <code>"gemini-8c2498"</code> or similar. If supplied and <code>model</code> is not
-fully-qualified (does not start with <code>"@"</code>), nalanda will build
-<code>"@{virtual_key}/{model}"</code>.</p></dd>
+<dd><p>Optional legacy virtual key. Should look like
+<code>"gemini-8c2498"</code> or similar. If supplied and <code>model</code> is not
+fully-qualified, nalanda will build <code>"@{virtual_key}/{model}"</code>.
+Use either <code>integration</code> or <code>virtual_key</code>, not both.</p></dd>
 
 
 <dt id="arg-base-url">base_url<a class="anchor" aria-label="anchor" href="#arg-base-url"></a></dt>

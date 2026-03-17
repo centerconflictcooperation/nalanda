@@ -32,9 +32,9 @@ Run a small smoke test directly with `ellmer`:
 ``` r
 library(ellmer)
 
-virtual_key = "gemini-8c2498" # portkey model choice
+integration = "vertexai" # portkey integration choice
 model <- "gemini-2.5-flash-lite"
-model_string = paste0("@", virtual_key, "/", model)
+model_string = paste0("@", integration, "/", model)
 
 chat <- chat_portkey(
   model = model_string,
@@ -64,7 +64,7 @@ need to repeat the same arguments in each call.
 library(nalanda)
 
 options(
-  nalanda.virtual_key = "gemini-8c2498",
+  nalanda.integration = "vertexai",
   nalanda.base_url = "https://ai-gateway.apps.cloud.rt.nyu.edu/v1/"
 )
 

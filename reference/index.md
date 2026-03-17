@@ -4,6 +4,8 @@
 
 - [`compute_run_ai_metrics()`](https://centerconflictcooperation.github.io/nalanda/reference/compute_run_ai_metrics.md)
   : Compute derived pre/post effect metrics from raw turn-level output
+- [`compute_run_ai_metrics_one_turn()`](https://centerconflictcooperation.github.io/nalanda/reference/compute_run_ai_metrics_one_turn.md)
+  : Compute one-turn ingroup/outgroup metrics from raw output
 - [`fix_text_file()`](https://centerconflictcooperation.github.io/nalanda/reference/fix_text_file.md)
   : Fix text file encoding and normalize punctuation/whitespace
 - [`list_book_chapters()`](https://centerconflictcooperation.github.io/nalanda/reference/list_book_chapters.md)
@@ -20,6 +22,8 @@
   : Plot chapter trajectories by book
 - [`plot_chapters_over_time()`](https://centerconflictcooperation.github.io/nalanda/reference/plot_chapters_over_time.md)
   : Plot chapters over time (multi-timepoint means)
+- [`plot_chapters_over_time_one_turn()`](https://centerconflictcooperation.github.io/nalanda/reference/plot_chapters_over_time_one_turn.md)
+  : Plot chapter trajectories for one-turn simulations
 - [`plot_forest_books()`](https://centerconflictcooperation.github.io/nalanda/reference/plot_forest_books.md)
   : Create a forest plot of book-level polarization reduction effects
 - [`prepare_forest_books()`](https://centerconflictcooperation.github.io/nalanda/reference/prepare_forest_books.md)
@@ -32,6 +36,8 @@
   : Rename chapter text files in a folder to a sequential order
 - [`run_ai_on_chapters()`](https://centerconflictcooperation.github.io/nalanda/reference/run_ai_on_chapters.md)
   : Run AI model on book chapters and collect structured responses
+- [`run_ai_on_chapters_one_turn()`](https://centerconflictcooperation.github.io/nalanda/reference/run_ai_on_chapters_one_turn.md)
+  : Run AI model on book chapters with a single prompt per simulation
 - [`save_forest_plot()`](https://centerconflictcooperation.github.io/nalanda/reference/save_forest_plot.md)
   : Save a forest plot to PNG and PDF formats
 - [`summarize_chapter_scores()`](https://centerconflictcooperation.github.io/nalanda/reference/summarize_chapter_scores.md)

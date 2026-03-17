@@ -27,6 +27,7 @@ run_ai_on_chapters(
   temperature = 0,
   seed = 42,
   model = "gemini-2.5-flash-lite",
+  integration = getOption("nalanda.integration"),
   virtual_key = getOption("nalanda.virtual_key"),
   base_url = getOption("nalanda.base_url"),
   excerpt_chars = 200,
@@ -86,12 +87,19 @@ run_ai_on_chapters(
   `"gemini-2.5-flash-lite"`). The value is passed directly to
   `ellmer::chat_portkey(model = ...)`.
 
+- integration:
+
+  Optional integration/provider slug. Should look like `"vertexai"` or
+  similar. If supplied and `model` is not fully-qualified (does not
+  start with `"@"`), nalanda will build `"@{integration}/{model}"`.
+  Preferred for new Portkey/NYU setups.
+
 - virtual_key:
 
-  Optional legacy provider/integration key. Should look like
-  `"gemini-8c2498"` or similar. If supplied and `model` is not
-  fully-qualified (does not start with `"@"`), nalanda will build
-  `"@{virtual_key}/{model}"`.
+  Optional legacy virtual key. Should look like `"gemini-8c2498"` or
+  similar. If supplied and `model` is not fully-qualified, nalanda will
+  build `"@{virtual_key}/{model}"`. Use either `integration` or
+  `virtual_key`, not both.
 
 - base_url:
 
