@@ -30,24 +30,3 @@ plot_chapters_over_time_one_turn(chapters, dv = "outgroup_rating", ...)
 ## Value
 
 A ggplot2 object.
-
-## Examples
-
-``` r
-one_turn_like <- toy_run_ai_turns |>
-  dplyr::filter(turn_type == "post") |>
-  dplyr::mutate(
-    turn_type = "single",
-    prompt = post_prompt
-  ) |>
-  dplyr::select(-baseline_prompt, -post_prompt)
-
-plot_chapters_over_time_one_turn(
-  one_turn_like,
-  dv = "gap",
-  group = "party",
-  facet = "book"
-)
-#> Scale for shape is already present.
-#> Adding another scale for shape, which will replace the existing scale.
-```

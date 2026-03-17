@@ -136,14 +136,17 @@ simulation).</p></dd>
 <dd><p>Optional integration/provider slug. Should look like
 <code>"vertexai"</code> or similar. If supplied and <code>model</code> is not fully-qualified
 (does not start with <code>"@"</code>), nalanda will build <code>"@{integration}/{model}"</code>.
-Preferred for new Portkey/NYU setups.</p></dd>
+Preferred for new Portkey/NYU setups. When both <code>nalanda.integration</code> and
+<code>nalanda.virtual_key</code> options are set and neither argument is supplied,
+<code>integration</code> is preferred.</p></dd>
 
 
 <dt id="arg-virtual-key">virtual_key<a class="anchor" aria-label="anchor" href="#arg-virtual-key"></a></dt>
 <dd><p>Optional legacy virtual key. Should look like
 <code>"gemini-8c2498"</code> or similar. If supplied and <code>model</code> is not
 fully-qualified, nalanda will build <code>"@{virtual_key}/{model}"</code>.
-Use either <code>integration</code> or <code>virtual_key</code>, not both.</p></dd>
+Use either <code>integration</code> or <code>virtual_key</code>, not both when explicitly
+supplying function arguments.</p></dd>
 
 
 <dt id="arg-base-url">base_url<a class="anchor" aria-label="anchor" href="#arg-base-url"></a></dt>

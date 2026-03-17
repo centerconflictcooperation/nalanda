@@ -92,14 +92,16 @@ run_ai_on_chapters(
   Optional integration/provider slug. Should look like `"vertexai"` or
   similar. If supplied and `model` is not fully-qualified (does not
   start with `"@"`), nalanda will build `"@{integration}/{model}"`.
-  Preferred for new Portkey/NYU setups.
+  Preferred for new Portkey/NYU setups. When both `nalanda.integration`
+  and `nalanda.virtual_key` options are set and neither argument is
+  supplied, `integration` is preferred.
 
 - virtual_key:
 
   Optional legacy virtual key. Should look like `"gemini-8c2498"` or
   similar. If supplied and `model` is not fully-qualified, nalanda will
   build `"@{virtual_key}/{model}"`. Use either `integration` or
-  `virtual_key`, not both.
+  `virtual_key`, not both when explicitly supplying function arguments.
 
 - base_url:
 

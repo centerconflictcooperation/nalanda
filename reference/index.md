@@ -40,6 +40,8 @@
   : Run AI model on book chapters with a single prompt per simulation
 - [`save_forest_plot()`](https://centerconflictcooperation.github.io/nalanda/reference/save_forest_plot.md)
   : Save a forest plot to PNG and PDF formats
+- [`simulate_treatment()`](https://centerconflictcooperation.github.io/nalanda/reference/simulate_treatment.md)
+  : Simulate a generic multi-turn treatment workflow
 - [`summarize_chapter_scores()`](https://centerconflictcooperation.github.io/nalanda/reference/summarize_chapter_scores.md)
   : Summarize simulated chapter scores
 - [`toy_run_ai_turns`](https://centerconflictcooperation.github.io/nalanda/reference/toy_run_ai_turns.md)
