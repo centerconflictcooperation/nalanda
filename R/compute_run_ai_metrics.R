@@ -3,8 +3,10 @@
 #' Separates post-processing from model execution so users can re-compute
 #' metrics without re-running API calls.
 #'
-#' @param x Tibble from [run_ai_on_chapters()] with turn-level rows including
-#'   `chapter`, `sim`, `identity`, `turn_type`, and `rating`.
+#' @param x A data frame or list-like object from [run_ai_on_chapters()] with
+#'   turn-level rows including `chapter`, `sim`, `identity`, `turn_type`, and
+#'   `rating`. If a list is supplied, the function will attempt to combine its
+#'   data-frame elements with [dplyr::bind_rows()] before computing metrics.
 #' @param per_group Optional logical. Whether the run used per-group mode
 #'   (`{group}` in question template). If `NULL` (default), mode is inferred
 #'   from `target_group`:
@@ -18,9 +20,23 @@
 #'   `delta_ingroup`, `delta_gap`).
 #' @export
 compute_run_ai_metrics <- function(x, per_group = NULL) {
-  model <- attr(x, "model")
-  temperature <- attr(x, "temperature")
-  chapter_excerpts <- attr(x, "chapter_excerpts")
+  input <- x
+
+  if (is.list(input) && !inherits(input, "data.frame")) {
+    x <- flatten_sim_results(input)
+  }
+
+  x <- tibble::as_tibble(x)
+
+  model <- attr(input, "model")
+  temperature <- attr(input, "temperature")
+  chapter_excerpts <- chapter_excerpt_index(input)
+
+  if (is.null(model) && is.list(input) && !inherits(input, "data.frame") &&
+    length(input) > 0) {
+    model <- rlang::`%||%`(model, attr(input[[1]], "model"))
+    temperature <- rlang::`%||%`(temperature, attr(input[[1]], "temperature"))
+  }
 
   required_cols <- c("chapter", "sim", "identity", "turn_type", "rating")
   missing_cols <- setdiff(required_cols, names(x))

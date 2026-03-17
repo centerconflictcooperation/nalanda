@@ -35,7 +35,8 @@ plot_chapters_over_time(
 \arguments{
 \item{chapters}{A data frame or list of processed simulation rows, typically
 returned by \code{\link[=compute_run_ai_metrics]{compute_run_ai_metrics()}}, containing columns \code{book},
-\code{chapter}, and the desired \code{dv}.}
+\code{chapter}, and the desired \code{dv}. If a list is supplied, the function will
+attempt to combine its data-frame elements before plotting.}
 
 \item{dv}{Character. Name of the column to plot as the dependent variable (default: "pre_post_outgroup_difference").}
 

@@ -37,10 +37,14 @@
 #' @param model Character. Model name for the chat backend (for example,
 #'   `"gemini-2.5-flash-lite"`). The value is passed directly to
 #'   `ellmer::chat_portkey(model = ...)`.
-#' @param virtual_key Optional legacy provider/integration key. Should look
-#'   like `"gemini-8c2498"` or similar. If supplied and `model` is not
-#'   fully-qualified (does not start with `"@"`), nalanda will build
-#'   `"@{virtual_key}/{model}"`.
+#' @param integration Optional integration/provider slug. Should look like
+#'   `"vertexai"` or similar. If supplied and `model` is not fully-qualified
+#'   (does not start with `"@"`), nalanda will build `"@{integration}/{model}"`.
+#'   Preferred for new Portkey/NYU setups.
+#' @param virtual_key Optional legacy virtual key. Should look like
+#'   `"gemini-8c2498"` or similar. If supplied and `model` is not
+#'   fully-qualified, nalanda will build `"@{virtual_key}/{model}"`.
+#'   Use either `integration` or `virtual_key`, not both.
 #' @param base_url Character. Base URL for API calls.
 #' @param excerpt_chars Integer. Number of chapter characters to retain in the
 #'   stored post-prompt preview shown in results.
@@ -92,6 +96,7 @@ run_ai_on_chapters <- function(
   temperature = 0,
   seed = 42,
   model = "gemini-2.5-flash-lite",
+  integration = getOption("nalanda.integration"),
   virtual_key = getOption("nalanda.virtual_key"),
   base_url = getOption("nalanda.base_url"),
   excerpt_chars = 200,
@@ -114,6 +119,10 @@ run_ai_on_chapters <- function(
   if (n_simulations < 1) {
     stop("`n_simulations` must be >= 1.")
   }
+  if (!is.null(integration) && nzchar(integration) &&
+      !is.null(virtual_key) && nzchar(virtual_key)) {
+    stop("Please provide only one of `integration` or `virtual_key`.")
+  }
 
   # --- Expand context_text from template if scalar ---
   if (length(context_text) == 1 && grepl("\\{identity\\}", context_text)) {
@@ -133,6 +142,19 @@ run_ai_on_chapters <- function(
       length(groups),
       ")."
     )
+  }
+
+  if (is.list(book_texts)) {
+    book_names <- names(book_texts)
+    for (i in seq_along(book_texts)) {
+      book <- if (is.null(book_names)) paste0("book_", i) else book_names[[i]]
+      chapter_texts <- unlist(book_texts[[i]], use.names = TRUE)
+      validate_chapter_order(
+        chapter = names(chapter_texts),
+        book = book,
+        arg_name = "`book_texts` chapter names"
+      )
+    }
   }
 
   # --- Calculate total steps for progress bar ---
@@ -156,8 +178,16 @@ run_ai_on_chapters <- function(
   if (identical(model, "")) {
     stop("`model` must be a non-empty string.")
   }
-  if (!startsWith(model, "@") && !is.null(virtual_key) && nzchar(virtual_key)) {
-    model <- paste0("@", virtual_key, "/", model)
+  if (!startsWith(model, "@")) {
+    prefix <- NULL
+    if (!is.null(integration) && nzchar(integration)) {
+      prefix <- integration
+    } else if (!is.null(virtual_key) && nzchar(virtual_key)) {
+      prefix <- virtual_key
+    }
+    if (!is.null(prefix)) {
+      model <- paste0("@", prefix, "/", model)
+    }
   }
 
   # --- Normalise group labels for structured field names ---
@@ -231,9 +261,10 @@ run_ai_on_chapters <- function(
             msg <- conditionMessage(e)
             if (grepl("PORTKEY_VIRTUAL_KEY", msg, fixed = TRUE)) {
               stop(
-                "Please provide `virtual_key` (or set ",
-                "`options(nalanda.virtual_key=...)`), which is currently ",
-                "Nalanda's officially supported method. ",
+                "Please provide `integration` (or set ",
+                "`options(nalanda.integration=...)`). ",
+                "If you are still using the older NYU setup, `virtual_key` ",
+                "and `options(nalanda.virtual_key=...)` are also supported. ",
                 "Your installed `ellmer` expects `PORTKEY_VIRTUAL_KEY` when ",
                 "`model` is not fully-qualified. ",
                 "Alternative: use a fully-qualified model string in ",

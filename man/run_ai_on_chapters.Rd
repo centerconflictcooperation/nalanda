@@ -13,6 +13,7 @@ run_ai_on_chapters(
   temperature = 0,
   seed = 42,
   model = "gemini-2.5-flash-lite",
+  integration = getOption("nalanda.integration"),
   virtual_key = getOption("nalanda.virtual_key"),
   base_url = getOption("nalanda.base_url"),
   excerpt_chars = 200,
@@ -51,10 +52,15 @@ simulation).}
 \code{"gemini-2.5-flash-lite"}). The value is passed directly to
 \code{ellmer::chat_portkey(model = ...)}.}
 
-\item{virtual_key}{Optional legacy provider/integration key. Should look
-like \code{"gemini-8c2498"} or similar. If supplied and \code{model} is not
-fully-qualified (does not start with \code{"@"}), nalanda will build
-\code{"@{virtual_key}/{model}"}.}
+\item{integration}{Optional integration/provider slug. Should look like
+\code{"vertexai"} or similar. If supplied and \code{model} is not fully-qualified
+(does not start with \code{"@"}), nalanda will build \code{"@{integration}/{model}"}.
+Preferred for new Portkey/NYU setups.}
+
+\item{virtual_key}{Optional legacy virtual key. Should look like
+\code{"gemini-8c2498"} or similar. If supplied and \code{model} is not
+fully-qualified, nalanda will build \code{"@{virtual_key}/{model}"}.
+Use either \code{integration} or \code{virtual_key}, not both.}
 
 \item{base_url}{Character. Base URL for API calls.}
 

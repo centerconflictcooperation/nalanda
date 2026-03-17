@@ -329,3 +329,83 @@ test_that("plot_chapters_over_time keeps points when point_images is NULL", {
   ))
   expect_true(has_point)
 })
+
+test_that("plot_chapters_over_time accepts list inputs from compute_run_ai_metrics", {
+  skip_if_not_installed("Rmisc")
+
+  raw_a <- tibble::tibble(
+    book = c("Book A", "Book A", "Book A", "Book A"),
+    chapter = c("Chapter 1", "Chapter 1", "Chapter 2", "Chapter 2"),
+    sim = c(1, 1, 1, 1),
+    identity = c("Democrat", "Democrat", "Democrat", "Democrat"),
+    turn_type = c("baseline", "post", "baseline", "post"),
+    target_group = c(NA_character_, NA_character_, NA_character_, NA_character_),
+    rating = c(40, 45, 42, 47)
+  )
+  raw_b <- tibble::tibble(
+    book = c("Book A", "Book A", "Book A", "Book A"),
+    chapter = c("Chapter 1", "Chapter 1", "Chapter 2", "Chapter 2"),
+    sim = c(2, 2, 2, 2),
+    identity = c("Democrat", "Democrat", "Democrat", "Democrat"),
+    turn_type = c("baseline", "post", "baseline", "post"),
+    target_group = c(NA_character_, NA_character_, NA_character_, NA_character_),
+    rating = c(41, 46, 43, 48)
+  )
+  attr(raw_a, "model") <- "gpt-test"
+  attr(raw_a, "temperature") <- 0.2
+
+  chapters <- compute_run_ai_metrics(list(raw_a, raw_b))
+
+  p <- plot_chapters_over_time(chapters)
+
+  expect_s3_class(p, "ggplot")
+  expect_equal(p$labels$subtitle, "Model: gpt-test; Temp: 0.2")
+})
+
+test_that("plot_chapters_over_time errors on ambiguous chapter numbering", {
+  skip_if_not_installed("Rmisc")
+
+  chapters <- tibble::tibble(
+    book = c("Book A", "Book A", "Book A", "Book A"),
+    chapter = c(
+      "4_Chapter_4.txt",
+      "4_Chapter_4.txt",
+      "4_Chapter3.txt",
+      "4_Chapter3.txt"
+    ),
+    sim = c(1, 1, 1, 1),
+    identity = c("Democrat", "Republican", "Democrat", "Republican"),
+    party = c("Democrat", "Republican", "Democrat", "Republican"),
+    delta_outgroup = c(-5, -5, -7, -7)
+  )
+
+  expect_error(
+    plot_chapters_over_time(
+      chapters,
+      dv = "delta_outgroup",
+      reverse_score = TRUE
+    ),
+    "Duplicate chapters identified while parsing"
+  )
+})
+
+test_that("plot_chapters_over_time_one_turn computes metrics from raw output", {
+  skip_if_not_installed("Rmisc")
+
+  chapters <- tibble::tibble(
+    chapter = c("chapter_1", "chapter_1", "chapter_2", "chapter_2"),
+    sim = c(1, 1, 1, 1),
+    identity = c("Democrat", "Democrat", "Democrat", "Democrat"),
+    party = c("Democrat", "Democrat", "Democrat", "Democrat"),
+    target_group = c("Democrat", "Republican", "Democrat", "Republican"),
+    rating = c(70, 45, 68, 50)
+  )
+  attr(chapters, "model") <- "gpt-test"
+  attr(chapters, "temperature") <- 0.2
+
+  p <- plot_chapters_over_time_one_turn(chapters, group = "party")
+
+  expect_s3_class(p, "ggplot")
+  expect_equal(p$labels$title, "Results of 1 simulations per book per chapter")
+  expect_equal(p$labels$subtitle, "Model: gpt-test; Temp: 0.2")
+})

@@ -137,6 +137,135 @@ test_that("compute_run_ai_metrics preserves chapter excerpt index", {
   )
 })
 
+test_that("compute_run_ai_metrics binds list inputs before computing metrics", {
+  x1 <- tibble::tibble(
+    chapter = c("chapter_1", "chapter_1"),
+    sim = c(1, 1),
+    identity = c("Democrat", "Democrat"),
+    turn_type = c("baseline", "post"),
+    target_group = c(NA_character_, NA_character_),
+    rating = c(40, 45)
+  )
+  x2 <- tibble::tibble(
+    chapter = c("chapter_2", "chapter_2"),
+    sim = c(1, 1),
+    identity = c("Democrat", "Democrat"),
+    turn_type = c("baseline", "post"),
+    target_group = c(NA_character_, NA_character_),
+    rating = c(50, 60)
+  )
+  attr(x1, "model") <- "test-model"
+  attr(x1, "temperature") <- 0
+  attr(x1, "chapter_excerpts") <- tibble::tibble(
+    chapter = "chapter_1",
+    chapter_excerpt = "preview 1"
+  )
+  attr(x2, "chapter_excerpts") <- tibble::tibble(
+    chapter = "chapter_2",
+    chapter_excerpt = "preview 2"
+  )
+
+  out <- compute_run_ai_metrics(list(x1, x2))
+
+  expect_s3_class(out, "data.frame")
+  expect_equal(nrow(out), 2)
+  expect_equal(out$delta_outgroup, c(5, 10))
+  expect_equal(attr(out, "model"), "test-model")
+  expect_equal(attr(out, "temperature"), 0)
+  expect_equal(
+    attr(out, "chapter_excerpts"),
+    tibble::tibble(
+      chapter = c("chapter_1", "chapter_2"),
+      chapter_excerpt = c("preview 1", "preview 2")
+    )
+  )
+})
+
+test_that("run_ai_on_chapters fails early on ambiguous chapter numbering", {
+  bad_book_texts <- list(
+    moraltribes = list(
+      "4_Chapter_4.txt" = "chapter a",
+      "4_Chapter3.txt" = "chapter b"
+    )
+  )
+
+  expect_error(
+    run_ai_on_chapters(
+      book_texts = bad_book_texts,
+      groups = c("Democrat", "Republican"),
+      context_text = "You are simulating a {identity}.",
+      question_text = "How warmly do you feel towards your outgroup?"
+    ),
+    "Duplicate chapters identified while parsing"
+  )
+})
+
+test_that("run_ai_on_chapters rejects integration and virtual_key together", {
+  expect_error(
+    run_ai_on_chapters(
+      book_texts = "chapter",
+      groups = c("Democrat", "Republican"),
+      context_text = "You are simulating a {identity}.",
+      question_text = "How warmly do you feel towards your outgroup?",
+      integration = "vertexai",
+      virtual_key = "gemini-8c2498"
+    ),
+    "Please provide only one of `integration` or `virtual_key`"
+  )
+})
+
+test_that("run_ai_on_chapters_one_turn rejects integration and virtual_key together", {
+  expect_error(
+    run_ai_on_chapters_one_turn(
+      book_texts = "chapter",
+      groups = c("Democrat", "Republican"),
+      context_text = "You are simulating a {identity}.",
+      question_text = "How warmly do you feel towards your outgroup?",
+      integration = "vertexai",
+      virtual_key = "gemini-8c2498"
+    ),
+    "Please provide only one of `integration` or `virtual_key`"
+  )
+})
+
+test_that("compute_run_ai_metrics_one_turn computes one-turn per-group summaries", {
+  x <- tibble::tibble(
+    chapter = c("chapter_1", "chapter_1", "chapter_2", "chapter_2"),
+    sim = c(1, 1, 1, 1),
+    identity = c("Democrat", "Democrat", "Democrat", "Democrat"),
+    target_group = c("Democrat", "Republican", "Democrat", "Republican"),
+    rating = c(70, 45, 68, 50),
+    party = c("Democrat", "Democrat", "Democrat", "Democrat")
+  )
+  attr(x, "model") <- "test-model"
+  attr(x, "temperature") <- 0
+
+  out <- compute_run_ai_metrics_one_turn(x)
+
+  expect_equal(nrow(out), 2)
+  expect_equal(out$ingroup_rating, c(70, 68))
+  expect_equal(out$outgroup_rating, c(45, 50))
+  expect_equal(out$gap, c(25, 18))
+  expect_equal(attr(out, "model"), "test-model")
+  expect_equal(attr(out, "temperature"), 0)
+})
+
+test_that("compute_run_ai_metrics_one_turn handles single-question mode", {
+  x <- tibble::tibble(
+    chapter = c("chapter_1", "chapter_2"),
+    sim = c(1, 1),
+    identity = c("Democrat", "Democrat"),
+    rating = c(42, 47)
+  )
+
+  out <- compute_run_ai_metrics_one_turn(x)
+
+  expect_equal(out$overall_rating, c(42, 47))
+  expect_equal(out$outgroup_rating, c(42, 47))
+  expect_true(all(is.na(out$ingroup_rating)))
+  expect_true(all(is.na(out$gap)))
+})
+
 test_that("toy_sim_results is available as package data", {
   data_env <- new.env(parent = emptyenv())
   utils::data("toy_sim_results", package = "nalanda", envir = data_env)

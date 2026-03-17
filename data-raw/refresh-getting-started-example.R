@@ -4,7 +4,7 @@
 library(nalanda)
 
 options(
-  nalanda.model_provider = "gemini-8c2498",
+  nalanda.integration = "vertexai",
   nalanda.base_url = "https://ai-gateway.apps.cloud.rt.nyu.edu/v1/"
 )
 

@@ -7,8 +7,10 @@
 compute_run_ai_metrics(x, per_group = NULL)
 }
 \arguments{
-\item{x}{Tibble from \code{\link[=run_ai_on_chapters]{run_ai_on_chapters()}} with turn-level rows including
-\code{chapter}, \code{sim}, \code{identity}, \code{turn_type}, and \code{rating}.}
+\item{x}{A data frame or list-like object from \code{\link[=run_ai_on_chapters]{run_ai_on_chapters()}} with
+turn-level rows including \code{chapter}, \code{sim}, \code{identity}, \code{turn_type}, and
+\code{rating}. If a list is supplied, the function will attempt to combine its
+data-frame elements with \code{\link[dplyr:bind_rows]{dplyr::bind_rows()}} before computing metrics.}
 
 \item{per_group}{Optional logical. Whether the run used per-group mode
 (\code{{group}} in question template). If \code{NULL} (default), mode is inferred

@@ -5,7 +5,8 @@
 #'
 #' @param chapters A data frame or list of processed simulation rows, typically
 #'   returned by [compute_run_ai_metrics()], containing columns `book`,
-#'   `chapter`, and the desired `dv`.
+#'   `chapter`, and the desired `dv`. If a list is supplied, the function will
+#'   attempt to combine its data-frame elements before plotting.
 #' @param dv Character. Name of the column to plot as the dependent variable (default: "pre_post_outgroup_difference").
 #' @param group The group by which to plot the variable
 #' @param x_label Character. X-axis label.
@@ -80,19 +81,25 @@ plot_chapters_over_time <- function(
   facet = NULL,
   facets.order = "increasing"
 ) {
+  input <- chapters
+
   # Extract metadata before binding (works for tibble, list-of-tibbles, or
   # individual tibbles loaded via readRDS and reassembled into a plain list)
-  model_name <- attr(chapters, "model")
-  model_temp <- attr(chapters, "temperature")
+  model_name <- attr(input, "model")
+  model_temp <- attr(input, "temperature")
 
   # Fallback: check first list element (covers lapply(files, readRDS) workflow)
-  if (is.null(model_name) && is.list(chapters) && length(chapters) > 0) {
-    first <- chapters[[1]]
+  if (is.null(model_name) && is.list(input) && !inherits(input, "data.frame") &&
+    length(input) > 0) {
+    first <- input[[1]]
     model_name <- rlang::`%||%`(model_name, attr(first, "model"))
     model_temp <- rlang::`%||%`(model_temp, attr(first, "temperature"))
   }
 
-  df <- bind_simulation_results(chapters)
+  df <- bind_simulation_results(input)
+  if (!"book" %in% names(df)) {
+    df$book <- "book_1"
+  }
 
   # n_simulations: max sim per identity per chapter
   n_sims <- max(df$sim, na.rm = TRUE)
@@ -125,13 +132,21 @@ plot_chapters_over_time <- function(
     df <- df |>
       dplyr::mutate(score = .data$score * -1)
   }
+  chapter_lookup <- df |>
+    dplyr::distinct(.data$book, .data$chapter) |>
+    dplyr::group_by(.data$book) |>
+    dplyr::group_modify(function(.x, .y) {
+      .x$chapter_num <- validate_chapter_order(
+        .x$chapter,
+        book = .y$book[[1]],
+        arg_name = "`chapters$chapter`"
+      )
+      .x
+    }) |>
+    dplyr::ungroup()
+
   df <- df |>
-    dplyr::mutate(
-      chapter_num = suppressWarnings(as.integer(stringr::str_extract(
-        .data$chapter,
-        "\\d+"
-      )))
-    ) |>
+    dplyr::left_join(chapter_lookup, by = c("book", "chapter")) |>
     dplyr::arrange(.data$book, .data$chapter_num, .data$sim) |>
     dplyr::group_by(.data$book) |>
     dplyr::mutate(chapter_index = dplyr::dense_rank(.data$chapter_num)) |>
@@ -323,11 +338,9 @@ plot_chapters_over_time <- function(
 
 bind_simulation_results <- function(chapters) {
   if (is.list(chapters) && !inherits(chapters, "data.frame")) {
-    # Unclass to ensure bind_rows treats it as a plain list of data frames
-    # and not a custom object that might be misinterpreted
-    dplyr::bind_rows(unclass(chapters))
+    return(tibble::as_tibble(flatten_sim_results(chapters)))
   } else {
-    chapters
+    return(tibble::as_tibble(chapters))
   }
 }
 
