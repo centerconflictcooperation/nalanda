@@ -10,3 +10,4 @@
 ^pkgdown$
 .vscode
 ^data-raw$
+^papers$

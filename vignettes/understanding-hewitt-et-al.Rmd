@@ -1,0 +1,356 @@
+---
+title: "Understanding Hewitt et al. and Using Nalanda Today"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Understanding Hewitt et al. and Using Nalanda Today}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+bibliography: references.bib
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+# Overview
+
+This vignette is for users who want a practical introduction to the simulation
+approach in Hewitt, Ashokkumar, Ghezae, and Willer
+[@hewitt2024predicting; @hewitt2024supplement], and who want to understand what
+the `nalanda` package can already do in that spirit.
+
+The short version is:
+
+1. the papers show that large language models can often predict the direction
+   and relative size of social science experimental effects surprisingly well;
+2. this works best for text-based survey experiments;
+3. the method uses careful prompting, demographic conditioning, and averaging
+   over multiple prompts;
+4. raw model-predicted effects were too large on average in their main archive,
+   so the authors recommend shrinking effect estimates by about `0.56` in that
+   specific setting [@hewitt2024supplement];
+5. `nalanda` already supports several related simulation workflows, but users
+   still need to do some parts manually.
+
+# What the papers did, in simple language
+
+The central question of the papers is whether a language model can be used to
+simulate how people would respond in real social science experiments
+[@hewitt2024predicting]. Rather than asking the model to guess an effect size
+directly, the authors prompted the model to act like many hypothetical survey
+participants, each exposed to a study condition and then asked the outcome
+question.
+
+The broad workflow was:
+
+1. describe the study setting,
+2. describe a hypothetical participant,
+3. show the treatment text,
+4. ask the outcome question on the original response scale,
+5. repeat this many times across conditions, people, and prompt variants, and
+6. compare average responses across conditions.
+
+The main finding was that model-based predictions were strongly correlated with
+the real treatment effects in their primary archive of U.S. survey experiments
+[@hewitt2024predicting]. In plain terms, the model was often good at telling
+which interventions would work better than others, even if it was not perfect
+at recovering the exact numeric size of the effects.
+
+# What the supplement adds
+
+The supplement is especially useful because it clarifies what parts of the
+procedure mattered most in practice [@hewitt2024supplement].
+
+## 1. Prompting strategy matters
+
+The prompts were not just a bare stimulus plus question. They included:
+
+1. an introductory framing sentence,
+2. a short description of the study context,
+3. a description of the hypothetical participant,
+4. the experimental stimulus, and
+5. the outcome question and scale.
+
+This matters because users trying to apply the same general approach should not
+assume that any single ad hoc prompt will behave like the published method.
+
+## 2. Ensemble prompting matters
+
+The supplement reports that averaging over more prompt variants improved
+accuracy [@hewitt2024supplement]. In practice, this means users should avoid
+treating a single prompt wording as decisive whenever cost permits.
+
+## 3. Demographic conditioning is part of the method
+
+The main paper describes prompting the model with specific participant profiles,
+including fields such as gender, age, race, education, ideology, and party
+[@hewitt2024predicting]. The supplement suggests that matched demographic
+profiles gave only small or modest gains in some subgroup analyses, but they are
+still part of the paper's design [@hewitt2024supplement].
+
+## 4. Absolute effect sizes need caution
+
+The model was good at predicting relative effects, but its raw effect estimates
+were too large on average in the primary archive. The supplement reports a
+shrinkage coefficient of about `0.56`, meaning that raw predicted effects in
+that setting should be multiplied by `0.56` to improve absolute calibration
+[@hewitt2024supplement].
+
+This is one of the most important practical take-aways from the paper.
+
+# Recommended take-aways for users
+
+If you want to use these papers as a guide, the safest practical lessons are:
+
+1. focus first on relative comparisons and ranking, not only exact effect-size
+   recovery;
+2. use multiple prompt variants rather than relying on one wording;
+3. be explicit about who is being simulated;
+4. preserve the original response scale in the prompt;
+5. keep raw outputs and calibrated outputs separate;
+6. treat the `0.56` factor as a useful paper-specific calibration, not as a
+   universal law for every possible application.
+
+# How this relates to `nalanda`
+
+`nalanda` was not originally built as a line-by-line reproduction of Hewitt et
+al. It was built around chapter-based simulations for questions such as whether
+books or book chapters shift attitudes. Even so, there is substantial overlap
+in spirit and implementation.
+
+At the moment, `nalanda` already supports:
+
+1. **Pre/post chapter simulations** with `run_ai_on_chapters()`.
+2. **Post-only one-turn simulations** with `run_ai_on_chapters_one_turn()`.
+3. **Custom prompt sequences** with `simulate_treatment()`.
+4. **Summary functions for package-native outputs**, such as
+   `compute_run_ai_metrics()` and `compute_run_ai_metrics_one_turn()`.
+
+What `nalanda` does not yet fully provide out of the box:
+
+1. a built-in prompt bank matching the paper's exact strategy,
+2. a first-class ensemble prompting object,
+3. a first-class demographic profile object,
+4. a dedicated condition-based experimental wrapper modeled directly on the
+   Hewitt et al. survey workflow,
+5. built-in between-condition inferential contrasts, and
+6. a standard calibration helper for externally estimated effect columns.
+
+# A concrete way to use `nalanda` today
+
+Below is a practical way to use the package while staying close to the lessons
+from Hewitt et al.
+
+## Scenario 1: Pre/post chapter simulations
+
+This is the most native current workflow in `nalanda`.
+
+```{r, eval = FALSE}
+library(nalanda)
+
+res <- run_ai_on_chapters(
+  book_texts = my_book_texts,
+  groups = c("Democrat", "Republican"),
+  context_text = "You are simulating an American adult who politically identifies as a {identity}.",
+  question_text = "On a scale from 0 to 100, how warmly do you feel towards {group}s?",
+  n_simulations = 20,
+  temperature = 0,
+  model = "gemini-2.5-flash-lite"
+)
+
+chapter_metrics <- compute_run_ai_metrics(res)
+```
+
+This gives you package-native pre/post summaries such as deltas and gap changes.
+That is already useful for understanding whether a chapter seems to shift the
+simulated participant before versus after exposure.
+
+## Scenario 2: Post-only simulations
+
+If you want something closer to the paper's single-prompt logic, use the
+one-turn interface.
+
+```{r, eval = FALSE}
+res_one_turn <- run_ai_on_chapters_one_turn(
+  book_texts = my_book_texts,
+  groups = c("Democrat", "Republican"),
+  context_text = "You are simulating an American adult who politically identifies as a {identity}.",
+  question_text = "On a scale from 0 to 100, how warmly do you feel towards {group}s?",
+  n_simulations = 20,
+  temperature = 0,
+  model = "gemini-2.5-flash-lite"
+)
+
+one_turn_metrics <- compute_run_ai_metrics_one_turn(res_one_turn)
+```
+
+This is not identical to the Hewitt et al. survey design, but it is closer to a
+post-only prompt structure where the chapter serves as the intervention text.
+
+## Scenario 3: Control-versus-treatment chapter comparisons
+
+Some users will have treatment books and control books. `nalanda` can already
+help generate the simulated outcomes for each condition, even if the formal
+between-condition comparison happens elsewhere.
+
+One practical workflow is:
+
+1. run the simulation separately or jointly on all chapters or books,
+2. attach a condition label such as `control`, `treatment_a`, or `treatment_b`,
+3. compute the package-native summaries,
+4. pass the resulting data frame to your preferred downstream tool for mean
+   comparisons, contrasts, regression, or meta-analytic summaries.
+
+Conceptually:
+
+```{r, eval = FALSE}
+chapter_metrics$condition <- c("control", "treatment", "treatment")
+
+# then analyze in your preferred downstream workflow
+# for example with dplyr summaries, rempsyc helpers, or regression models
+```
+
+This is an important design point: `nalanda` can own the simulation workflow
+without needing to own every inferential comparison.
+
+# What users should currently do themselves
+
+At this stage, users wanting to approximate the Hewitt et al. method more
+closely should currently handle several parts themselves.
+
+## 1. Build or manage a prompt bank manually
+
+Right now, users still need to manage alternative prompt wordings in their own
+scripts. A good practical habit is to write down:
+
+1. multiple introductory variants,
+2. the study-setting text,
+3. the participant-profile text,
+4. the intervention text wrapper, and
+5. the outcome question.
+
+Even if these are stored as plain character vectors in a script, that is better
+than repeatedly editing one long prompt string by hand.
+
+## 2. Run ensembles manually
+
+If you want to average over several prompt variants, you currently need to do
+this by running several simulations and combining them yourself. This is
+important if you want to remain closer to the published workflow.
+
+## 3. Manage demographic profiles manually
+
+Users who want more than identity-only conditioning should currently define
+their own participant profiles in a data frame or list and loop over them.
+
+## 4. Estimate between-condition contrasts downstream
+
+If your design involves treatment versus control comparisons, `nalanda` can
+help produce the simulated outcomes, but you will currently need to estimate
+contrasts yourself using your preferred analysis workflow.
+
+## 5. Apply effect calibration explicitly
+
+If you estimate an effect column downstream and want to apply the paper's
+primary-archive calibration, you should currently do so yourself and document
+it clearly.
+
+For example:
+
+```{r, eval = FALSE}
+results$adjusted_effect <- results$raw_effect * 0.56
+results$calibration_source <- "Hewitt et al. 2024 primary survey archive"
+```
+
+# How to think about the `0.56` factor
+
+This is the single most tempting number to overgeneralize from the papers, so
+it is worth being explicit.
+
+## When it is reasonable to use it
+
+Using `0.56` is most defensible when:
+
+1. your application is fairly close to the paper's primary setting,
+2. your outcome is a text-based survey-style response,
+3. you are estimating condition differences on the original response scale, and
+4. you want a rough calibration of absolute effect magnitudes.
+
+## When to be cautious
+
+You should be more cautious when:
+
+1. your design is very different from their survey archive,
+2. your intervention is a long book chapter rather than a short survey
+   treatment,
+3. your outcome is behavioral or cumulative rather than a direct survey item,
+4. your analysis focuses on subgroup heterogeneity, or
+5. you are working outside the kind of U.S. survey setting used in the paper.
+
+## Best current practice
+
+For most users, the best current practice is:
+
+1. report raw results,
+2. if useful, add a separate adjusted result using `0.56`,
+3. label clearly where the adjustment came from, and
+4. do not overwrite the raw values.
+
+# A simple recommended workflow for users
+
+If you want a practical, cautious workflow inspired by Hewitt et al., the
+following is a reasonable current recipe.
+
+## Minimal workflow
+
+1. choose a clear outcome question and scale;
+2. decide whether your design is pre/post or post-only;
+3. define at least a small set of prompt variants;
+4. run multiple simulations per chapter or condition;
+5. compute package-native summary metrics in `nalanda`;
+6. if needed, estimate between-condition comparisons downstream;
+7. optionally create a separate calibrated version of any effect column.
+
+## Better workflow
+
+If cost and time allow, improve on the minimal workflow by:
+
+1. using several prompt variants rather than one,
+2. simulating several participant profiles rather than one generic identity,
+3. checking whether conclusions are stable across prompts and profiles,
+4. comparing raw and adjusted effects side by side, and
+5. treating conclusions as stronger when rank-order patterns are robust.
+
+# What `nalanda` may support later
+
+Planned or plausible future extensions include:
+
+1. built-in prompt bank objects,
+2. first-class ensemble controls,
+3. first-class demographic profile objects,
+4. a condition-based experimental simulation wrapper,
+5. small calibration helpers, and
+6. cumulative chapter simulation designs.
+
+These features would make it easier for users to get closer to the Hewitt et
+al. workflow without writing as much scaffolding themselves.
+
+# Final practical advice
+
+For most current users, the best way to understand the Hewitt et al. papers is
+to think of them as a guide to disciplined simulation rather than as a recipe
+that transfers mechanically to every design.
+
+The main practical lessons are:
+
+1. prompt carefully,
+2. average across prompts when possible,
+3. be explicit about who is being simulated,
+4. distinguish simulation from inference,
+5. keep raw and adjusted outputs separate, and
+6. use the `0.56` correction cautiously and transparently.
+
+# References
