@@ -12,7 +12,7 @@ plot_chapters_over_time(
   group = "book",
   x_label = "Chapter",
   y_label = "Simulated scores",
-  plot_title = TRUE,
+  plot_title = NULL,
   plot_subtitle = "",
   append_model_info = TRUE,
   ci_type = "between",
@@ -65,7 +65,8 @@ plot_chapters_over_time(
 
 - plot_title:
 
-  Logical. Whether to include a title.
+  Optional character title. If `NULL` (default) or `FALSE`, no title is
+  added.
 
 - plot_subtitle:
 

@@ -49,7 +49,7 @@ for the wide-format response variables.</p>
 <span>  group <span class="op">=</span> <span class="st">"book"</span>,</span>
 <span>  x_label <span class="op">=</span> <span class="st">"Chapter"</span>,</span>
 <span>  y_label <span class="op">=</span> <span class="st">"Simulated scores"</span>,</span>
-<span>  plot_title <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  plot_title <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  plot_subtitle <span class="op">=</span> <span class="st">""</span>,</span>
 <span>  append_model_info <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  ci_type <span class="op">=</span> <span class="st">"between"</span>,</span>
@@ -100,7 +100,8 @@ attempt to combine its data-frame elements before plotting.</p></dd>
 
 
 <dt id="arg-plot-title">plot_title<a class="anchor" aria-label="anchor" href="#arg-plot-title"></a></dt>
-<dd><p>Logical. Whether to include a title.</p></dd>
+<dd><p>Optional character title. If <code>NULL</code> (default) or <code>FALSE</code>,
+no title is added.</p></dd>
 
 
 <dt id="arg-plot-subtitle">plot_subtitle<a class="anchor" aria-label="anchor" href="#arg-plot-subtitle"></a></dt>
