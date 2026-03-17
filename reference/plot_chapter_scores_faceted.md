@@ -32,3 +32,14 @@ plot_chapter_scores_faceted(
 ## Value
 
 A ggplot2 object.
+
+## Examples
+
+``` r
+chapter_summary <- summarize_chapter_scores(toy_sim_results)
+plot_chapter_scores_faceted(
+  chapter_summary,
+  dv = "delta_outgroup",
+  y_label = "Mean outgroup change"
+)
+```

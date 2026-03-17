@@ -37,3 +37,41 @@ A simulation-level tibble with derived metrics (for example
 `pre_outgroup`, `post_outgroup`, `delta_outgroup`, and in per-group mode
 also `pre_ingroup`, `post_ingroup`, `pre_gap`, `post_gap`,
 `delta_ingroup`, `delta_gap`).
+
+## Examples
+
+``` r
+metrics <- compute_run_ai_metrics(toy_run_ai_turns)
+head(metrics)
+#> # A tibble: 6 × 16
+#>   chapter     sim identity   book    party pre_ingroup post_ingroup pre_outgroup
+#>   <chr>     <int> <chr>      <chr>   <chr>       <dbl>        <dbl>        <dbl>
+#> 1 chapter_1     1 Democrat   Bridge… Demo…          78           79           46
+#> 2 chapter_1     1 Democrat   Common… Demo…          77           78           50
+#> 3 chapter_1     1 Republican Bridge… Repu…          82           84           51
+#> 4 chapter_1     1 Republican Common… Repu…          81           83           48
+#> 5 chapter_1     2 Democrat   Bridge… Demo…          79           80           47
+#> 6 chapter_1     2 Democrat   Common… Demo…          78           79           51
+#> # ℹ 8 more variables: post_outgroup <dbl>, pre_gap <dbl>, post_gap <dbl>,
+#> #   delta_ingroup <dbl>, delta_outgroup <dbl>, delta_gap <dbl>,
+#> #   baseline_prompt <chr>, post_prompt <chr>
+
+# The processed output can be passed on to summary and plotting helpers.
+summary_by_chapter <- summarize_chapter_scores(metrics)
+head(summary_by_chapter)
+#> # A tibble: 6 × 23
+#>   book           chapter   sim mean_pre_ingroup sd_pre_ingroup mean_post_ingroup
+#>   <chr>          <chr>   <int>            <dbl>          <dbl>             <dbl>
+#> 1 Bridge Stories chapte…     4             80.5           2.38                82
+#> 2 Bridge Stories chapte…     4             80.5           2.38                82
+#> 3 Bridge Stories chapte…     4             80.5           2.38                82
+#> 4 Bridge Stories chapte…     4             80.5           2.38                82
+#> 5 Common Ground  chapte…     4             79.5           2.38                81
+#> 6 Common Ground  chapte…     4             79.5           2.38                81
+#> # ℹ 17 more variables: sd_post_ingroup <dbl>, mean_pre_outgroup <dbl>,
+#> #   sd_pre_outgroup <dbl>, mean_post_outgroup <dbl>, sd_post_outgroup <dbl>,
+#> #   mean_pre_gap <dbl>, sd_pre_gap <dbl>, mean_post_gap <dbl>,
+#> #   sd_post_gap <dbl>, mean_delta_outgroup <dbl>, sd_delta_outgroup <dbl>,
+#> #   mean_delta_ingroup <dbl>, sd_delta_ingroup <dbl>, mean_delta_gap <dbl>,
+#> #   sd_delta_gap <dbl>, chapter_excerpt <chr>, chapter_index <int>
+```

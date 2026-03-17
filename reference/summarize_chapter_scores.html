@@ -84,6 +84,67 @@ When "book", results are aggregated to the book level.</p></dd>
 object will have the original model attribute copied to it.</p>
     </div>
 
+    <div class="section level2">
+    <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="va">chapter_summary</span> <span class="op">&lt;-</span> <span class="fu">summarize_chapter_scores</span><span class="op">(</span><span class="va">toy_sim_results</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">chapter_summary</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># A tibble: 8 × 22</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   book           chapter   sim mean_pre_ingroup sd_pre_ingroup mean_post_ingroup</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>          <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;int&gt;</span>            <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>          <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>             <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">1</span> Bridge Stories chapte…     4             80.5           2.38                82</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">2</span> Bridge Stories chapte…     4             80.5           2.38                82</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">3</span> Bridge Stories chapte…     4             80.5           2.38                82</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">4</span> Bridge Stories chapte…     4             80.5           2.38                82</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">5</span> Common Ground  chapte…     4             79.5           2.38                81</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">6</span> Common Ground  chapte…     4             79.5           2.38                81</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">7</span> Common Ground  chapte…     4             79.5           2.38                81</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">8</span> Common Ground  chapte…     4             79.5           2.38                81</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># ℹ 16 more variables: sd_post_ingroup &lt;dbl&gt;, mean_pre_outgroup &lt;dbl&gt;,</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;">#   sd_pre_outgroup &lt;dbl&gt;, mean_post_outgroup &lt;dbl&gt;, sd_post_outgroup &lt;dbl&gt;,</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;">#   mean_pre_gap &lt;dbl&gt;, sd_pre_gap &lt;dbl&gt;, mean_post_gap &lt;dbl&gt;,</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;">#   sd_post_gap &lt;dbl&gt;, mean_delta_outgroup &lt;dbl&gt;, sd_delta_outgroup &lt;dbl&gt;,</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;">#   mean_delta_ingroup &lt;dbl&gt;, sd_delta_ingroup &lt;dbl&gt;, mean_delta_gap &lt;dbl&gt;,</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;">#   sd_delta_gap &lt;dbl&gt;, chapter_index &lt;int&gt;</span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="va">book_summary</span> <span class="op">&lt;-</span> <span class="fu">summarize_chapter_scores</span><span class="op">(</span></span></span>
+<span class="r-in"><span>  <span class="va">toy_sim_results</span>,</span></span>
+<span class="r-in"><span>  aggregate_level <span class="op">=</span> <span class="st">"book"</span></span></span>
+<span class="r-in"><span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">book_summary</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># A tibble: 2 × 20</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   book     sim mean_pre_ingroup sd_pre_ingroup mean_post_ingroup sd_post_ingroup</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;int&gt;</span>            <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>          <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>             <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>           <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">1</span> Bridg…    16             80.5           2.13                82            2.19</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">2</span> Commo…    16             79.5           2.13                81            2.19</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># ℹ 14 more variables: mean_pre_outgroup &lt;dbl&gt;, sd_pre_outgroup &lt;dbl&gt;,</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;">#   mean_post_outgroup &lt;dbl&gt;, sd_post_outgroup &lt;dbl&gt;, mean_pre_gap &lt;dbl&gt;,</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;">#   sd_pre_gap &lt;dbl&gt;, mean_post_gap &lt;dbl&gt;, sd_post_gap &lt;dbl&gt;,</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;">#   mean_delta_outgroup &lt;dbl&gt;, sd_delta_outgroup &lt;dbl&gt;,</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;">#   mean_delta_ingroup &lt;dbl&gt;, sd_delta_ingroup &lt;dbl&gt;, mean_delta_gap &lt;dbl&gt;,</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;">#   sd_delta_gap &lt;dbl&gt;</span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="va">party_summary</span> <span class="op">&lt;-</span> <span class="fu">summarize_chapter_scores</span><span class="op">(</span></span></span>
+<span class="r-in"><span>  <span class="va">toy_sim_results</span>,</span></span>
+<span class="r-in"><span>  by_party <span class="op">=</span> <span class="cn">TRUE</span></span></span>
+<span class="r-in"><span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">party_summary</span><span class="op">)</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># A tibble: 6 × 23</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   book     chapter party   sim mean_pre_ingroup sd_pre_ingroup mean_post_ingroup</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span>            <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>          <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>             <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">1</span> Bridge … chapte… Demo…     2             78.5          0.707              79.5</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">2</span> Bridge … chapte… Repu…     2             82.5          0.707              84.5</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">3</span> Bridge … chapte… Demo…     2             78.5          0.707              79.5</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">4</span> Bridge … chapte… Repu…     2             82.5          0.707              84.5</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">5</span> Bridge … chapte… Demo…     2             78.5          0.707              80.5</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">6</span> Bridge … chapte… Repu…     2             82.5          0.707              83.5</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># ℹ 16 more variables: sd_post_ingroup &lt;dbl&gt;, mean_pre_outgroup &lt;dbl&gt;,</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;">#   sd_pre_outgroup &lt;dbl&gt;, mean_post_outgroup &lt;dbl&gt;, sd_post_outgroup &lt;dbl&gt;,</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;">#   mean_pre_gap &lt;dbl&gt;, sd_pre_gap &lt;dbl&gt;, mean_post_gap &lt;dbl&gt;,</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;">#   sd_post_gap &lt;dbl&gt;, mean_delta_outgroup &lt;dbl&gt;, sd_delta_outgroup &lt;dbl&gt;,</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;">#   mean_delta_ingroup &lt;dbl&gt;, sd_delta_ingroup &lt;dbl&gt;, mean_delta_gap &lt;dbl&gt;,</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;">#   sd_delta_gap &lt;dbl&gt;, chapter_index &lt;int&gt;</span></span>
+</code></pre></div>
+    </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside></div>
 

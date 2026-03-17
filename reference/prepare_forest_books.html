@@ -108,6 +108,28 @@ when formatting the <code>ci</code> column. Ignored if <code>add_ci_label = FALS
 are calculated using a normal approximation (<code>mean +/- 1.96 * SE</code>).</p>
     </div>
 
+    <div class="section level2">
+    <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="va">book_summary</span> <span class="op">&lt;-</span> <span class="fu"><a href="summarize_chapter_scores.html">summarize_chapter_scores</a></span><span class="op">(</span></span></span>
+<span class="r-in"><span>  <span class="va">toy_sim_results</span>,</span></span>
+<span class="r-in"><span>  aggregate_level <span class="op">=</span> <span class="st">"book"</span></span></span>
+<span class="r-in"><span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu">prepare_forest_books</span><span class="op">(</span><span class="va">book_summary</span>, dv <span class="op">=</span> <span class="st">"delta_gap"</span><span class="op">)</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># A tibble: 2 × 25</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   book     sim mean_pre_ingroup sd_pre_ingroup mean_post_ingroup sd_post_ingroup</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;int&gt;</span>            <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>          <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>             <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>           <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">1</span> Bridg…    16             80.5           2.13                82            2.19</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">2</span> Commo…    16             79.5           2.13                81            2.19</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># ℹ 19 more variables: mean_pre_outgroup &lt;dbl&gt;, sd_pre_outgroup &lt;dbl&gt;,</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;">#   mean_post_outgroup &lt;dbl&gt;, sd_post_outgroup &lt;dbl&gt;, mean_pre_gap &lt;dbl&gt;,</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;">#   sd_pre_gap &lt;dbl&gt;, mean_post_gap &lt;dbl&gt;, sd_post_gap &lt;dbl&gt;,</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;">#   mean_delta_outgroup &lt;dbl&gt;, sd_delta_outgroup &lt;dbl&gt;,</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;">#   mean_delta_ingroup &lt;dbl&gt;, sd_delta_ingroup &lt;dbl&gt;, mean_delta_gap &lt;dbl&gt;,</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;">#   sd_delta_gap &lt;dbl&gt;, mean &lt;dbl&gt;, se &lt;dbl&gt;, lower &lt;dbl&gt;, upper &lt;dbl&gt;,</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;">#   ci &lt;chr&gt;</span></span>
+<span class="r-in"><span></span></span>
+</code></pre></div>
+    </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside></div>
 

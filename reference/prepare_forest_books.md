@@ -65,3 +65,25 @@ A tibble with added columns:
 
 Standard errors are computed as `sd / sqrt(sim)`. Confidence intervals
 are calculated using a normal approximation (`mean +/- 1.96 * SE`).
+
+## Examples
+
+``` r
+book_summary <- summarize_chapter_scores(
+  toy_sim_results,
+  aggregate_level = "book"
+)
+prepare_forest_books(book_summary, dv = "delta_gap")
+#> # A tibble: 2 × 25
+#>   book     sim mean_pre_ingroup sd_pre_ingroup mean_post_ingroup sd_post_ingroup
+#>   <chr>  <int>            <dbl>          <dbl>             <dbl>           <dbl>
+#> 1 Bridg…    16             80.5           2.13                82            2.19
+#> 2 Commo…    16             79.5           2.13                81            2.19
+#> # ℹ 19 more variables: mean_pre_outgroup <dbl>, sd_pre_outgroup <dbl>,
+#> #   mean_post_outgroup <dbl>, sd_post_outgroup <dbl>, mean_pre_gap <dbl>,
+#> #   sd_pre_gap <dbl>, mean_post_gap <dbl>, sd_post_gap <dbl>,
+#> #   mean_delta_outgroup <dbl>, sd_delta_outgroup <dbl>,
+#> #   mean_delta_ingroup <dbl>, sd_delta_ingroup <dbl>, mean_delta_gap <dbl>,
+#> #   sd_delta_gap <dbl>, mean <dbl>, se <dbl>, lower <dbl>, upper <dbl>,
+#> #   ci <chr>
+```

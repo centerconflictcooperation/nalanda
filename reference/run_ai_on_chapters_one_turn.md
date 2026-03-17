@@ -123,3 +123,21 @@ book). Each row is one rating observation and includes `chapter`, `sim`,
 plus prompt and metadata columns. Use
 [`compute_run_ai_metrics_one_turn()`](https://centerconflictcooperation.github.io/nalanda/reference/compute_run_ai_metrics_one_turn.md)
 to derive chapter-level one-turn summaries.
+
+## Examples
+
+``` r
+if (FALSE) { # \dontrun{
+run_ai_on_chapters_one_turn(
+  book_texts = list(
+    "Toy Book" = list(
+      chapter1 = toy_sim_results$chapter_excerpt[[1]]
+    )
+  ),
+  groups = c("Democrat", "Republican"),
+  context_text = "You are simulating an American adult who identifies as a {identity}.",
+  question_text = "On a 0 to 100 scale, how warmly do you feel towards {group}s?",
+  n_simulations = 1
+)
+} # }
+```

@@ -33,3 +33,14 @@ plot_chapter_trajectories(
 ## Value
 
 A ggplot2 object.
+
+## Examples
+
+``` r
+chapter_summary <- summarize_chapter_scores(toy_sim_results)
+plot_chapter_trajectories(
+  chapter_summary,
+  dv = "mean_delta_gap",
+  y_label = "Mean gap change"
+)
+```

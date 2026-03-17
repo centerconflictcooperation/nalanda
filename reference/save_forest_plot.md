@@ -52,3 +52,16 @@ Two files are created:
 - `filename.pdf`:
 
   Vector-based PDF
+
+## Examples
+
+``` r
+if (FALSE) { # \dontrun{
+book_summary <- summarize_chapter_scores(
+  toy_sim_results,
+  aggregate_level = "book"
+)
+forest_plot <- plot_forest_books(book_summary, xlab = "Delta gap")
+save_forest_plot(forest_plot, tempfile("nalanda-forest"))
+} # }
+```

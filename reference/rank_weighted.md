@@ -34,3 +34,27 @@ rank_weighted(data, weights, normalize = TRUE, decreasing = TRUE)
 
 A tibble containing all original columns plus `weighted_score`, sorted
 by score.
+
+## Examples
+
+``` r
+book_summary <- summarize_chapter_scores(
+  toy_sim_results,
+  aggregate_level = "book"
+)
+rank_weighted(
+  book_summary,
+  weights = c(mean_delta_outgroup = 0.6, mean_delta_gap = 0.4)
+)
+#> # A tibble: 2 × 21
+#>   book     sim mean_pre_ingroup sd_pre_ingroup mean_post_ingroup sd_post_ingroup
+#>   <chr>  <int>            <dbl>          <dbl>             <dbl>           <dbl>
+#> 1 Bridg…    16             80.5           2.13                82            2.19
+#> 2 Commo…    16             79.5           2.13                81            2.19
+#> # ℹ 15 more variables: mean_pre_outgroup <dbl>, sd_pre_outgroup <dbl>,
+#> #   mean_post_outgroup <dbl>, sd_post_outgroup <dbl>, mean_pre_gap <dbl>,
+#> #   sd_pre_gap <dbl>, mean_post_gap <dbl>, sd_post_gap <dbl>,
+#> #   mean_delta_outgroup <dbl>, sd_delta_outgroup <dbl>,
+#> #   mean_delta_ingroup <dbl>, sd_delta_ingroup <dbl>, mean_delta_gap <dbl>,
+#> #   sd_delta_gap <dbl>, weighted_score <dbl>
+```

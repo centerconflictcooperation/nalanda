@@ -171,3 +171,17 @@ plot_chapters_over_time(
 ## Value
 
 A ggplot2 object.
+
+## Examples
+
+``` r
+plot_chapters_over_time(
+  toy_sim_results,
+  dv = "delta_outgroup",
+  group = "party",
+  facet = "book",
+  y_label = "Outgroup change"
+)
+#> Scale for shape is already present.
+#> Adding another scale for shape, which will replace the existing scale.
+```

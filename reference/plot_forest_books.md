@@ -137,3 +137,19 @@ generated internally when needed.
 
 If `party` is present, estimates are drawn as multiple CIs per book row
 (one row per book; one estimate per party).
+
+## Examples
+
+``` r
+book_summary <- summarize_chapter_scores(
+  toy_sim_results,
+  aggregate_level = "book"
+)
+forest_df <- prepare_forest_books(book_summary, dv = "delta_gap")
+plot_forest_books(
+  forest_df,
+  xlab = "Reduction in polarization gap",
+  show_overall = FALSE
+)
+
+```
