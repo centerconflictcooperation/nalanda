@@ -55,11 +55,14 @@ chapters and identities within the same \code{sim} share the same seed.}
 
 \item{integration}{Optional integration/provider slug. If supplied and
 \code{model} is not fully-qualified, nalanda will build
-\code{"@{integration}/{model}"}. Preferred for new Portkey/NYU setups.}
+\code{"@{integration}/{model}"}. When both \code{nalanda.integration} and
+\code{nalanda.virtual_key} options are set and neither argument is supplied,
+\code{integration} is preferred.}
 
 \item{virtual_key}{Optional legacy virtual key. If supplied and \code{model} is
 not fully-qualified, nalanda will build \code{"@{virtual_key}/{model}"}.
-Use either \code{integration} or \code{virtual_key}, not both.}
+Use either \code{integration} or \code{virtual_key}, not both when explicitly
+supplying function arguments.}
 
 \item{base_url}{Character. Base URL for API calls.}
 
@@ -88,19 +91,4 @@ summaries.
 This function implements a one-turn design where identity context, chapter
 text, and the rating question are combined into a single prompt. Independent
 prompts are executed in parallel with \code{\link[ellmer:parallel_chat]{ellmer::parallel_chat_structured()}}.
-}
-\examples{
-\dontrun{
-run_ai_on_chapters_one_turn(
-  book_texts = list(
-    "Toy Book" = list(
-      chapter1 = toy_sim_results$chapter_excerpt[[1]]
-    )
-  ),
-  groups = c("Democrat", "Republican"),
-  context_text = "You are simulating an American adult who identifies as a {identity}.",
-  question_text = "On a 0 to 100 scale, how warmly do you feel towards {group}s?",
-  n_simulations = 1
-)
-}
 }

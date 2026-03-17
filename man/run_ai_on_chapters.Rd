@@ -55,12 +55,15 @@ simulation).}
 \item{integration}{Optional integration/provider slug. Should look like
 \code{"vertexai"} or similar. If supplied and \code{model} is not fully-qualified
 (does not start with \code{"@"}), nalanda will build \code{"@{integration}/{model}"}.
-Preferred for new Portkey/NYU setups.}
+Preferred for new Portkey/NYU setups. When both \code{nalanda.integration} and
+\code{nalanda.virtual_key} options are set and neither argument is supplied,
+\code{integration} is preferred.}
 
 \item{virtual_key}{Optional legacy virtual key. Should look like
 \code{"gemini-8c2498"} or similar. If supplied and \code{model} is not
 fully-qualified, nalanda will build \code{"@{virtual_key}/{model}"}.
-Use either \code{integration} or \code{virtual_key}, not both.}
+Use either \code{integration} or \code{virtual_key}, not both when explicitly
+supplying function arguments.}
 
 \item{base_url}{Character. Base URL for API calls.}
 

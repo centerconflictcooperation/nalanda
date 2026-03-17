@@ -21,19 +21,3 @@ A ggplot2 object.
 \description{
 Plot chapter trajectories for one-turn simulations
 }
-\examples{
-one_turn_like <- toy_run_ai_turns |>
-  dplyr::filter(turn_type == "post") |>
-  dplyr::mutate(
-    turn_type = "single",
-    prompt = post_prompt
-  ) |>
-  dplyr::select(-baseline_prompt, -post_prompt)
-
-plot_chapters_over_time_one_turn(
-  one_turn_like,
-  dv = "gap",
-  group = "party",
-  facet = "book"
-)
-}

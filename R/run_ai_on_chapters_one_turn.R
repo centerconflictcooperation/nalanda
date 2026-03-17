@@ -27,10 +27,13 @@
 #' @param model Character. Model name for the chat backend.
 #' @param integration Optional integration/provider slug. If supplied and
 #'   `model` is not fully-qualified, nalanda will build
-#'   `"@{integration}/{model}"`. Preferred for new Portkey/NYU setups.
+#'   `"@{integration}/{model}"`. When both `nalanda.integration` and
+#'   `nalanda.virtual_key` options are set and neither argument is supplied,
+#'   `integration` is preferred.
 #' @param virtual_key Optional legacy virtual key. If supplied and `model` is
 #'   not fully-qualified, nalanda will build `"@{virtual_key}/{model}"`.
-#'   Use either `integration` or `virtual_key`, not both.
+#'   Use either `integration` or `virtual_key`, not both when explicitly
+#'   supplying function arguments.
 #' @param base_url Character. Base URL for API calls.
 #' @param excerpt_chars Integer. Number of chapter characters to retain in the
 #'   stored prompt preview shown in results.
@@ -47,21 +50,6 @@
 #'   `rating`, plus prompt and metadata columns. Use
 #'   [compute_run_ai_metrics_one_turn()] to derive chapter-level one-turn
 #'   summaries.
-#'
-#' @examples
-#' \dontrun{
-#' run_ai_on_chapters_one_turn(
-#'   book_texts = list(
-#'     "Toy Book" = list(
-#'       chapter1 = toy_sim_results$chapter_excerpt[[1]]
-#'     )
-#'   ),
-#'   groups = c("Democrat", "Republican"),
-#'   context_text = "You are simulating an American adult who identifies as a {identity}.",
-#'   question_text = "On a 0 to 100 scale, how warmly do you feel towards {group}s?",
-#'   n_simulations = 1
-#' )
-#' }
 #' @export
 run_ai_on_chapters_one_turn <- function(
   book_texts,
@@ -81,69 +69,54 @@ run_ai_on_chapters_one_turn <- function(
   max_active = 10,
   rpm = 500
 ) {
-  if (missing(groups) || length(groups) < 2) {
-    stop("`groups` must be a character vector with at least 2 group labels.")
-  }
-  if (missing(question_text) || length(question_text) != 1) {
-    stop("`question_text` must be a single character string.")
-  }
-  if (missing(context_text)) {
-    stop("Please provide `context_text`.")
-  }
-  if (n_simulations < 1) {
-    stop("`n_simulations` must be >= 1.")
-  }
-  if (identical(model, "")) {
-    stop("`model` must be a non-empty string.")
-  }
-  if (!is.null(integration) && nzchar(integration) &&
-      !is.null(virtual_key) && nzchar(virtual_key)) {
-    stop("Please provide only one of `integration` or `virtual_key`.")
-  }
-
-  per_group <- grepl("\\{group\\}", question_text)
-
-  if (length(context_text) == 1 && grepl("\\{identity\\}", context_text)) {
-    context_text <- vapply(
-      groups,
-      function(g) {
-        gsub("\\{identity\\}", g, context_text)
-      },
-      character(1),
-      USE.NAMES = FALSE
-    )
-  }
-  if (length(context_text) != length(groups)) {
-    stop(
-      "`context_text` must be either a scalar template with `{identity}` or ",
-      "a vector of length equal to `length(groups)` (",
-      length(groups),
-      ")."
-    )
-  }
-
-  if (!startsWith(model, "@")) {
-    prefix <- NULL
-    if (!is.null(integration) && nzchar(integration)) {
-      prefix <- integration
-    } else if (!is.null(virtual_key) && nzchar(virtual_key)) {
-      prefix <- virtual_key
-    }
-    if (!is.null(prefix)) {
-      model <- paste0("@", prefix, "/", model)
-    }
-  }
-
-  chapter_jobs <- build_one_turn_chapter_jobs(book_texts)
-  total_steps <- nrow(chapter_jobs) * n_simulations * length(groups)
-
-  pb <- progress::progress_bar$new(
-    format = "  running [:bar] :percent eta: :eta :what",
-    total = total_steps,
-    clear = FALSE,
-    width = 60
+  route <- resolve_model_route(
+    integration = integration,
+    virtual_key = virtual_key,
+    integration_missing = missing(integration),
+    virtual_key_missing = missing(virtual_key)
   )
+  integration <- route$integration
+  virtual_key <- route$virtual_key
 
+  run_simulation_pipeline(
+    book_texts = book_texts,
+    groups = groups,
+    context_text = context_text,
+    question_text = question_text,
+    n_simulations = n_simulations,
+    temperature = temperature,
+    seed = seed,
+    model = model,
+    integration = integration,
+    virtual_key = virtual_key,
+    base_url = base_url,
+    excerpt_chars = excerpt_chars,
+    include_tokens = include_tokens,
+    include_cost = include_cost,
+    executor = execute_one_turn_pipeline,
+    max_active = max_active,
+    rpm = rpm
+  )
+}
+
+execute_one_turn_pipeline <- function(
+  chapter_jobs,
+  groups,
+  context_text,
+  per_group,
+  question_text,
+  n_simulations,
+  temperature,
+  seed,
+  model,
+  base_url,
+  excerpt_chars,
+  include_tokens,
+  include_cost,
+  pb,
+  max_active,
+  rpm
+) {
   group_keys <- tolower(gsub(" ", "_", groups))
   if (per_group) {
     response_fields <- list(party = ellmer::type_string())
@@ -162,36 +135,11 @@ run_ai_on_chapters_one_turn <- function(
   all_row_i <- 0L
 
   for (k in seq_len(n_simulations)) {
-    chat <- tryCatch(
-      ellmer::chat_portkey(
-        model = model,
-        base_url = base_url,
-        params = ellmer::params(
-          temperature = temperature,
-          seed = seed + k - 1L
-        ),
-        api_args = list(
-          temperature = temperature,
-          seed = seed + k - 1L
-        )
-      ),
-      error = function(e) {
-        msg <- conditionMessage(e)
-        if (grepl("PORTKEY_VIRTUAL_KEY", msg, fixed = TRUE)) {
-          stop(
-            "Please provide `integration` (or set ",
-            "`options(nalanda.integration=...)`). ",
-            "If you are still using the older NYU setup, `virtual_key` ",
-            "and `options(nalanda.virtual_key=...)` are also supported. ",
-            "Your installed `ellmer` expects `PORTKEY_VIRTUAL_KEY` when ",
-            "`model` is not fully-qualified. ",
-            "Alternative: use a fully-qualified model string in ",
-            "`model` (e.g., '@provider/model') or update `ellmer`.",
-            call. = FALSE
-          )
-        }
-        stop(e)
-      }
+    chat <- new_portkey_chat(
+      model = model,
+      base_url = base_url,
+      temperature = temperature,
+      seed = seed + k - 1L
     )
 
     prompt_jobs <- vector("list", nrow(chapter_jobs) * length(groups))
@@ -343,24 +291,15 @@ run_ai_on_chapters_one_turn <- function(
     out_tbl <- out_tbl[, c(setdiff(names(out_tbl), long_cols), long_cols)]
   }
 
-  chapter_excerpts <- tibble::tibble(
-    book = chapter_jobs$book,
-    chapter = chapter_jobs$chapter,
-    chapter_excerpt = chapter_jobs$chapter_text
-  )
-  chapter_excerpts <- dplyr::distinct(chapter_excerpts)
+  chapter_excerpts <- chapter_jobs_to_excerpt_index(chapter_jobs)
 
   if (all(is.na(chapter_jobs$book))) {
-    chapter_excerpts <- dplyr::select(chapter_excerpts, -dplyr::all_of("book"))
     out <- out_tbl
   } else {
     out <- split(out_tbl, out_tbl$book)
     out <- lapply(out, tibble::as_tibble)
 
     for (book_name in names(out)) {
-      attr(out[[book_name]], "model") <- normalize_model_name(model)
-      attr(out[[book_name]], "temperature") <- temperature
-      attr(out[[book_name]], "n_simulations") <- n_simulations
       attr(out[[book_name]], "chapter_excerpts") <- dplyr::filter(
         chapter_excerpts,
         .data$book == book_name
@@ -368,10 +307,6 @@ run_ai_on_chapters_one_turn <- function(
     }
   }
 
-  class(out) <- c(class(out), "nalanda")
-  attr(out, "model") <- normalize_model_name(model)
-  attr(out, "temperature") <- temperature
-  attr(out, "n_simulations") <- n_simulations
   attr(out, "chapter_excerpts") <- chapter_excerpts
   out
 }
@@ -387,17 +322,6 @@ run_ai_on_chapters_one_turn <- function(
 #' @return A simulation-level tibble with one-turn metrics. In per-group mode
 #'   this includes `ingroup_rating`, `outgroup_rating`, and `gap`. In
 #'   single-question mode it includes `overall_rating` and `outgroup_rating`.
-#'
-#' @examples
-#' one_turn_like <- toy_run_ai_turns |>
-#'   dplyr::filter(turn_type == "post") |>
-#'   dplyr::mutate(
-#'     turn_type = "single",
-#'     prompt = post_prompt
-#'   ) |>
-#'   dplyr::select(-baseline_prompt, -post_prompt)
-#'
-#' compute_run_ai_metrics_one_turn(one_turn_like)
 #' @export
 compute_run_ai_metrics_one_turn <- function(x, per_group = NULL) {
   input <- x
@@ -417,9 +341,7 @@ compute_run_ai_metrics_one_turn <- function(x, per_group = NULL) {
     length(input) > 0) {
     model <- rlang::`%||%`(model, attr(input[[1]], "model"))
     temperature <- rlang::`%||%`(temperature, attr(input[[1]], "temperature"))
-    n_simulations <- rlang::`%||%`(n_simulations, attr(input[[1]], "n_simulations"))
   }
-  model <- normalize_model_name(model)
 
   required_cols <- c("chapter", "sim", "identity", "rating")
   missing_cols <- setdiff(required_cols, names(x))
@@ -507,22 +429,6 @@ compute_run_ai_metrics_one_turn <- function(x, per_group = NULL) {
 #' @param ... Additional arguments passed to [plot_chapters_over_time()].
 #'
 #' @return A ggplot2 object.
-#'
-#' @examples
-#' one_turn_like <- toy_run_ai_turns |>
-#'   dplyr::filter(turn_type == "post") |>
-#'   dplyr::mutate(
-#'     turn_type = "single",
-#'     prompt = post_prompt
-#'   ) |>
-#'   dplyr::select(-baseline_prompt, -post_prompt)
-#'
-#' plot_chapters_over_time_one_turn(
-#'   one_turn_like,
-#'   dv = "gap",
-#'   group = "party",
-#'   facet = "book"
-#' )
 #' @export
 plot_chapters_over_time_one_turn <- function(
   chapters,
@@ -605,54 +511,6 @@ build_group_question_block <- function(question_template, groups, identity_label
   }
 
   question_template
-}
-
-build_one_turn_chapter_jobs <- function(book_texts) {
-  if (is.character(book_texts) && length(book_texts) == 1) {
-    chapter_id <- if (!is.null(names(book_texts))) {
-      names(book_texts)[1]
-    } else {
-      "chapter_1"
-    }
-
-    return(tibble::tibble(
-      book = NA_character_,
-      chapter = chapter_id,
-      chapter_text = unname(book_texts[[1]])
-    ))
-  }
-
-  if (is.list(book_texts)) {
-    out <- list()
-    out_i <- 0L
-    book_names <- names(book_texts)
-
-    for (i in seq_along(book_texts)) {
-      book <- if (is.null(book_names)) paste0("book_", i) else book_names[[i]]
-      chapter_texts <- unlist(book_texts[[i]], use.names = TRUE)
-      validate_chapter_order(
-        chapter = names(chapter_texts),
-        book = book,
-        arg_name = "`book_texts` chapter names"
-      )
-
-      for (j in seq_along(chapter_texts)) {
-        out_i <- out_i + 1L
-        out[[out_i]] <- tibble::tibble(
-          book = book,
-          chapter = names(chapter_texts)[[j]],
-          chapter_text = unname(chapter_texts[[j]])
-        )
-      }
-    }
-
-    return(dplyr::bind_rows(out))
-  }
-
-  stop(
-    "`book_texts` must be either a single chapter text or ",
-    "a nested list like `read_book_texts()`."
-  )
 }
 
 normalize_parallel_chat_structured_output <- function(x) {

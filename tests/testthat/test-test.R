@@ -269,6 +269,85 @@ test_that("run_ai_on_chapters_one_turn rejects integration and virtual_key toget
   )
 })
 
+test_that("run_ai_on_chapters ignores lingering virtual_key option when integration option is set", {
+  withr::local_options(list(
+    nalanda.integration = "vertexai",
+    nalanda.virtual_key = "gemini-8c2498"
+  ))
+
+  bad_book_texts <- list(
+    moraltribes = list(
+      "4_Chapter_4.txt" = "chapter a",
+      "4_Chapter3.txt" = "chapter b"
+    )
+  )
+
+  expect_message(
+    expect_error(
+      run_ai_on_chapters(
+        book_texts = bad_book_texts,
+        groups = c("Democrat", "Republican"),
+        context_text = "You are simulating a {identity}.",
+        question_text = "How warmly do you feel towards your outgroup?"
+      ),
+      "Duplicate chapters identified while parsing"
+    ),
+    "Both `nalanda.integration` and `nalanda.virtual_key` options are set; prioritizing `integration`.",
+    fixed = TRUE
+  )
+})
+
+test_that("run_ai_on_chapters respects explicit integration even with virtual_key option set", {
+  withr::local_options(list(nalanda.virtual_key = "gemini-8c2498"))
+
+  bad_book_texts <- list(
+    moraltribes = list(
+      "4_Chapter_4.txt" = "chapter a",
+      "4_Chapter3.txt" = "chapter b"
+    )
+  )
+
+  expect_error(
+    run_ai_on_chapters(
+      book_texts = bad_book_texts,
+      groups = c("Democrat", "Republican"),
+      context_text = "You are simulating a {identity}.",
+      question_text = "How warmly do you feel towards your outgroup?",
+      integration = "vertexai"
+    ),
+    "Duplicate chapters identified while parsing"
+  )
+})
+
+test_that("run_ai_on_chapters_one_turn ignores lingering virtual_key option when integration option is set", {
+  withr::local_options(list(
+    nalanda.integration = "vertexai",
+    nalanda.virtual_key = "gemini-8c2498"
+  ))
+
+  err <- NULL
+  expect_message(
+    err <- tryCatch(
+      run_ai_on_chapters_one_turn(
+        book_texts = "chapter",
+        groups = c("Democrat", "Republican"),
+        context_text = "You are simulating a {identity}.",
+        question_text = "How warmly do you feel towards your outgroup?"
+      ),
+      error = identity
+    ),
+    "Both `nalanda.integration` and `nalanda.virtual_key` options are set; prioritizing `integration`.",
+    fixed = TRUE
+  )
+
+  expect_s3_class(err, "error")
+  expect_false(grepl(
+    "Please provide only one of `integration` or `virtual_key`",
+    conditionMessage(err),
+    fixed = TRUE
+  ))
+})
+
 test_that("compute_run_ai_metrics_one_turn computes one-turn per-group summaries", {
   x <- tibble::tibble(
     chapter = c("chapter_1", "chapter_1", "chapter_2", "chapter_2"),

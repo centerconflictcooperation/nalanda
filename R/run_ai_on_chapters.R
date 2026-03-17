@@ -40,11 +40,14 @@
 #' @param integration Optional integration/provider slug. Should look like
 #'   `"vertexai"` or similar. If supplied and `model` is not fully-qualified
 #'   (does not start with `"@"`), nalanda will build `"@{integration}/{model}"`.
-#'   Preferred for new Portkey/NYU setups.
+#'   Preferred for new Portkey/NYU setups. When both `nalanda.integration` and
+#'   `nalanda.virtual_key` options are set and neither argument is supplied,
+#'   `integration` is preferred.
 #' @param virtual_key Optional legacy virtual key. Should look like
 #'   `"gemini-8c2498"` or similar. If supplied and `model` is not
 #'   fully-qualified, nalanda will build `"@{virtual_key}/{model}"`.
-#'   Use either `integration` or `virtual_key`, not both.
+#'   Use either `integration` or `virtual_key`, not both when explicitly
+#'   supplying function arguments.
 #' @param base_url Character. Base URL for API calls.
 #' @param excerpt_chars Integer. Number of chapter characters to retain in the
 #'   stored post-prompt preview shown in results.
@@ -103,6 +106,15 @@ run_ai_on_chapters <- function(
   include_tokens = FALSE,
   include_cost = FALSE
 ) {
+  route <- resolve_model_route(
+    integration = integration,
+    virtual_key = virtual_key,
+    integration_missing = missing(integration),
+    virtual_key_missing = missing(virtual_key)
+  )
+  integration <- route$integration
+  virtual_key <- route$virtual_key
+
   # --- Input validation ---
   if (missing(groups) || length(groups) < 2) {
     stop("`groups` must be a character vector with at least 2 group labels.")
@@ -118,10 +130,6 @@ run_ai_on_chapters <- function(
   }
   if (n_simulations < 1) {
     stop("`n_simulations` must be >= 1.")
-  }
-  if (!is.null(integration) && nzchar(integration) &&
-      !is.null(virtual_key) && nzchar(virtual_key)) {
-    stop("Please provide only one of `integration` or `virtual_key`.")
   }
 
   # --- Expand context_text from template if scalar ---
