@@ -115,3 +115,12 @@ A ggplot2 object.
 Create a plot showing means over chapter timepoints using rempsyc::plot_means_over_time
 for the wide-format response variables.
 }
+\examples{
+plot_chapters_over_time(
+  toy_sim_results,
+  dv = "delta_outgroup",
+  group = "party",
+  facet = "book",
+  y_label = "Outgroup change"
+)
+}

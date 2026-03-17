@@ -48,3 +48,11 @@ book level (e.g., using
 Standard errors are computed as \code{sd / sqrt(sim)}. Confidence intervals
 are calculated using a normal approximation (\verb{mean +/- 1.96 * SE}).
 }
+\examples{
+book_summary <- summarize_chapter_scores(
+  toy_sim_results,
+  aggregate_level = "book"
+)
+prepare_forest_books(book_summary, dv = "delta_gap")
+
+}

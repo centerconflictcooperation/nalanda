@@ -24,3 +24,11 @@ A ggplot2 object.
 \description{
 Create a faceted plot (one facet per book) showing mean scores and error bars.
 }
+\examples{
+chapter_summary <- summarize_chapter_scores(toy_sim_results)
+plot_chapter_scores_faceted(
+  chapter_summary,
+  dv = "delta_outgroup",
+  y_label = "Mean outgroup change"
+)
+}

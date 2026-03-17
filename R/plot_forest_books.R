@@ -55,6 +55,18 @@
 #' If `party` is present, estimates are drawn as multiple CIs per book row
 #' (one row per book; one estimate per party).
 #'
+#' @examples
+#' book_summary <- summarize_chapter_scores(
+#'   toy_sim_results,
+#'   aggregate_level = "book"
+#' )
+#' forest_df <- prepare_forest_books(book_summary, dv = "delta_gap")
+#' plot_forest_books(
+#'   forest_df,
+#'   xlab = "Reduction in polarization gap",
+#'   show_overall = FALSE
+#' )
+#'
 #' @export
 plot_forest_books <- function(
   forest_df,
@@ -366,6 +378,13 @@ plot_forest_books <- function(
 #' Standard errors are computed as `sd / sqrt(sim)`. Confidence intervals
 #' are calculated using a normal approximation (`mean +/- 1.96 * SE`).
 #'
+#' @examples
+#' book_summary <- summarize_chapter_scores(
+#'   toy_sim_results,
+#'   aggregate_level = "book"
+#' )
+#' prepare_forest_books(book_summary, dv = "delta_gap")
+#'
 #' @export
 prepare_forest_books <- function(
   summary_books,
@@ -438,6 +457,16 @@ prepare_forest_books <- function(
 #' \describe{
 #'   \item{`filename.png`}{High-resolution raster image}
 #'   \item{`filename.pdf`}{Vector-based PDF}
+#' }
+#'
+#' @examples
+#' \dontrun{
+#' book_summary <- summarize_chapter_scores(
+#'   toy_sim_results,
+#'   aggregate_level = "book"
+#' )
+#' forest_plot <- plot_forest_books(book_summary, xlab = "Delta gap")
+#' save_forest_plot(forest_plot, tempfile("nalanda-forest"))
 #' }
 #'
 #' @export

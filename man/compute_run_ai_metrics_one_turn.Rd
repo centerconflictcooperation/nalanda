@@ -22,3 +22,14 @@ single-question mode it includes \code{overall_rating} and \code{outgroup_rating
 \description{
 Compute one-turn ingroup/outgroup metrics from raw output
 }
+\examples{
+one_turn_like <- toy_run_ai_turns |>
+  dplyr::filter(turn_type == "post") |>
+  dplyr::mutate(
+    turn_type = "single",
+    prompt = post_prompt
+  ) |>
+  dplyr::select(-baseline_prompt, -post_prompt)
+
+compute_run_ai_metrics_one_turn(one_turn_like)
+}

@@ -16,6 +16,22 @@
 #'   (if present).
 #' @return A tibble summarizing each chapter (and book if present). The returned
 #'   object will have the original model attribute copied to it.
+#'
+#' @examples
+#' chapter_summary <- summarize_chapter_scores(toy_sim_results)
+#' chapter_summary
+#'
+#' book_summary <- summarize_chapter_scores(
+#'   toy_sim_results,
+#'   aggregate_level = "book"
+#' )
+#' book_summary
+#'
+#' party_summary <- summarize_chapter_scores(
+#'   toy_sim_results,
+#'   by_party = TRUE
+#' )
+#' head(party_summary)
 #' @export
 summarize_chapter_scores <- function(
   x,

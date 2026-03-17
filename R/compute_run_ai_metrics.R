@@ -18,6 +18,14 @@
 #'   `pre_outgroup`, `post_outgroup`, `delta_outgroup`, and in per-group mode
 #'   also `pre_ingroup`, `post_ingroup`, `pre_gap`, `post_gap`,
 #'   `delta_ingroup`, `delta_gap`).
+#'
+#' @examples
+#' metrics <- compute_run_ai_metrics(toy_run_ai_turns)
+#' head(metrics)
+#'
+#' # The processed output can be passed on to summary and plotting helpers.
+#' summary_by_chapter <- summarize_chapter_scores(metrics)
+#' head(summary_by_chapter)
 #' @export
 compute_run_ai_metrics <- function(x, per_group = NULL) {
   input <- x

@@ -7,6 +7,14 @@
 #'   `"post_outgroup"` will plot `mean_post_outgroup` ± `sd_post_outgroup`.
 #' @param y_label Character string for y-axis label.
 #' @return A ggplot2 object.
+#'
+#' @examples
+#' chapter_summary <- summarize_chapter_scores(toy_sim_results)
+#' plot_chapter_scores_faceted(
+#'   chapter_summary,
+#'   dv = "delta_outgroup",
+#'   y_label = "Mean outgroup change"
+#' )
 #' @export
 plot_chapter_scores_faceted <- function(
   summary_df,

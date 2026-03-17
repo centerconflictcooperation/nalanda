@@ -26,3 +26,13 @@ sorted by score.
 Compute a weighted score across selected numeric columns and return the input
 data with a final \code{weighted_score}, sorted by score.
 }
+\examples{
+book_summary <- summarize_chapter_scores(
+  toy_sim_results,
+  aggregate_level = "book"
+)
+rank_weighted(
+  book_summary,
+  weights = c(mean_delta_outgroup = 0.6, mean_delta_gap = 0.4)
+)
+}

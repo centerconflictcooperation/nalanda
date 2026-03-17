@@ -54,6 +54,15 @@
 #'   y variable, or "string.length" to order panels by facet label length.
 #'   Defaults to "increasing".
 #' @return A ggplot2 object.
+#'
+#' @examples
+#' plot_chapters_over_time(
+#'   toy_sim_results,
+#'   dv = "delta_outgroup",
+#'   group = "party",
+#'   facet = "book",
+#'   y_label = "Outgroup change"
+#' )
 #' @export
 plot_chapters_over_time <- function(
   chapters,

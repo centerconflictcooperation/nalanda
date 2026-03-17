@@ -9,6 +9,14 @@
 #'   `"mean_post_outgroup"`.
 #' @param y_label Character. Y-axis label.
 #' @return A ggplot2 object.
+#'
+#' @examples
+#' chapter_summary <- summarize_chapter_scores(toy_sim_results)
+#' plot_chapter_trajectories(
+#'   chapter_summary,
+#'   dv = "mean_delta_gap",
+#'   y_label = "Mean gap change"
+#' )
 #' @export
 plot_chapter_trajectories <- function(
   summary_df,

@@ -13,6 +13,16 @@
 #'
 #' @return A tibble containing all original columns plus `weighted_score`,
 #'   sorted by score.
+#'
+#' @examples
+#' book_summary <- summarize_chapter_scores(
+#'   toy_sim_results,
+#'   aggregate_level = "book"
+#' )
+#' rank_weighted(
+#'   book_summary,
+#'   weights = c(mean_delta_outgroup = 0.6, mean_delta_gap = 0.4)
+#' )
 #' @export
 rank_weighted <- function(
   data,

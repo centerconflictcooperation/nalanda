@@ -30,3 +30,11 @@ also \code{pre_ingroup}, \code{post_ingroup}, \code{pre_gap}, \code{post_gap},
 Separates post-processing from model execution so users can re-compute
 metrics without re-running API calls.
 }
+\examples{
+metrics <- compute_run_ai_metrics(toy_run_ai_turns)
+head(metrics)
+
+# The processed output can be passed on to summary and plotting helpers.
+summary_by_chapter <- summarize_chapter_scores(metrics)
+head(summary_by_chapter)
+}

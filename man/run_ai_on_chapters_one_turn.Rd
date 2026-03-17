@@ -89,3 +89,18 @@ This function implements a one-turn design where identity context, chapter
 text, and the rating question are combined into a single prompt. Independent
 prompts are executed in parallel with \code{\link[ellmer:parallel_chat]{ellmer::parallel_chat_structured()}}.
 }
+\examples{
+\dontrun{
+run_ai_on_chapters_one_turn(
+  book_texts = list(
+    "Toy Book" = list(
+      chapter1 = toy_sim_results$chapter_excerpt[[1]]
+    )
+  ),
+  groups = c("Democrat", "Republican"),
+  context_text = "You are simulating an American adult who identifies as a {identity}.",
+  question_text = "On a 0 to 100 scale, how warmly do you feel towards {group}s?",
+  n_simulations = 1
+)
+}
+}

@@ -33,3 +33,19 @@ number of simulations, means and SDs for core model outputs. In the current
 schema, this includes ingroup/outgroup pre-post ratings plus delta and gap
 metrics (for example delta_outgroup, delta_ingroup, and delta_gap).
 }
+\examples{
+chapter_summary <- summarize_chapter_scores(toy_sim_results)
+chapter_summary
+
+book_summary <- summarize_chapter_scores(
+  toy_sim_results,
+  aggregate_level = "book"
+)
+book_summary
+
+party_summary <- summarize_chapter_scores(
+  toy_sim_results,
+  by_party = TRUE
+)
+head(party_summary)
+}

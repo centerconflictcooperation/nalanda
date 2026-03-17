@@ -47,6 +47,21 @@
 #'   `rating`, plus prompt and metadata columns. Use
 #'   [compute_run_ai_metrics_one_turn()] to derive chapter-level one-turn
 #'   summaries.
+#'
+#' @examples
+#' \dontrun{
+#' run_ai_on_chapters_one_turn(
+#'   book_texts = list(
+#'     "Toy Book" = list(
+#'       chapter1 = toy_sim_results$chapter_excerpt[[1]]
+#'     )
+#'   ),
+#'   groups = c("Democrat", "Republican"),
+#'   context_text = "You are simulating an American adult who identifies as a {identity}.",
+#'   question_text = "On a 0 to 100 scale, how warmly do you feel towards {group}s?",
+#'   n_simulations = 1
+#' )
+#' }
 #' @export
 run_ai_on_chapters_one_turn <- function(
   book_texts,
@@ -372,6 +387,17 @@ run_ai_on_chapters_one_turn <- function(
 #' @return A simulation-level tibble with one-turn metrics. In per-group mode
 #'   this includes `ingroup_rating`, `outgroup_rating`, and `gap`. In
 #'   single-question mode it includes `overall_rating` and `outgroup_rating`.
+#'
+#' @examples
+#' one_turn_like <- toy_run_ai_turns |>
+#'   dplyr::filter(turn_type == "post") |>
+#'   dplyr::mutate(
+#'     turn_type = "single",
+#'     prompt = post_prompt
+#'   ) |>
+#'   dplyr::select(-baseline_prompt, -post_prompt)
+#'
+#' compute_run_ai_metrics_one_turn(one_turn_like)
 #' @export
 compute_run_ai_metrics_one_turn <- function(x, per_group = NULL) {
   input <- x
@@ -481,6 +507,22 @@ compute_run_ai_metrics_one_turn <- function(x, per_group = NULL) {
 #' @param ... Additional arguments passed to [plot_chapters_over_time()].
 #'
 #' @return A ggplot2 object.
+#'
+#' @examples
+#' one_turn_like <- toy_run_ai_turns |>
+#'   dplyr::filter(turn_type == "post") |>
+#'   dplyr::mutate(
+#'     turn_type = "single",
+#'     prompt = post_prompt
+#'   ) |>
+#'   dplyr::select(-baseline_prompt, -post_prompt)
+#'
+#' plot_chapters_over_time_one_turn(
+#'   one_turn_like,
+#'   dv = "gap",
+#'   group = "party",
+#'   facet = "book"
+#' )
 #' @export
 plot_chapters_over_time_one_turn <- function(
   chapters,
