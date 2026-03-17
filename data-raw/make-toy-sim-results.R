@@ -35,10 +35,10 @@ toy_sim_results <- tibble::as_tibble(toy_sim_results) |>
       TRUE ~ 45 + 2 * .data$chapter_num + .data$sim
     ),
     target_delta_gap = dplyr::case_when(
-      .data$book == "Bridge Stories" & .data$party == "Democrat" ~ c(-3, -6, -9, -12)[.data$chapter_num] - 0.5 * (.data$sim - 1),
-      .data$book == "Bridge Stories" & .data$party == "Republican" ~ c(-11, -8, -5, -2)[.data$chapter_num] + 0.5 * (.data$sim - 1),
-      .data$book == "Common Ground" & .data$party == "Democrat" ~ c(-4, -6, -5, -7)[.data$chapter_num] - 0.5 * (.data$sim - 1),
-      TRUE ~ c(-5, -4, -6, -5)[.data$chapter_num] + 0.5 * (.data$sim - 1)
+      .data$book == "Bridge Stories" & .data$party == "Democrat" ~ c(3, 6, 9, 12)[.data$chapter_num] + 0.5 * (.data$sim - 1),
+      .data$book == "Bridge Stories" & .data$party == "Republican" ~ c(11, 8, 5, 2)[.data$chapter_num] - 0.5 * (.data$sim - 1),
+      .data$book == "Common Ground" & .data$party == "Democrat" ~ c(4, 6, 5, 7)[.data$chapter_num] + 0.5 * (.data$sim - 1),
+      TRUE ~ c(5, 4, 6, 5)[.data$chapter_num] - 0.5 * (.data$sim - 1)
     ),
     delta_ingroup = dplyr::case_when(
       .data$book == "Bridge Stories" & .data$party == "Democrat" ~ c(1, 1, 2, 2)[.data$chapter_num],
@@ -46,12 +46,12 @@ toy_sim_results <- tibble::as_tibble(toy_sim_results) |>
       .data$book == "Common Ground" & .data$party == "Democrat" ~ c(1, 2, 1, 2)[.data$chapter_num],
       TRUE ~ c(2, 1, 2, 1)[.data$chapter_num]
     ),
-    delta_outgroup = .data$delta_ingroup - .data$target_delta_gap,
+    delta_outgroup = .data$delta_ingroup + .data$target_delta_gap,
     post_ingroup = .data$pre_ingroup + .data$delta_ingroup,
     post_outgroup = .data$pre_outgroup + .data$delta_outgroup,
     pre_gap = .data$pre_ingroup - .data$pre_outgroup,
     post_gap = .data$post_ingroup - .data$post_outgroup,
-    delta_gap = .data$post_gap - .data$pre_gap
+    delta_gap = .data$delta_outgroup - .data$delta_ingroup
   ) |>
   dplyr::select(
     .data$book, .data$chapter, .data$sim, .data$identity, .data$party,
