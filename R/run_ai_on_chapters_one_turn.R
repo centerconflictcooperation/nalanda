@@ -343,8 +343,9 @@ run_ai_on_chapters_one_turn <- function(
     out <- lapply(out, tibble::as_tibble)
 
     for (book_name in names(out)) {
-      attr(out[[book_name]], "model") <- model
+      attr(out[[book_name]], "model") <- normalize_model_name(model)
       attr(out[[book_name]], "temperature") <- temperature
+      attr(out[[book_name]], "n_simulations") <- n_simulations
       attr(out[[book_name]], "chapter_excerpts") <- dplyr::filter(
         chapter_excerpts,
         .data$book == book_name
@@ -353,8 +354,9 @@ run_ai_on_chapters_one_turn <- function(
   }
 
   class(out) <- c(class(out), "nalanda")
-  attr(out, "model") <- model
+  attr(out, "model") <- normalize_model_name(model)
   attr(out, "temperature") <- temperature
+  attr(out, "n_simulations") <- n_simulations
   attr(out, "chapter_excerpts") <- chapter_excerpts
   out
 }
@@ -382,13 +384,16 @@ compute_run_ai_metrics_one_turn <- function(x, per_group = NULL) {
 
   model <- attr(input, "model")
   temperature <- attr(input, "temperature")
+  n_simulations <- attr(input, "n_simulations")
   chapter_excerpts <- chapter_excerpt_index(input)
 
   if (is.null(model) && is.list(input) && !inherits(input, "data.frame") &&
     length(input) > 0) {
     model <- rlang::`%||%`(model, attr(input[[1]], "model"))
     temperature <- rlang::`%||%`(temperature, attr(input[[1]], "temperature"))
+    n_simulations <- rlang::`%||%`(n_simulations, attr(input[[1]], "n_simulations"))
   }
+  model <- normalize_model_name(model)
 
   required_cols <- c("chapter", "sim", "identity", "rating")
   missing_cols <- setdiff(required_cols, names(x))
@@ -462,6 +467,7 @@ compute_run_ai_metrics_one_turn <- function(x, per_group = NULL) {
 
   attr(out, "model") <- model
   attr(out, "temperature") <- temperature
+  attr(out, "n_simulations") <- n_simulations
   attr(out, "chapter_excerpts") <- chapter_excerpts
   out
 }
@@ -492,18 +498,6 @@ plot_chapters_over_time_one_turn <- function(
     plot_chapters_over_time,
     c(list(chapters = df, dv = dv), args)
   )
-
-  plot_title <- args$plot_title
-  if (is.null(plot_title) || isTRUE(plot_title)) {
-    n_sims <- max(df$sim, na.rm = TRUE)
-    p <- p + ggplot2::labs(
-      title = paste0(
-        "Results of ",
-        n_sims,
-        " simulations per book per chapter"
-      )
-    )
-  }
 
   p
 }

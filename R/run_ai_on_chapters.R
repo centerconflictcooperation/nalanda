@@ -472,8 +472,9 @@ run_ai_on_chapters <- function(
       })
 
       # Set attributes on each book tibble so they survive individual saveRDS
-      attr(book_tbl, "model") <- model
+      attr(book_tbl, "model") <- normalize_model_name(model)
       attr(book_tbl, "temperature") <- temperature
+      attr(book_tbl, "n_simulations") <- n_simulations
       attr(book_tbl, "chapter_excerpts") <- tibble::tibble(
         book = book,
         chapter = names(chapter_texts),
@@ -494,8 +495,9 @@ run_ai_on_chapters <- function(
   }
 
   class(out) <- c(class(out), "nalanda")
-  attr(out, "model") <- model
+  attr(out, "model") <- normalize_model_name(model)
   attr(out, "temperature") <- temperature
+  attr(out, "n_simulations") <- n_simulations
   out
 }
 

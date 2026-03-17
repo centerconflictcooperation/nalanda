@@ -12,7 +12,8 @@ test_that("plot_chapters_over_time appends model info to subtitle by default", {
 
   p <- plot_chapters_over_time(chapters)
 
-  expect_equal(p$labels$subtitle, "Model: gpt-test; Temp: 0.2")
+  expect_null(p$labels$title)
+  expect_equal(p$labels$subtitle, "(model = \"gpt-test\"; temperature = 0.2)")
 })
 
 test_that("plot_chapters_over_time appends model info to provided subtitle", {
@@ -31,7 +32,7 @@ test_that("plot_chapters_over_time appends model info to provided subtitle", {
 
   expect_equal(
     p$labels$subtitle,
-    "My subtitle | Model: gpt-test; Temp: 0.2"
+    "My subtitle (model = \"gpt-test\"; temperature = 0.2)"
   )
 })
 
@@ -54,6 +55,41 @@ test_that("plot_chapters_over_time can disable model info appending", {
   )
 
   expect_equal(p$labels$subtitle, "My subtitle")
+})
+
+test_that("plot_chapters_over_time strips integration from stored model names", {
+  skip_if_not_installed("Rmisc")
+
+  chapters <- tibble::tibble(
+    book = c("Book A", "Book A", "Book A", "Book A"),
+    chapter = c("Chapter 1", "Chapter 2", "Chapter 1", "Chapter 2"),
+    sim = c(1, 1, 2, 2),
+    delta_gap = c(1, 2, 1.5, 2.5)
+  )
+  attr(chapters, "model") <- "@gemini-8c2498/gemini-2.5-flash-lite"
+  attr(chapters, "temperature") <- 0
+
+  p <- plot_chapters_over_time(chapters)
+
+  expect_equal(
+    p$labels$subtitle,
+    "(model = \"gemini-2.5-flash-lite\"; temperature = 0)"
+  )
+})
+
+test_that("plot_chapters_over_time accepts a manual title", {
+  skip_if_not_installed("Rmisc")
+
+  chapters <- tibble::tibble(
+    book = c("Book A", "Book A", "Book A", "Book A"),
+    chapter = c("Chapter 1", "Chapter 2", "Chapter 1", "Chapter 2"),
+    sim = c(1, 1, 2, 2),
+    delta_gap = c(1, 2, 1.5, 2.5)
+  )
+
+  p <- plot_chapters_over_time(chapters, plot_title = "Custom title")
+
+  expect_equal(p$labels$title, "Custom title")
 })
 
 test_that("plot_chapters_over_time replaces points with images when point_images is provided", {
@@ -353,13 +389,15 @@ test_that("plot_chapters_over_time accepts list inputs from compute_run_ai_metri
   )
   attr(raw_a, "model") <- "gpt-test"
   attr(raw_a, "temperature") <- 0.2
+  attr(raw_a, "n_simulations") <- 2
 
   chapters <- compute_run_ai_metrics(list(raw_a, raw_b))
 
   p <- plot_chapters_over_time(chapters)
 
   expect_s3_class(p, "ggplot")
-  expect_equal(p$labels$subtitle, "Model: gpt-test; Temp: 0.2")
+  expect_equal(attr(chapters, "n_simulations"), 2)
+  expect_equal(p$labels$subtitle, "(model = \"gpt-test\"; temperature = 0.2)")
 })
 
 test_that("plot_chapters_over_time errors on ambiguous chapter numbering", {
@@ -406,6 +444,6 @@ test_that("plot_chapters_over_time_one_turn computes metrics from raw output", {
   p <- plot_chapters_over_time_one_turn(chapters, group = "party")
 
   expect_s3_class(p, "ggplot")
-  expect_equal(p$labels$title, "Results of 1 simulations per book per chapter")
-  expect_equal(p$labels$subtitle, "Model: gpt-test; Temp: 0.2")
+  expect_null(p$labels$title)
+  expect_equal(p$labels$subtitle, "(model = \"gpt-test\"; temperature = 0.2)")
 })

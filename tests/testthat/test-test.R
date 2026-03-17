@@ -75,6 +75,7 @@ test_that("summarize_chapter_scores computes chapter summaries and keeps attrs",
   )
   attr(x, "model") <- "test-model"
   attr(x, "temperature") <- 0
+  attr(x, "n_simulations") <- 2
   attr(x, "chapter_excerpts") <- tibble::tibble(
     book = "Book A",
     chapter = c("chapter_1", "chapter_2"),
@@ -90,6 +91,7 @@ test_that("summarize_chapter_scores computes chapter summaries and keeps attrs",
   expect_equal(out$chapter_excerpt, c("x", "y"))
   expect_equal(attr(out, "model"), "test-model")
   expect_equal(attr(out, "temperature"), 0)
+  expect_equal(attr(out, "n_simulations"), 2)
 })
 
 test_that("summarize_chapter_scores supports book-level aggregation", {
@@ -156,6 +158,7 @@ test_that("compute_run_ai_metrics binds list inputs before computing metrics", {
   )
   attr(x1, "model") <- "test-model"
   attr(x1, "temperature") <- 0
+  attr(x1, "n_simulations") <- 1
   attr(x1, "chapter_excerpts") <- tibble::tibble(
     chapter = "chapter_1",
     chapter_excerpt = "preview 1"
@@ -172,6 +175,7 @@ test_that("compute_run_ai_metrics binds list inputs before computing metrics", {
   expect_equal(out$delta_outgroup, c(5, 10))
   expect_equal(attr(out, "model"), "test-model")
   expect_equal(attr(out, "temperature"), 0)
+  expect_equal(attr(out, "n_simulations"), 1)
   expect_equal(
     attr(out, "chapter_excerpts"),
     tibble::tibble(
@@ -179,6 +183,43 @@ test_that("compute_run_ai_metrics binds list inputs before computing metrics", {
       chapter_excerpt = c("preview 1", "preview 2")
     )
   )
+})
+
+test_that("normalize_model_name strips integration prefixes", {
+  expect_equal(
+    nalanda:::normalize_model_name("@gemini-8c2498/gemini-2.5-flash-lite"),
+    "gemini-2.5-flash-lite"
+  )
+  expect_equal(
+    nalanda:::normalize_model_name("vertexai/gemini-2.5-flash-lite"),
+    "gemini-2.5-flash-lite"
+  )
+  expect_equal(
+    nalanda:::normalize_model_name("gemini-2.5-flash-lite"),
+    "gemini-2.5-flash-lite"
+  )
+})
+
+test_that("summarize_chapter_scores normalizes fully-qualified model attrs", {
+  x <- tibble::tibble(
+    book = c("Book A", "Book A"),
+    chapter = c("chapter_1", "chapter_1"),
+    pre_ingroup = c(60, 62),
+    post_ingroup = c(64, 66),
+    pre_outgroup = c(40, 42),
+    post_outgroup = c(48, 50),
+    pre_gap = c(20, 20),
+    post_gap = c(16, 16),
+    delta_outgroup = c(8, 8),
+    delta_ingroup = c(4, 4),
+    delta_gap = c(4, 4)
+  )
+  attr(x, "model") <- "@gemini-8c2498/gemini-2.5-flash-lite"
+  attr(x, "temperature") <- 0
+
+  out <- summarize_chapter_scores(x)
+
+  expect_equal(attr(out, "model"), "gemini-2.5-flash-lite")
 })
 
 test_that("run_ai_on_chapters fails early on ambiguous chapter numbering", {
@@ -239,6 +280,7 @@ test_that("compute_run_ai_metrics_one_turn computes one-turn per-group summaries
   )
   attr(x, "model") <- "test-model"
   attr(x, "temperature") <- 0
+  attr(x, "n_simulations") <- 1
 
   out <- compute_run_ai_metrics_one_turn(x)
 
@@ -248,6 +290,7 @@ test_that("compute_run_ai_metrics_one_turn computes one-turn per-group summaries
   expect_equal(out$gap, c(25, 18))
   expect_equal(attr(out, "model"), "test-model")
   expect_equal(attr(out, "temperature"), 0)
+  expect_equal(attr(out, "n_simulations"), 1)
 })
 
 test_that("compute_run_ai_metrics_one_turn handles single-question mode", {

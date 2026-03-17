@@ -83,7 +83,7 @@ plot_chapters_over_time(
   group = "party",
   y_label = "Affective Polarization (Delta Gap)",
   plot_subtitle = "Bundled toy data: 2 simulations per party",
-  plot_title = TRUE,
+  plot_title = "Results of 4 simulations per book per chapter",
   error_bars = FALSE,
   reverse_score = TRUE,
   groups.order = "none",
@@ -147,7 +147,7 @@ library(nalanda)
 
 # Get a random fact about Nalanda University
 nalanda()
-#> [1] "Nalanda was one of the world's first residential universities, hosting thousands of students and teachers."
+#> [1] "Nalanda remained an active center of learning for roughly 700 years until the 12th century."
 ```
 
 Learn more about related research on books, learning, and prosociality:

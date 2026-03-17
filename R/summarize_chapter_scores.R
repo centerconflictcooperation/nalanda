@@ -25,6 +25,7 @@ summarize_chapter_scores <- function(
   aggregate_level <- match.arg(aggregate_level)
   model <- attr(x, "model")
   temperature <- attr(x, "temperature")
+  n_simulations <- attr(x, "n_simulations")
   chapter_excerpts <- chapter_excerpt_index(x)
 
   # Fallback: check first list element (covers lapply(files, readRDS) workflow)
@@ -32,7 +33,9 @@ summarize_chapter_scores <- function(
     length(x) > 0) {
     model <- model %||% attr(x[[1]], "model")
     temperature <- temperature %||% attr(x[[1]], "temperature")
+    n_simulations <- n_simulations %||% attr(x[[1]], "n_simulations")
   }
+  model <- normalize_model_name(model)
 
   df <- if (is.list(x) && !inherits(x, "data.frame")) {
     flatten_sim_results(x)
@@ -139,6 +142,7 @@ summarize_chapter_scores <- function(
 
   attr(df, "model") <- model
   attr(df, "temperature") <- temperature
+  attr(df, "n_simulations") <- n_simulations
   df
 }
 

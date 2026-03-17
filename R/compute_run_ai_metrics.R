@@ -30,13 +30,16 @@ compute_run_ai_metrics <- function(x, per_group = NULL) {
 
   model <- attr(input, "model")
   temperature <- attr(input, "temperature")
+  n_simulations <- attr(input, "n_simulations")
   chapter_excerpts <- chapter_excerpt_index(input)
 
   if (is.null(model) && is.list(input) && !inherits(input, "data.frame") &&
     length(input) > 0) {
     model <- rlang::`%||%`(model, attr(input[[1]], "model"))
     temperature <- rlang::`%||%`(temperature, attr(input[[1]], "temperature"))
+    n_simulations <- rlang::`%||%`(n_simulations, attr(input[[1]], "n_simulations"))
   }
+  model <- normalize_model_name(model)
 
   required_cols <- c("chapter", "sim", "identity", "turn_type", "rating")
   missing_cols <- setdiff(required_cols, names(x))
@@ -143,6 +146,7 @@ compute_run_ai_metrics <- function(x, per_group = NULL) {
 
   attr(out, "model") <- model
   attr(out, "temperature") <- temperature
+  attr(out, "n_simulations") <- n_simulations
   attr(out, "chapter_excerpts") <- chapter_excerpts
   out
 }

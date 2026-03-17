@@ -10,7 +10,7 @@ plot_chapters_over_time(
   group = "book",
   x_label = "Chapter",
   y_label = "Simulated scores",
-  plot_title = TRUE,
+  plot_title = NULL,
   plot_subtitle = "",
   append_model_info = TRUE,
   ci_type = "between",
@@ -46,7 +46,8 @@ attempt to combine its data-frame elements before plotting.}
 
 \item{y_label}{Character. Y-axis label.}
 
-\item{plot_title}{Logical. Whether to include a title.}
+\item{plot_title}{Optional character title. If \code{NULL} (default) or \code{FALSE},
+no title is added.}
 
 \item{plot_subtitle}{Optional plot subtitle.}
 

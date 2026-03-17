@@ -11,7 +11,8 @@
 #' @param group The group by which to plot the variable
 #' @param x_label Character. X-axis label.
 #' @param y_label Character. Y-axis label.
-#' @param plot_title Logical. Whether to include a title.
+#' @param plot_title Optional character title. If `NULL` (default) or `FALSE`,
+#'   no title is added.
 #' @param plot_subtitle Optional plot subtitle.
 #' @param append_model_info Logical. If `TRUE` (default), append model and
 #'   temperature attributes to the subtitle (or create one if none is provided).
@@ -60,7 +61,7 @@ plot_chapters_over_time <- function(
   group = "book",
   x_label = "Chapter",
   y_label = "Simulated scores",
-  plot_title = TRUE,
+  plot_title = NULL,
   plot_subtitle = "",
   append_model_info = TRUE,
   ci_type = "between",
@@ -95,14 +96,13 @@ plot_chapters_over_time <- function(
     model_name <- rlang::`%||%`(model_name, attr(first, "model"))
     model_temp <- rlang::`%||%`(model_temp, attr(first, "temperature"))
   }
+  model_name <- normalize_model_name(model_name)
 
   df <- bind_simulation_results(input)
   if (!"book" %in% names(df)) {
     df$book <- "book_1"
   }
 
-  # n_simulations: max sim per identity per chapter
-  n_sims <- max(df$sim, na.rm = TRUE)
   dv_column <- dv
   if (!dv_column %in% names(df)) {
     # Fallback candidates in the new schema
@@ -206,15 +206,8 @@ plot_chapters_over_time <- function(
       axis.title = ggplot2::element_text(size = text_size),
       plot.title = ggplot2::element_text(size = text_size)
     )
-  if (isTRUE(plot_title)) {
-    p <- p +
-      ggplot2::labs(
-        title = paste0(
-          "Results of ",
-          n_sims * 2,
-          " simulations per book per chapter"
-        )
-      )
+  if (is.character(plot_title) && length(plot_title) == 1 && nzchar(plot_title)) {
+    p <- p + ggplot2::labs(title = plot_title)
   }
   if (
     isTRUE(neutrality_line) &&
@@ -268,15 +261,15 @@ plot_chapters_over_time <- function(
 
   if (isTRUE(append_model_info)) {
     model_info <- paste0(
-      "Model: ",
+      "model = \"",
       rlang::`%||%`(model_name, "unknown"),
-      "; Temp: ",
+      "\"; temperature = ",
       rlang::`%||%`(model_temp, "unknown")
     )
     subtitle_value <- if (!is.null(subtitle_value) && nzchar(subtitle_value)) {
-      paste0(subtitle_value, " | ", model_info)
+      paste0(subtitle_value, " (", model_info, ")")
     } else {
-      model_info
+      paste0("(", model_info, ")")
     }
   }
 
