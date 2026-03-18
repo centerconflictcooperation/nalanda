@@ -29,6 +29,7 @@ plot_chapters_over_time(
   image_jitter_width = 0,
   image_jitter_height = 0,
   facet = NULL,
+  facet_ncol = NULL,
   facets.order = "increasing"
 )
 }
@@ -101,6 +102,9 @@ images only. Defaults to \code{0}.}
 images only. Defaults to \code{0}.}
 
 \item{facet}{The variable by which to facet grid.}
+
+\item{facet_ncol}{Optional numeric value passed to \code{ggplot2::facet_wrap()}
+as \code{ncol} when \code{facet} is supplied.}
 
 \item{facets.order}{Specifies the desired display order of facet panels.
 Either provide the levels directly, or a string: "increasing" or

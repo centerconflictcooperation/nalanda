@@ -366,6 +366,26 @@ test_that("plot_chapters_over_time keeps points when point_images is NULL", {
   expect_true(has_point)
 })
 
+test_that("plot_chapters_over_time passes facet_ncol to facet_wrap", {
+  skip_if_not_installed("Rmisc")
+
+  chapters <- tibble::tibble(
+    book = rep(c("Book A", "Book B", "Book C"), each = 4),
+    chapter = rep(c("Chapter 1", "Chapter 2"), 6),
+    sim = rep(c(1, 1, 2, 2), 3),
+    delta_gap = c(1, 2, 1.5, 2.5, 3, 4, 3.5, 4.5, 5, 6, 5.5, 6.5)
+  )
+
+  p <- plot_chapters_over_time(
+    chapters,
+    group = "book",
+    facet = "book",
+    facet_ncol = 2
+  )
+
+  expect_equal(p$facet$params$ncol, 2)
+})
+
 test_that("plot_chapters_over_time accepts list inputs from compute_run_ai_metrics", {
   skip_if_not_installed("Rmisc")
 

@@ -33,6 +33,8 @@
 #' @param error_bars Logical. Show error bars.
 #' @param neutrality_line Logical. Add a horizontal neutrality line at 50.
 #' @param facet The variable by which to facet grid.
+#' @param facet_ncol Optional numeric value passed to `ggplot2::facet_wrap()`
+#'   as `ncol` when `facet` is supplied.
 #' @param point_images Optional named list mapping group levels to image file
 #'   paths (PNG recommended). When supplied, the point markers are replaced with
 #'   the corresponding images, and the legend labels are updated to show the
@@ -89,6 +91,7 @@ plot_chapters_over_time <- function(
   image_jitter_width = 0,
   image_jitter_height = 0,
   facet = NULL,
+  facet_ncol = NULL,
   facets.order = "increasing"
 ) {
   input <- chapters
@@ -312,7 +315,10 @@ plot_chapters_over_time <- function(
   }
   # Optional faceting
   if (!is.null(facet) && facet %in% names(df)) {
-    p <- p + ggplot2::facet_wrap(stats::as.formula(paste("~", facet)))
+    p <- p + ggplot2::facet_wrap(
+      stats::as.formula(paste("~", facet)),
+      ncol = facet_ncol
+    )
   }
 
   # Replace point markers with images if requested

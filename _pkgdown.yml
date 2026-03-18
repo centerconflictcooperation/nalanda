@@ -7,9 +7,33 @@ navbar:
     href: index.html
   - text: Tutorials
     href: articles/index.html
+    menu:
+    - text: Getting Started
+      href: articles/getting-started.html
+    - text: Methods and Roadmaps
+    - text: Simulation Roadmap
+      href: articles/simulation-roadmap.html
+    - text: Paper Context
+    - text: Understanding Hewitt et al.
+      href: articles/understanding-hewitt-et-al.html
   - text: Functions
     href: reference/index.html
   - text: News
     href: news/index.html
+
+articles:
+- title: Getting Started
+  navbar: ~
+  contents:
+  - getting-started
+- title: Methods and Roadmaps
+  navbar: ~
+  contents:
+  - simulation-roadmap
+- title: Paper Context
+  navbar: ~
+  contents:
+  - understanding-hewitt-et-al
+
 template:
   bootstrap: 5
