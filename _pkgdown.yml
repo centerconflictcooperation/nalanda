@@ -10,6 +10,8 @@ navbar:
     menu:
     - text: Getting Started
       href: articles/getting-started.html
+    - text: Post-Only Identity Treatments
+      href: articles/post-only-identity-treatments.html
     - text: Methods and Roadmaps
     - text: Simulation Roadmap
       href: articles/simulation-roadmap.html
