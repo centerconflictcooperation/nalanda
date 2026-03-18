@@ -31,6 +31,7 @@ plot_chapters_over_time(
   image_jitter_width = 0,
   image_jitter_height = 0,
   facet = NULL,
+  facet_ncol = NULL,
   facets.order = "increasing"
 )
 ```
@@ -159,6 +160,12 @@ plot_chapters_over_time(
 - facet:
 
   The variable by which to facet grid.
+
+- facet_ncol:
+
+  Optional numeric value passed to
+  [`ggplot2::facet_wrap()`](https://ggplot2.tidyverse.org/reference/facet_wrap.html)
+  as `ncol` when `facet` is supplied.
 
 - facets.order:
 
