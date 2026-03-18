@@ -413,6 +413,47 @@ test_that("build_simulate_treatment_prompt works without identity", {
   expect_false(grepl("\\{identity\\}|\\{group\\}", out))
 })
 
+test_that("compute_run_ai_metrics_cumulative compares each chapter to baseline", {
+  x <- tibble::tibble(
+    book = c("Book A", "Book A", "Book A", "Book A", "Book A", "Book A"),
+    chapter = c("baseline", "baseline", "chapter_1", "chapter_1", "chapter_2", "chapter_2"),
+    chapter_index = c(0L, 0L, 1L, 1L, 2L, 2L),
+    sim = c(1, 1, 1, 1, 1, 1),
+    identity = c("Democrat", "Democrat", "Democrat", "Democrat", "Democrat", "Democrat"),
+    party = c("Democrat", "Democrat", "Democrat", "Democrat", "Democrat", "Democrat"),
+    turn_type = c("baseline", "baseline", "post", "post", "post", "post"),
+    target_group = c("Democrat", "Republican", "Democrat", "Republican", "Democrat", "Republican"),
+    rating = c(70, 40, 68, 45, 66, 50),
+    baseline_prompt = "baseline",
+    post_prompt = c(NA, NA, "chapter 1", "chapter 1", "chapter 2", "chapter 2")
+  )
+  attr(x, "model") <- "test-model"
+  attr(x, "temperature") <- 0
+  attr(x, "n_simulations") <- 1
+
+  out <- compute_run_ai_metrics_cumulative(x)
+
+  expect_equal(nrow(out), 2)
+  expect_equal(out$chapter, c("chapter_1", "chapter_2"))
+  expect_equal(out$pre_outgroup, c(40, 40))
+  expect_equal(out$post_outgroup, c(45, 50))
+  expect_equal(out$delta_outgroup, c(5, 10))
+  expect_equal(out$delta_gap, c(7, 14))
+  expect_equal(attr(out, "model"), "test-model")
+})
+
+test_that("run_ai_cumulative_chapters rejects non-nested input", {
+  expect_error(
+    run_ai_cumulative_chapters(
+      book_texts = "chapter",
+      groups = c("Democrat", "Republican"),
+      context_text = "You are simulating a {identity}.",
+      question_text = "How warmly do you feel towards your outgroup?"
+    ),
+    "nested list of books and chapters"
+  )
+})
+
 test_that("toy_sim_results is available as package data", {
   data_env <- new.env(parent = emptyenv())
   utils::data("toy_sim_results", package = "nalanda", envir = data_env)

@@ -15,6 +15,7 @@ run_simulation_pipeline <- function(
   include_cost,
   executor,
   require_groups = TRUE,
+  total_steps = NULL,
   ...
 ) {
   if (missing(question_text) || length(question_text) != 1) {
@@ -75,7 +76,9 @@ run_simulation_pipeline <- function(
   }
 
   chapter_jobs <- build_chapter_jobs(book_texts)
-  total_steps <- nrow(chapter_jobs) * n_simulations * length(groups)
+  if (is.null(total_steps)) {
+    total_steps <- nrow(chapter_jobs) * n_simulations * length(groups)
+  }
   pb <- progress::progress_bar$new(
     format = "  running [:bar] :percent eta: :eta :what",
     total = total_steps,
