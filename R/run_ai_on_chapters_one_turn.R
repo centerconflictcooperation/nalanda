@@ -412,7 +412,7 @@ make_one_turn_prompt <- function(
   paste0(
     identity_context,
     "\n\n",
-    "You have just read the chapter below.\n\n",
+    "You have just been shown the material below.\n\n",
     chapter_text,
     "\n\n",
     "Now answer the following question(s):\n",

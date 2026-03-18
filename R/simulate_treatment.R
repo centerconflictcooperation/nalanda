@@ -7,8 +7,9 @@
 #' turns.
 #'
 #' @param intervention_text A single character string or a nested list of
-#'   book/chapter-like texts. This is mapped internally onto the same job grid
-#'   used by [run_ai_on_chapters()].
+#'   intervention texts. This is mapped internally onto the same job grid used
+#'   by [run_ai_on_chapters()]. Defaults to `""`, which is useful when the full
+#'   treatment is already encoded in `prompt` and/or `context_text`.
 #' @param prompt Character vector of prompt templates. Each element defines one
 #'   turn. Prompt templates may include `{intervention_text}`, `{identity}`, and
 #'   `{group}` placeholders.
@@ -44,7 +45,7 @@
 #' @examples
 #' \dontrun{
 #' simulate_treatment(
-#'   intervention_text = "A short chapter about people working together.",
+#'   intervention_text = "A short passage about people working together.",
 #'   prompt = c(
 #'     "Read the following text:\n\n{intervention_text}\n\nRate its readability from 0 to 100."
 #'   ),
@@ -55,10 +56,28 @@
 #'   temperature = 0,
 #'   seed = 42
 #' )
+#'
+#' simulate_treatment(
+#'   groups = c("South African", "Danish"),
+#'   context_text = "You are simulating an adult who identifies as {identity}.",
+#'   prompt = c(
+#'     climate_belief = paste(
+#'       "Generally speaking, do you usually think of yourself as Danish or South African?",
+#'       "On a scale from 0 to 100, how accurate do you think this statement is?",
+#'       "Statement: Human activities are causing climate change"
+#'     )
+#'   ),
+#'   response_type = ellmer::type_object(
+#'     rating = ellmer::type_number()
+#'   ),
+#'   n_simulations = 2,
+#'   temperature = 0,
+#'   seed = 42
+#' )
 #' }
 #' @export
 simulate_treatment <- function(
-  intervention_text,
+  intervention_text = "",
   prompt,
   response_type,
   groups = NULL,
@@ -74,6 +93,9 @@ simulate_treatment <- function(
   include_tokens = FALSE,
   include_cost = FALSE
 ) {
+  if (missing(intervention_text) || is.null(intervention_text)) {
+    intervention_text <- ""
+  }
   if (missing(prompt) || length(prompt) < 1) {
     stop("`prompt` must contain at least one turn.")
   }
@@ -107,6 +129,7 @@ simulate_treatment <- function(
     include_cost = include_cost,
     executor = execute_generic_treatment_pipeline,
     require_groups = FALSE,
+    default_unit_id = "intervention_1",
     prompt = as.character(prompt),
     response_type = response_type
   )
@@ -171,13 +194,13 @@ execute_generic_treatment_pipeline <- function(
         )
 
         for (turn_idx in seq_along(prompt)) {
-          full_prompt <- build_simulate_treatment_prompt(
+          full_prompt <- make_treatment_prompt(
             prompt_template = prompt[[turn_idx]],
             intervention_text = chapter_job$chapter_text[[1]],
             identity_context = identity_context,
             identity_label = identity_label
           )
-          prompt_preview <- build_simulate_treatment_prompt(
+          prompt_preview <- make_treatment_prompt(
             prompt_template = prompt[[turn_idx]],
             intervention_text = compact_chapter_text(
               chapter_job$chapter_text[[1]],
@@ -226,7 +249,33 @@ execute_generic_treatment_pipeline <- function(
   )
 }
 
-build_simulate_treatment_prompt <- function(
+#' Build a concrete prompt for `simulate_treatment()`
+#'
+#' This helper expands a single `simulate_treatment()` prompt template into a
+#' concrete prompt string. It is useful for inspecting prompt wording before
+#' launching a run, much like [make_baseline_prompt()] and [make_post_prompt()]
+#' are useful for `run_ai_on_chapters()`.
+#'
+#' @param prompt_template Character scalar. A single prompt template that may
+#'   include `{intervention_text}`, `{identity}`, and `{group}`.
+#' @param intervention_text Character scalar. The intervention text to insert
+#'   into `{intervention_text}`.
+#' @param identity_context Character scalar. Optional identity context to
+#'   prepend to the prompt.
+#' @param identity_label Character scalar. Optional identity label used to
+#'   expand `{identity}` and `{group}`.
+#'
+#' @return A character scalar containing the concrete prompt.
+#'
+#' @examples
+#' make_treatment_prompt(
+#'   prompt_template = "{intervention_text}\n\nRate this as {identity}.",
+#'   intervention_text = "A short climate message.",
+#'   identity_context = "You are simulating an American adult.",
+#'   identity_label = "American"
+#' )
+#' @export
+make_treatment_prompt <- function(
   prompt_template,
   intervention_text,
   identity_context = "",
@@ -241,4 +290,20 @@ build_simulate_treatment_prompt <- function(
 
   out <- paste(identity_context, out)
   trimws(out)
+}
+
+#' @rdname make_treatment_prompt
+#' @export
+build_simulate_treatment_prompt <- function(
+  prompt_template,
+  intervention_text,
+  identity_context = "",
+  identity_label = NA_character_
+) {
+  make_treatment_prompt(
+    prompt_template = prompt_template,
+    intervention_text = intervention_text,
+    identity_context = identity_context,
+    identity_label = identity_label
+  )
 }

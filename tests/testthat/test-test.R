@@ -39,6 +39,20 @@ test_that("make_post_prompt_preview stores a cropped chapter preview", {
   expect_match(out, "How warmly do you feel towards your outgroup\\?")
 })
 
+test_that("make_one_turn_prompt uses generic material wording", {
+  out <- nalanda:::make_one_turn_prompt(
+    chapter_text = "Prompt body here.",
+    identity_context = "You are simulating a Democrat.",
+    question_template = "How warmly do you feel towards your outgroup?",
+    groups = c("Democrat", "Republican"),
+    identity_label = "Democrat"
+  )
+
+  expect_match(out, "You have just been shown the material below\\.")
+  expect_match(out, "Prompt body here\\.")
+  expect_false(grepl("book chapter", out, fixed = TRUE))
+})
+
 test_that("summarize_chapter_scores tolerates missing chapter excerpt", {
   x <- tibble::tibble(
     book = c("Book A", "Book A"),
@@ -388,8 +402,8 @@ test_that("compute_run_ai_metrics_one_turn handles single-question mode", {
   expect_true(all(is.na(out$gap)))
 })
 
-test_that("build_simulate_treatment_prompt interpolates intervention text and identity", {
-  out <- nalanda:::build_simulate_treatment_prompt(
+test_that("make_treatment_prompt interpolates intervention text and identity", {
+  out <- make_treatment_prompt(
     prompt_template = "Read this:\n{intervention_text}\nScore it as {identity}.",
     intervention_text = "BOOK TEXT",
     identity_context = "You are a Democrat.",
@@ -401,8 +415,8 @@ test_that("build_simulate_treatment_prompt interpolates intervention text and id
   expect_match(out, "Democrat")
 })
 
-test_that("build_simulate_treatment_prompt works without identity", {
-  out <- nalanda:::build_simulate_treatment_prompt(
+test_that("make_treatment_prompt works without identity", {
+  out <- make_treatment_prompt(
     prompt_template = "Read this:\n{intervention_text}\nScore it.",
     intervention_text = "BOOK TEXT",
     identity_context = "",
@@ -411,6 +425,96 @@ test_that("build_simulate_treatment_prompt works without identity", {
 
   expect_match(out, "BOOK TEXT")
   expect_false(grepl("\\{identity\\}|\\{group\\}", out))
+})
+
+test_that("build_simulate_treatment_prompt remains an alias", {
+  out <- build_simulate_treatment_prompt(
+    prompt_template = "Read this:\n{intervention_text}\nScore it as {identity}.",
+    intervention_text = "BOOK TEXT",
+    identity_context = "You are a Democrat.",
+    identity_label = "Democrat"
+  )
+
+  expect_match(out, "You are a Democrat\\.")
+  expect_match(out, "BOOK TEXT")
+  expect_match(out, "Democrat")
+})
+
+test_that("simulate_treatment defaults intervention_text to empty string", {
+  expect_identical(formals(simulate_treatment)$intervention_text, "")
+})
+
+test_that("build_chapter_jobs can use intervention-style default ids", {
+  out <- nalanda:::build_chapter_jobs(
+    "A short intervention.",
+    default_unit_id = "intervention_1"
+  )
+
+  expect_equal(out$chapter, "intervention_1")
+})
+
+test_that("summarize_treatment_results summarizes readability fields by chapter", {
+  x <- tibble::tibble(
+    book = c("Book A", "Book A", "Book A"),
+    chapter = c("chapter_1", "chapter_1", "chapter_2"),
+    sim = c(1, 2, 1),
+    turn_type = "turn_1",
+    readability_score = c(6, 8, 7),
+    readability_confidence = c(4, 5, 4)
+  )
+  attr(x, "model") <- "@gemini-8c2498/gemini-2.5-flash-lite"
+  attr(x, "temperature") <- 0
+  attr(x, "n_simulations") <- 2
+
+  out <- summarize_treatment_results(x)
+
+  expect_equal(nrow(out), 2)
+  expect_true(all(c(
+    "mean_readability_score",
+    "sd_readability_score",
+    "mean_readability_confidence",
+    "chapter_index",
+    "turn_type"
+  ) %in% names(out)))
+  expect_equal(out$mean_readability_score, c(7, 7))
+  expect_equal(attr(out, "model"), "gemini-2.5-flash-lite")
+  expect_equal(attr(out, "temperature"), 0)
+  expect_equal(attr(out, "n_simulations"), 2)
+})
+
+test_that("summarize_treatment_results supports book-level aggregation", {
+  x <- tibble::tibble(
+    book = c("Book A", "Book A", "Book B"),
+    chapter = c("chapter_1", "chapter_2", "chapter_1"),
+    sim = c(1, 2, 1),
+    turn_type = "turn_1",
+    readability_score = c(6, 8, 7),
+    readability_confidence = c(4, 5, 4)
+  )
+
+  out <- summarize_treatment_results(x, aggregate_level = "book")
+
+  expect_equal(nrow(out), 2)
+  expect_false("chapter" %in% names(out))
+  expect_true(all(c("book", "sim", "mean_readability_score") %in% names(out)))
+  expect_equal(out$mean_readability_score, c(7, 7))
+})
+
+test_that("summarize_treatment_results can split by identity", {
+  x <- tibble::tibble(
+    book = c("Book A", "Book A"),
+    chapter = c("chapter_1", "chapter_1"),
+    sim = c(1, 1),
+    identity = c("Democrat", "Republican"),
+    turn_type = "turn_1",
+    readability_score = c(6, 8)
+  )
+
+  out <- summarize_treatment_results(x, by_identity = TRUE)
+
+  expect_equal(nrow(out), 2)
+  expect_true("identity" %in% names(out))
+  expect_equal(out$mean_readability_score, c(6, 8))
 })
 
 test_that("compute_run_ai_metrics_cumulative compares each chapter to baseline", {

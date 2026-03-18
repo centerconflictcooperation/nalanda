@@ -16,6 +16,7 @@ run_simulation_pipeline <- function(
   executor,
   require_groups = TRUE,
   total_steps = NULL,
+  default_unit_id = "chapter_1",
   ...
 ) {
   if (missing(question_text) || length(question_text) != 1) {
@@ -75,7 +76,10 @@ run_simulation_pipeline <- function(
     }
   }
 
-  chapter_jobs <- build_chapter_jobs(book_texts)
+  chapter_jobs <- build_chapter_jobs(
+    book_texts,
+    default_unit_id = default_unit_id
+  )
   if (is.null(total_steps)) {
     total_steps <- nrow(chapter_jobs) * n_simulations * length(groups)
   }
@@ -120,12 +124,12 @@ run_simulation_pipeline <- function(
   out
 }
 
-build_chapter_jobs <- function(book_texts) {
+build_chapter_jobs <- function(book_texts, default_unit_id = "chapter_1") {
   if (is.character(book_texts) && length(book_texts) == 1) {
     chapter_id <- if (!is.null(names(book_texts))) {
       names(book_texts)[1]
     } else {
-      "chapter_1"
+      default_unit_id
     }
 
     return(tibble::tibble(

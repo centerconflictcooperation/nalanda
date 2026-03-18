@@ -5,7 +5,7 @@
 \title{Simulate a generic multi-turn treatment workflow}
 \usage{
 simulate_treatment(
-  intervention_text,
+  intervention_text = "",
   prompt,
   response_type,
   groups = NULL,
@@ -24,8 +24,9 @@ simulate_treatment(
 }
 \arguments{
 \item{intervention_text}{A single character string or a nested list of
-book/chapter-like texts. This is mapped internally onto the same job grid
-used by \code{\link[=run_ai_on_chapters]{run_ai_on_chapters()}}.}
+intervention texts. This is mapped internally onto the same job grid used
+by \code{\link[=run_ai_on_chapters]{run_ai_on_chapters()}}. Defaults to \code{""}, which is useful when the full
+treatment is already encoded in \code{prompt} and/or \code{context_text}.}
 
 \item{prompt}{Character vector of prompt templates. Each element defines one
 turn. Prompt templates may include \code{{intervention_text}}, \code{{identity}}, and
@@ -83,12 +84,30 @@ turns.
 \examples{
 \dontrun{
 simulate_treatment(
-  intervention_text = "A short chapter about people working together.",
+  intervention_text = "A short passage about people working together.",
   prompt = c(
     "Read the following text:\n\n{intervention_text}\n\nRate its readability from 0 to 100."
   ),
   response_type = ellmer::type_object(
     score = ellmer::type_number()
+  ),
+  n_simulations = 2,
+  temperature = 0,
+  seed = 42
+)
+
+simulate_treatment(
+  groups = c("South African", "Danish"),
+  context_text = "You are simulating an adult who identifies as {identity}.",
+  prompt = c(
+    climate_belief = paste(
+      "Generally speaking, do you usually think of yourself as Danish or South African?",
+      "On a scale from 0 to 100, how accurate do you think this statement is?",
+      "Statement: Human activities are causing climate change"
+    )
+  ),
+  response_type = ellmer::type_object(
+    rating = ellmer::type_number()
   ),
   n_simulations = 2,
   temperature = 0,
