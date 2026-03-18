@@ -10,7 +10,7 @@ create additional turns.
 
 ``` r
 simulate_treatment(
-  intervention_text,
+  intervention_text = "",
   prompt,
   response_type,
   groups = NULL,
@@ -32,9 +32,11 @@ simulate_treatment(
 
 - intervention_text:
 
-  A single character string or a nested list of book/chapter-like texts.
-  This is mapped internally onto the same job grid used by
+  A single character string or a nested list of intervention texts. This
+  is mapped internally onto the same job grid used by
   [`run_ai_on_chapters()`](https://centerconflictcooperation.github.io/nalanda/reference/run_ai_on_chapters.md).
+  Defaults to `""`, which is useful when the full treatment is already
+  encoded in `prompt` and/or `context_text`.
 
 - prompt:
 
@@ -114,12 +116,30 @@ by `response_type`, plus stored prompt previews and metadata columns.
 ``` r
 if (FALSE) { # \dontrun{
 simulate_treatment(
-  intervention_text = "A short chapter about people working together.",
+  intervention_text = "A short passage about people working together.",
   prompt = c(
     "Read the following text:\n\n{intervention_text}\n\nRate its readability from 0 to 100."
   ),
   response_type = ellmer::type_object(
     score = ellmer::type_number()
+  ),
+  n_simulations = 2,
+  temperature = 0,
+  seed = 42
+)
+
+simulate_treatment(
+  groups = c("South African", "Danish"),
+  context_text = "You are simulating an adult who identifies as {identity}.",
+  prompt = c(
+    climate_belief = paste(
+      "Generally speaking, do you usually think of yourself as Danish or South African?",
+      "On a scale from 0 to 100, how accurate do you think this statement is?",
+      "Statement: Human activities are causing climate change"
+    )
+  ),
+  response_type = ellmer::type_object(
+    rating = ellmer::type_number()
   ),
   n_simulations = 2,
   temperature = 0,

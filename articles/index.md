@@ -4,6 +4,8 @@
 
 - [Getting Started with Ellmer and
   Nalanda](https://centerconflictcooperation.github.io/nalanda/articles/getting-started.md):
+- [Post-Only Identity Treatments with
+  \`simulate_treatment()\`](https://centerconflictcooperation.github.io/nalanda/articles/post-only-identity-treatments.md):
 
 ### Methods and Roadmaps
 
