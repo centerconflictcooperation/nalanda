@@ -4,6 +4,8 @@
 
 - [`compute_run_ai_metrics()`](https://centerconflictcooperation.github.io/nalanda/reference/compute_run_ai_metrics.md)
   : Compute derived pre/post effect metrics from raw turn-level output
+- [`compute_run_ai_metrics_cumulative()`](https://centerconflictcooperation.github.io/nalanda/reference/compute_run_ai_metrics_cumulative.md)
+  : Compute cumulative chapter metrics against the original baseline
 - [`compute_run_ai_metrics_one_turn()`](https://centerconflictcooperation.github.io/nalanda/reference/compute_run_ai_metrics_one_turn.md)
   : Compute one-turn ingroup/outgroup metrics from raw output
 - [`fix_text_file()`](https://centerconflictcooperation.github.io/nalanda/reference/fix_text_file.md)
@@ -34,6 +36,8 @@
   : Read book chapters into a nested list
 - [`rename_chapters()`](https://centerconflictcooperation.github.io/nalanda/reference/rename_chapters.md)
   : Rename chapter text files in a folder to a sequential order
+- [`run_ai_cumulative_chapters()`](https://centerconflictcooperation.github.io/nalanda/reference/run_ai_cumulative_chapters.md)
+  : Run AI model on books with cumulative chapter context
 - [`run_ai_on_chapters()`](https://centerconflictcooperation.github.io/nalanda/reference/run_ai_on_chapters.md)
   : Run AI model on book chapters and collect structured responses
 - [`run_ai_on_chapters_one_turn()`](https://centerconflictcooperation.github.io/nalanda/reference/run_ai_on_chapters_one_turn.md)

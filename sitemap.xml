@@ -14,6 +14,7 @@
 <url><loc>https://centerconflictcooperation.github.io/nalanda/news/index.html</loc></url>
 <url><loc>https://centerconflictcooperation.github.io/nalanda/reference/add_point_images.html</loc></url>
 <url><loc>https://centerconflictcooperation.github.io/nalanda/reference/compute_run_ai_metrics.html</loc></url>
+<url><loc>https://centerconflictcooperation.github.io/nalanda/reference/compute_run_ai_metrics_cumulative.html</loc></url>
 <url><loc>https://centerconflictcooperation.github.io/nalanda/reference/compute_run_ai_metrics_one_turn.html</loc></url>
 <url><loc>https://centerconflictcooperation.github.io/nalanda/reference/fix_text_file.html</loc></url>
 <url><loc>https://centerconflictcooperation.github.io/nalanda/reference/index.html</loc></url>
@@ -31,6 +32,7 @@
 <url><loc>https://centerconflictcooperation.github.io/nalanda/reference/rank_weighted.html</loc></url>
 <url><loc>https://centerconflictcooperation.github.io/nalanda/reference/read_book_texts.html</loc></url>
 <url><loc>https://centerconflictcooperation.github.io/nalanda/reference/rename_chapters.html</loc></url>
+<url><loc>https://centerconflictcooperation.github.io/nalanda/reference/run_ai_cumulative_chapters.html</loc></url>
 <url><loc>https://centerconflictcooperation.github.io/nalanda/reference/run_ai_on_chapters.html</loc></url>
 <url><loc>https://centerconflictcooperation.github.io/nalanda/reference/run_ai_on_chapters_one_turn.html</loc></url>
 <url><loc>https://centerconflictcooperation.github.io/nalanda/reference/save_forest_plot.html</loc></url>
