@@ -26,6 +26,7 @@ articles:
   navbar: ~
   contents:
   - getting-started
+  - post-only-identity-treatments
 - title: Methods and Roadmaps
   navbar: ~
   contents:
