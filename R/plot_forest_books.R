@@ -87,6 +87,9 @@ plot_forest_books <- function(
   show_overall = TRUE,
   ci.vertices = FALSE
 ) {
+  model_name <- normalize_model_name(attr(forest_df, "model"))
+  model_temp <- attr(forest_df, "temperature")
+
   required_cols <- c("mean", "lower", "upper")
   if (!all(required_cols %in% names(forest_df))) {
     forest_df <- prepare_forest_books(
@@ -95,6 +98,21 @@ plot_forest_books <- function(
       add_ci_label = add_ci_label,
       digits = digits
     )
+  }
+
+  if (!is.null(model_name) || !is.null(model_temp)) {
+    model_info <- paste0(
+      "(model = \"",
+      rlang::`%||%`(model_name, "unknown"),
+      "\"; temperature = ",
+      rlang::`%||%`(model_temp, "unknown"),
+      ")"
+    )
+    title <- if (is.character(title) && length(title) == 1 && nzchar(title)) {
+      paste(title, model_info, sep = "\n")
+    } else {
+      model_info
+    }
   }
 
   input <- .build_forestplot_inputs(

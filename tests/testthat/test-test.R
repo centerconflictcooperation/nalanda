@@ -654,6 +654,34 @@ test_that("plot_forest_books still accepts precomputed forest data", {
   )
 })
 
+test_that("plot_forest_books appends model info on a new title line", {
+  summary_books <- tibble::tibble(
+    book = c("Book A", "Book B"),
+    sim = c(10, 12),
+    mean_delta_gap = c(1.2, 0.8),
+    sd_delta_gap = c(0.6, 0.5)
+  )
+  attr(summary_books, "model") <- "@gemini-8c2498/gemini-2.5-flash-lite"
+  attr(summary_books, "temperature") <- 0
+
+  p <- plot_forest_books(
+    summary_books,
+    dv = "delta_gap",
+    title = "Reduction in polarization gap",
+    show_overall = FALSE,
+    ci.vertices = FALSE
+  )
+
+  expect_equal(
+    p$title,
+    paste(
+      "Reduction in polarization gap",
+      "(model = \"gemini-2.5-flash-lite\"; temperature = 0)",
+      sep = "\n"
+    )
+  )
+})
+
 test_that("plot_forest_books treats zero = NULL as no reference line", {
   summary_books <- tibble::tibble(
     book = c("Book A", "Book B"),
