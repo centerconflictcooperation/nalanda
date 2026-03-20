@@ -7,6 +7,25 @@ parse_chapter_numbers <- function(chapter) {
   suppressWarnings(as.integer(stringr::str_extract(chapter, "\\d+")))
 }
 
+validate_book_chapters_present <- function(chapter, book = NULL) {
+  if (length(chapter) > 0) {
+    return(invisible(chapter))
+  }
+
+  location <- if (!is.null(book) && nzchar(book)) {
+    paste0(" for book '", book, "'")
+  } else {
+    ""
+  }
+
+  stop(
+    "No chapters found in `book_texts`",
+    location,
+    ". Ensure the book folder contains at least one chapter file.",
+    call. = FALSE
+  )
+}
+
 #' Validate that chapter labels map to unique parsed chapter numbers
 #'
 #' @param chapter Character vector of chapter labels.
@@ -20,6 +39,8 @@ validate_chapter_order <- function(
   book = NULL,
   arg_name = "chapter"
 ) {
+  validate_book_chapters_present(chapter = chapter, book = book)
+
   chapter_num <- parse_chapter_numbers(chapter)
 
   if (anyNA(chapter_num)) {
@@ -42,10 +63,11 @@ validate_chapter_order <- function(
 
   parsed <- tibble::tibble(chapter = chapter, chapter_num = chapter_num) |>
     dplyr::distinct() |>
+    dplyr::group_by(.data$chapter_num) |>
     dplyr::summarise(
-      chapters = paste(sort(.data$chapter), collapse = " | "),
+      chapters = paste(sort(unique(.data$chapter)), collapse = " | "),
       n = dplyr::n(),
-      .by = "chapter_num"
+      .groups = "drop"
     ) |>
     dplyr::filter(.data$n > 1L) |>
     dplyr::arrange(.data$chapter_num)

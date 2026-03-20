@@ -255,6 +255,39 @@ test_that("run_ai_on_chapters fails early on ambiguous chapter numbering", {
   )
 })
 
+test_that("run_ai_on_chapters errors clearly on empty book folders", {
+  empty_book_texts <- list(whynationsfails = list())
+
+  expect_error(
+    run_ai_on_chapters(
+      book_texts = empty_book_texts,
+      groups = c("Democrat", "Republican"),
+      context_text = "You are simulating a {identity}.",
+      question_text = "How warmly do you feel towards your outgroup?"
+    ),
+    "No chapters found in `book_texts` for book 'whynationsfails'"
+  )
+})
+
+test_that("validate_chapter_order accepts epilogue-style chapter labels", {
+  expect_equal(
+    nalanda:::validate_chapter_order("WFK_9_Epilog.txt"),
+    9L
+  )
+})
+
+test_that("run_ai_on_chapters_one_turn errors clearly on empty chapter input", {
+  expect_error(
+    run_ai_on_chapters_one_turn(
+      book_texts = list(whynationsfails = list()),
+      groups = c("Democrat", "Republican"),
+      context_text = "You are simulating a {identity}.",
+      question_text = "How warmly do you feel towards your outgroup?"
+    ),
+    "No chapters found in `book_texts`"
+  )
+})
+
 test_that("run_ai_on_chapters rejects integration and virtual_key together", {
   expect_error(
     run_ai_on_chapters(
@@ -674,11 +707,7 @@ test_that("plot_forest_books appends model info on a new title line", {
 
   expect_equal(
     p$title,
-    paste(
-      "Reduction in polarization gap",
-      "(model = \"gemini-2.5-flash-lite\"; temperature = 0)",
-      sep = "\n"
-    )
+    "Reduction in polarization gap (model = \"gemini-2.5-flash-lite\"; temperature = 0)"
   )
 })
 

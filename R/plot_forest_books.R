@@ -109,7 +109,7 @@ plot_forest_books <- function(
       ")"
     )
     title <- if (is.character(title) && length(title) == 1 && nzchar(title)) {
-      paste(title, model_info, sep = "\n")
+      paste(title, model_info, sep = " ")
     } else {
       model_info
     }
@@ -224,7 +224,8 @@ plot_forest_books <- function(
   ci_show_party = FALSE
 ) {
   forest_df <- tibble::as_tibble(forest_df)
-  has_party <- "party" %in% names(forest_df) &&
+  has_party <- "party" %in%
+    names(forest_df) &&
     dplyr::n_distinct(forest_df$party, na.rm = TRUE) > 1
 
   final_label_cols <- label_cols
@@ -252,7 +253,10 @@ plot_forest_books <- function(
 
     missing_label_cols <- setdiff(final_label_cols, names(out_df))
     if (length(missing_label_cols) > 0) {
-      stop("`label_cols` not found in data: ", paste(missing_label_cols, collapse = ", "))
+      stop(
+        "`label_cols` not found in data: ",
+        paste(missing_label_cols, collapse = ", ")
+      )
     }
 
     return(list(
@@ -327,13 +331,17 @@ plot_forest_books <- function(
     ci_wide <- ci_wide[match(mean_wide$book, ci_wide$book), , drop = FALSE]
 
     sep <- if (ci_multiline) "\n" else " | "
-    ci_compact <- apply(as.matrix(ci_wide[, party_levels, drop = FALSE]), 1, function(x) {
-      vals <- as.character(x)
-      if (ci_show_party) {
-        vals <- paste0(party_levels, ": ", vals)
+    ci_compact <- apply(
+      as.matrix(ci_wide[, party_levels, drop = FALSE]),
+      1,
+      function(x) {
+        vals <- as.character(x)
+        if (ci_show_party) {
+          vals <- paste0(party_levels, ": ", vals)
+        }
+        paste(vals, collapse = sep)
       }
-      paste(vals, collapse = sep)
-    })
+    )
     label_df$ci <- ci_compact
   }
 
@@ -341,7 +349,10 @@ plot_forest_books <- function(
   if (length(extra_label_cols) > 0) {
     extras <- forest_df |>
       dplyr::group_by(.data$book) |>
-      dplyr::summarise(dplyr::across(dplyr::all_of(extra_label_cols), dplyr::first), .groups = "drop")
+      dplyr::summarise(
+        dplyr::across(dplyr::all_of(extra_label_cols), dplyr::first),
+        .groups = "drop"
+      )
     extras <- extras[match(mean_wide$book, extras$book), , drop = FALSE]
     label_df <- dplyr::left_join(label_df, extras, by = "book")
   }
@@ -509,8 +520,3 @@ save_forest_plot <- function(
   print(plot_object)
   grDevices::dev.off()
 }
-
-
-
-
-

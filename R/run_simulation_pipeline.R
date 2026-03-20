@@ -80,6 +80,13 @@ run_simulation_pipeline <- function(
     book_texts,
     default_unit_id = default_unit_id
   )
+  if (nrow(chapter_jobs) == 0) {
+    stop(
+      "No chapters found in `book_texts`. ",
+      "Ensure the input contains at least one chapter before running simulations.",
+      call. = FALSE
+    )
+  }
   if (is.null(total_steps)) {
     total_steps <- nrow(chapter_jobs) * n_simulations * length(groups)
   }
