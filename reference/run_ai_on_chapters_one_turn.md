@@ -21,8 +21,6 @@ run_ai_on_chapters_one_turn(
   virtual_key = getOption("nalanda.virtual_key"),
   base_url = getOption("nalanda.base_url"),
   excerpt_chars = 200,
-  include_tokens = FALSE,
-  include_cost = FALSE,
   max_active = 10,
   rpm = 500
 )
@@ -98,14 +96,6 @@ run_ai_on_chapters_one_turn(
 
   Integer. Number of chapter characters to retain in the stored prompt
   preview shown in results.
-
-- include_tokens:
-
-  Logical. Return token counts if available.
-
-- include_cost:
-
-  Logical. Return cost info if available.
 
 - max_active:
 

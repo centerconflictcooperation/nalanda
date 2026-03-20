@@ -22,9 +22,7 @@ simulate_treatment(
   integration = getOption("nalanda.integration"),
   virtual_key = getOption("nalanda.virtual_key"),
   base_url = getOption("nalanda.base_url"),
-  excerpt_chars = 200,
-  include_tokens = FALSE,
-  include_cost = FALSE
+  excerpt_chars = 200
 )
 ```
 
@@ -95,14 +93,6 @@ simulate_treatment(
 
   Integer. Number of intervention-text characters to retain in stored
   prompt previews.
-
-- include_tokens:
-
-  Logical. Return token counts if available.
-
-- include_cost:
-
-  Logical. Return cost info if available.
 
 ## Value
 
