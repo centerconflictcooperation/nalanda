@@ -16,9 +16,7 @@ run_ai_cumulative_chapters(
   integration = getOption("nalanda.integration"),
   virtual_key = getOption("nalanda.virtual_key"),
   base_url = getOption("nalanda.base_url"),
-  excerpt_chars = 200,
-  include_tokens = FALSE,
-  include_cost = FALSE
+  excerpt_chars = 200
 )
 }
 \arguments{
@@ -51,10 +49,6 @@ simulation).}
 
 \item{excerpt_chars}{Integer. Number of chapter characters to retain in the
 stored prompt previews shown in results.}
-
-\item{include_tokens}{Logical. Return token counts if available.}
-
-\item{include_cost}{Logical. Return cost info if available.}
 }
 \value{
 A tibble or named list of tibbles with cumulative turn-level rows.

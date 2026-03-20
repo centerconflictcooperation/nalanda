@@ -17,8 +17,6 @@ run_ai_on_chapters_one_turn(
   virtual_key = getOption("nalanda.virtual_key"),
   base_url = getOption("nalanda.base_url"),
   excerpt_chars = 200,
-  include_tokens = FALSE,
-  include_cost = FALSE,
   max_active = 10,
   rpm = 500
 )
@@ -68,10 +66,6 @@ supplying function arguments.}
 
 \item{excerpt_chars}{Integer. Number of chapter characters to retain in the
 stored prompt preview shown in results.}
-
-\item{include_tokens}{Logical. Return token counts if available.}
-
-\item{include_cost}{Logical. Return cost info if available.}
 
 \item{max_active}{Integer. Maximum number of concurrent requests passed to
 \code{\link[ellmer:parallel_chat]{ellmer::parallel_chat_structured()}}.}

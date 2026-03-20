@@ -51,10 +51,6 @@
 #' @param base_url Character. Base URL for API calls.
 #' @param excerpt_chars Integer. Number of chapter characters to retain in the
 #'   stored post-prompt preview shown in results.
-#' @param include_tokens Logical. Return token counts if available (summed
-#'   across both turns).
-#' @param include_cost Logical. Return cost info if available (summed across
-#'   both turns).
 #'
 #' @details
 #' Authentication uses `PORTKEY_API_KEY` via `ellmer::chat_portkey()`. Set it
@@ -102,9 +98,7 @@ run_ai_on_chapters <- function(
   integration = getOption("nalanda.integration"),
   virtual_key = getOption("nalanda.virtual_key"),
   base_url = getOption("nalanda.base_url"),
-  excerpt_chars = 200,
-  include_tokens = FALSE,
-  include_cost = FALSE
+  excerpt_chars = 200
 ) {
   route <- resolve_model_route(
     integration = integration,
@@ -141,8 +135,6 @@ run_ai_on_chapters <- function(
     virtual_key = virtual_key,
     base_url = base_url,
     excerpt_chars = excerpt_chars,
-    include_tokens = include_tokens,
-    include_cost = include_cost,
     executor = execute_two_turn_pipeline
   )
 
@@ -167,8 +159,6 @@ execute_two_turn_pipeline <- function(
   model,
   base_url,
   excerpt_chars,
-  include_tokens,
-  include_cost,
   pb
 ) {
   group_keys <- group_keys_from_groups(groups)
@@ -251,7 +241,7 @@ execute_two_turn_pipeline <- function(
           for (g_idx in seq_along(groups)) {
             field <- paste0("rating_", group_keys[[g_idx]])
 
-            row_pre <- attach_usage_fields(c(
+            row_pre <- c(
               base_fields,
               list(
                 turn_index = 1L,
@@ -259,8 +249,8 @@ execute_two_turn_pipeline <- function(
                 target_group = groups[[g_idx]],
                 rating = baseline_response[[field]]
               )
-            ), baseline_response, include_tokens, include_cost)
-            row_post <- attach_usage_fields(c(
+            )
+            row_post <- c(
               base_fields,
               list(
                 turn_index = 2L,
@@ -268,7 +258,7 @@ execute_two_turn_pipeline <- function(
                 target_group = groups[[g_idx]],
                 rating = post_response[[field]]
               )
-            ), post_response, include_tokens, include_cost)
+            )
 
             all_row_i <- all_row_i + 1L
             all_rows[[all_row_i]] <- row_pre
@@ -276,7 +266,7 @@ execute_two_turn_pipeline <- function(
             all_rows[[all_row_i]] <- row_post
           }
         } else {
-          row_pre <- attach_usage_fields(c(
+          row_pre <- c(
             base_fields,
             list(
               turn_index = 1L,
@@ -284,8 +274,8 @@ execute_two_turn_pipeline <- function(
               target_group = NA_character_,
               rating = baseline_response$rating
             )
-          ), baseline_response, include_tokens, include_cost)
-          row_post <- attach_usage_fields(c(
+          )
+          row_post <- c(
             base_fields,
             list(
               turn_index = 2L,
@@ -293,7 +283,7 @@ execute_two_turn_pipeline <- function(
               target_group = NA_character_,
               rating = post_response$rating
             )
-          ), post_response, include_tokens, include_cost)
+          )
 
           all_row_i <- all_row_i + 1L
           all_rows[[all_row_i]] <- row_pre

@@ -17,9 +17,7 @@ simulate_treatment(
   integration = getOption("nalanda.integration"),
   virtual_key = getOption("nalanda.virtual_key"),
   base_url = getOption("nalanda.base_url"),
-  excerpt_chars = 200,
-  include_tokens = FALSE,
-  include_cost = FALSE
+  excerpt_chars = 200
 )
 }
 \arguments{
@@ -63,10 +61,6 @@ not fully-qualified, nalanda will build \code{"@{virtual_key}/{model}"}.}
 
 \item{excerpt_chars}{Integer. Number of intervention-text characters to
 retain in stored prompt previews.}
-
-\item{include_tokens}{Logical. Return token counts if available.}
-
-\item{include_cost}{Logical. Return cost info if available.}
 }
 \value{
 A tibble of raw turn-level responses, or a named list of tibbles

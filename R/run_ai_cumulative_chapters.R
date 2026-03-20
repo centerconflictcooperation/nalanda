@@ -23,8 +23,6 @@
 #' @param base_url Character. Base URL for API calls.
 #' @param excerpt_chars Integer. Number of chapter characters to retain in the
 #'   stored prompt previews shown in results.
-#' @param include_tokens Logical. Return token counts if available.
-#' @param include_cost Logical. Return cost info if available.
 #'
 #' @return A tibble or named list of tibbles with cumulative turn-level rows.
 #'   The baseline turn is followed by one post turn per chapter, all within the
@@ -62,9 +60,7 @@ run_ai_cumulative_chapters <- function(
   integration = getOption("nalanda.integration"),
   virtual_key = getOption("nalanda.virtual_key"),
   base_url = getOption("nalanda.base_url"),
-  excerpt_chars = 200,
-  include_tokens = FALSE,
-  include_cost = FALSE
+  excerpt_chars = 200
 ) {
   route <- resolve_model_route(
     integration = integration,
@@ -106,8 +102,6 @@ run_ai_cumulative_chapters <- function(
     virtual_key = virtual_key,
     base_url = base_url,
     excerpt_chars = excerpt_chars,
-    include_tokens = include_tokens,
-    include_cost = include_cost,
     executor = execute_cumulative_chapter_pipeline,
     total_steps = total_steps
   )
@@ -133,8 +127,6 @@ execute_cumulative_chapter_pipeline <- function(
   model,
   base_url,
   excerpt_chars,
-  include_tokens,
-  include_cost,
   pb
 ) {
   group_keys <- group_keys_from_groups(groups)
@@ -203,9 +195,7 @@ execute_cumulative_chapter_pipeline <- function(
           turn_type = "baseline",
           per_group = per_group,
           groups = groups,
-          group_keys = group_keys,
-          include_tokens = include_tokens,
-          include_cost = include_cost
+          group_keys = group_keys
         )
         for (row in baseline_rows) {
           all_row_i <- all_row_i + 1L
@@ -259,9 +249,7 @@ execute_cumulative_chapter_pipeline <- function(
             turn_type = "post",
             per_group = per_group,
             groups = groups,
-            group_keys = group_keys,
-            include_tokens = include_tokens,
-            include_cost = include_cost
+            group_keys = group_keys
           )
           for (row in post_rows) {
             all_row_i <- all_row_i + 1L
@@ -286,44 +274,32 @@ build_cumulative_turn_rows <- function(
   turn_type,
   per_group,
   groups,
-  group_keys,
-  include_tokens,
-  include_cost
+  group_keys
 ) {
   out <- list()
 
   if (isTRUE(per_group)) {
     for (g_idx in seq_along(groups)) {
       field <- paste0("rating_", group_keys[[g_idx]])
-      out[[length(out) + 1L]] <- attach_usage_fields(
-        c(
-          base_fields,
-          list(
-            turn_index = turn_index,
-            turn_type = turn_type,
-            target_group = groups[[g_idx]],
-            rating = response[[field]]
-          )
-        ),
-        response,
-        include_tokens,
-        include_cost
-      )
-    }
-  } else {
-    out[[1]] <- attach_usage_fields(
-      c(
+      out[[length(out) + 1L]] <- c(
         base_fields,
         list(
           turn_index = turn_index,
           turn_type = turn_type,
-          target_group = NA_character_,
-          rating = response$rating
+          target_group = groups[[g_idx]],
+          rating = response[[field]]
         )
-      ),
-      response,
-      include_tokens,
-      include_cost
+      )
+    }
+  } else {
+    out[[1]] <- c(
+      base_fields,
+      list(
+        turn_index = turn_index,
+        turn_type = turn_type,
+        target_group = NA_character_,
+        rating = response$rating
+      )
     )
   }
 

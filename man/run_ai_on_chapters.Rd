@@ -16,9 +16,7 @@ run_ai_on_chapters(
   integration = getOption("nalanda.integration"),
   virtual_key = getOption("nalanda.virtual_key"),
   base_url = getOption("nalanda.base_url"),
-  excerpt_chars = 200,
-  include_tokens = FALSE,
-  include_cost = FALSE
+  excerpt_chars = 200
 )
 }
 \arguments{
@@ -69,12 +67,6 @@ supplying function arguments.}
 
 \item{excerpt_chars}{Integer. Number of chapter characters to retain in the
 stored post-prompt preview shown in results.}
-
-\item{include_tokens}{Logical. Return token counts if available (summed
-across both turns).}
-
-\item{include_cost}{Logical. Return cost info if available (summed across
-both turns).}
 }
 \value{
 A tibble of raw turn-level ratings, or a named list of tibbles (one

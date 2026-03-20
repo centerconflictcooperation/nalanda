@@ -37,8 +37,6 @@
 #' @param base_url Character. Base URL for API calls.
 #' @param excerpt_chars Integer. Number of chapter characters to retain in the
 #'   stored prompt preview shown in results.
-#' @param include_tokens Logical. Return token counts if available.
-#' @param include_cost Logical. Return cost info if available.
 #' @param max_active Integer. Maximum number of concurrent requests passed to
 #'   [ellmer::parallel_chat_structured()].
 #' @param rpm Integer. Requests-per-minute cap passed to
@@ -64,8 +62,6 @@ run_ai_on_chapters_one_turn <- function(
   virtual_key = getOption("nalanda.virtual_key"),
   base_url = getOption("nalanda.base_url"),
   excerpt_chars = 200,
-  include_tokens = FALSE,
-  include_cost = FALSE,
   max_active = 10,
   rpm = 500
 ) {
@@ -91,8 +87,6 @@ run_ai_on_chapters_one_turn <- function(
     virtual_key = virtual_key,
     base_url = base_url,
     excerpt_chars = excerpt_chars,
-    include_tokens = include_tokens,
-    include_cost = include_cost,
     executor = execute_one_turn_pipeline,
     max_active = max_active,
     rpm = rpm
@@ -111,8 +105,6 @@ execute_one_turn_pipeline <- function(
   model,
   base_url,
   excerpt_chars,
-  include_tokens,
-  include_cost,
   pb,
   max_active,
   rpm
@@ -178,8 +170,6 @@ execute_one_turn_pipeline <- function(
       prompts = prompts,
       type = type_response,
       convert = TRUE,
-      include_tokens = include_tokens,
-      include_cost = include_cost,
       max_active = max_active,
       rpm = rpm,
       on_error = "stop"
@@ -224,25 +214,25 @@ execute_one_turn_pipeline <- function(
         for (g_idx in seq_along(groups)) {
           g <- groups[[g_idx]]
           field <- paste0("rating_", group_keys[[g_idx]])
-          row <- attach_usage_fields(c(
+          row <- c(
             base_fields,
             list(
               target_group = g,
               rating = response[[field]]
             )
-          ), response, include_tokens, include_cost)
+          )
 
           all_row_i <- all_row_i + 1L
           all_rows[[all_row_i]] <- row
         }
       } else {
-        row <- attach_usage_fields(c(
+        row <- c(
           base_fields,
           list(
             target_group = NA_character_,
             rating = response$rating
           )
-        ), response, include_tokens, include_cost)
+        )
 
         all_row_i <- all_row_i + 1L
         all_rows[[all_row_i]] <- row

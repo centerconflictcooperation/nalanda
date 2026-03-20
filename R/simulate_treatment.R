@@ -34,8 +34,6 @@
 #' @param base_url Character. Base URL for API calls.
 #' @param excerpt_chars Integer. Number of intervention-text characters to
 #'   retain in stored prompt previews.
-#' @param include_tokens Logical. Return token counts if available.
-#' @param include_cost Logical. Return cost info if available.
 #'
 #' @return A tibble of raw turn-level responses, or a named list of tibbles
 #'   (one per book/intervention collection). Each row includes `chapter`, `sim`,
@@ -89,9 +87,7 @@ simulate_treatment <- function(
   integration = getOption("nalanda.integration"),
   virtual_key = getOption("nalanda.virtual_key"),
   base_url = getOption("nalanda.base_url"),
-  excerpt_chars = 200,
-  include_tokens = FALSE,
-  include_cost = FALSE
+  excerpt_chars = 200
 ) {
   if (missing(intervention_text) || is.null(intervention_text)) {
     intervention_text <- ""
@@ -125,8 +121,6 @@ simulate_treatment <- function(
     virtual_key = virtual_key,
     base_url = base_url,
     excerpt_chars = excerpt_chars,
-    include_tokens = include_tokens,
-    include_cost = include_cost,
     executor = execute_generic_treatment_pipeline,
     require_groups = FALSE,
     default_unit_id = "intervention_1",
@@ -155,8 +149,6 @@ execute_generic_treatment_pipeline <- function(
   model,
   base_url,
   excerpt_chars,
-  include_tokens,
-  include_cost,
   pb,
   prompt,
   response_type
@@ -227,12 +219,7 @@ execute_generic_treatment_pipeline <- function(
             )
           )
 
-          row <- attach_usage_fields(
-            c(base_fields, as.list(response)),
-            response,
-            include_tokens,
-            include_cost
-          )
+          row <- c(base_fields, as.list(response))
           row$party <- NULL
 
           all_row_i <- all_row_i + 1L

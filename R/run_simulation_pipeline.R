@@ -11,8 +11,6 @@ run_simulation_pipeline <- function(
   virtual_key,
   base_url,
   excerpt_chars,
-  include_tokens,
-  include_cost,
   executor,
   require_groups = TRUE,
   total_steps = NULL,
@@ -109,8 +107,6 @@ run_simulation_pipeline <- function(
     model = model,
     base_url = base_url,
     excerpt_chars = excerpt_chars,
-    include_tokens = include_tokens,
-    include_cost = include_cost,
     pb = pb,
     ...
   )
@@ -290,16 +286,6 @@ make_result_base_fields <- function(book, chapter, sim, identity, party, extra =
   }
 
   fields
-}
-
-attach_usage_fields <- function(row, response, include_tokens, include_cost) {
-  if (isTRUE(include_tokens) && !is.null(response$input_tokens)) {
-    row$input_tokens <- response$input_tokens
-  }
-  if (isTRUE(include_cost) && !is.null(response$cost)) {
-    row$cost <- response$cost
-  }
-  row
 }
 
 finalize_simulation_output <- function(out_rows, long_cols, chapter_jobs) {
