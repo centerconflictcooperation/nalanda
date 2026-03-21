@@ -144,6 +144,8 @@ execute_cumulative_chapter_pipeline <- function(
 
   for (book_name in names(books)) {
     book_jobs <- books[[book_name]]
+    book_index <- book_jobs$book_index[[1]]
+    total_books <- book_jobs$total_books[[1]]
 
     for (id_idx in seq_along(groups)) {
       identity_label <- groups[[id_idx]]
@@ -154,7 +156,9 @@ execute_cumulative_chapter_pipeline <- function(
           book = book_name,
           chapter = "baseline",
           identity = identity_label,
-          sim = k
+          sim = k,
+          book_index = book_index,
+          total_books = total_books
         )
         pb$tick(tokens = list(what = baseline_label))
 
@@ -208,7 +212,9 @@ execute_cumulative_chapter_pipeline <- function(
             book = book_name,
             chapter = chapter_job$chapter[[1]],
             identity = identity_label,
-            sim = k
+            sim = k,
+            book_index = book_index,
+            total_books = total_books
           )
           pb$tick(tokens = list(what = what_text))
 

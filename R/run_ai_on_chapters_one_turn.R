@@ -157,6 +157,8 @@ execute_one_turn_pipeline <- function(
         prompts[[prompt_i]] <- full_prompt
         prompt_jobs[[prompt_i]] <- list(
           book = chapter_job$book[[1]],
+          book_index = chapter_job$book_index[[1]],
+          total_books = chapter_job$total_books[[1]],
           chapter = chapter_job$chapter[[1]],
           sim = k,
           identity = identity_label,
@@ -193,7 +195,9 @@ execute_one_turn_pipeline <- function(
         book = meta$book,
         chapter = meta$chapter,
         identity = meta$identity,
-        sim = meta$sim
+        sim = meta$sim,
+        book_index = meta$book_index,
+        total_books = meta$total_books
       )
       pb$tick(tokens = list(what = what_text))
 

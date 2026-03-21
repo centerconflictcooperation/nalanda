@@ -185,7 +185,9 @@ execute_two_turn_pipeline <- function(
           book = chapter_job$book[[1]],
           chapter = chapter_job$chapter[[1]],
           identity = identity_label,
-          sim = k
+          sim = k,
+          book_index = chapter_job$book_index[[1]],
+          total_books = chapter_job$total_books[[1]]
         )
         pb$tick(tokens = list(what = what_text))
 

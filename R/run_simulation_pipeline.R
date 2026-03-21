@@ -137,6 +137,8 @@ build_chapter_jobs <- function(book_texts, default_unit_id = "chapter_1") {
 
     return(tibble::tibble(
       book = NA_character_,
+      book_index = NA_integer_,
+      total_books = 1L,
       chapter = chapter_id,
       chapter_text = unname(book_texts[[1]])
     ))
@@ -155,6 +157,8 @@ build_chapter_jobs <- function(book_texts, default_unit_id = "chapter_1") {
         out_i <- out_i + 1L
         out[[out_i]] <- tibble::tibble(
           book = book,
+          book_index = i,
+          total_books = length(book_texts),
           chapter = names(chapter_texts)[[j]],
           chapter_text = unname(chapter_texts[[j]])
         )
@@ -262,11 +266,23 @@ build_turn_types <- function(per_group, groups, include_party_first = TRUE) {
   )
 }
 
-format_progress_label <- function(book, chapter, identity, sim) {
+format_progress_label <- function(
+  book,
+  chapter,
+  identity,
+  sim,
+  book_index = NA_integer_,
+  total_books = 1L
+) {
+  prefix <- ""
+  if (!is.na(book_index) && total_books > 1L) {
+    prefix <- paste0("[book ", book_index, "/", total_books, "] ")
+  }
+
   if (!is.na(book) && nzchar(book)) {
-    paste0(book, " - ", chapter, " [", identity, "] (sim ", sim, ")")
+    paste0(prefix, book, " - ", chapter, " [", identity, "] (sim ", sim, ")")
   } else {
-    paste0(chapter, " [", identity, "] (sim ", sim, ")")
+    paste0(prefix, chapter, " [", identity, "] (sim ", sim, ")")
   }
 }
 
