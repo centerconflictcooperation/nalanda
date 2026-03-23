@@ -141,13 +141,7 @@ new_progress_tracker <- function(
   chapter_stage_counts <- table(chapter_ids)
 
   pb <- progress::progress_bar$new(
-    format = paste(
-      "  running [:bar] :percent",
-      "total=:total_pct",
-      "book=:book_pct",
-      "chapter=:chapter_pct",
-      "eta: :eta :what"
-    ),
+    format = "  running [:bar] :percent eta: :eta :what",
     total = total_steps,
     clear = FALSE,
     width = 60
@@ -181,14 +175,13 @@ new_progress_tracker <- function(
     chapter_total <- as.integer(chapter_stage_counts[[chapter_id]]) * units_per_stage
 
     pb$tick(tokens = list(
-      total_pct = format_progress_pct(state$total_done, total_steps),
-      book_pct = format_progress_pct(state$current_book_done, book_total),
-      chapter_pct = format_progress_pct(state$current_chapter_done, chapter_total),
       what = format_progress_label(
         book = book,
         chapter = chapter,
         identity = identity,
-        sim = sim
+        sim = sim,
+        book_pct = format_progress_pct(state$current_book_done, book_total),
+        chapter_pct = format_progress_pct(state$current_chapter_done, chapter_total)
       )
     ))
   }
@@ -373,12 +366,28 @@ format_progress_label <- function(
   book,
   chapter,
   identity,
-  sim
+  sim,
+  book_pct = NULL,
+  chapter_pct = NULL
 ) {
-  if (!is.na(book) && nzchar(book)) {
-    paste0(book, " - ", chapter, " [", identity, "] (sim ", sim, ")")
+  book_label <- if (!is.na(book) && nzchar(book)) {
+    book
   } else {
-    paste0(chapter, " [", identity, "] (sim ", sim, ")")
+    ""
+  }
+  if (!is.null(book_pct) && nzchar(book_label)) {
+    book_label <- paste0(book_label, " [", book_pct, "]")
+  }
+
+  chapter_label <- chapter
+  if (!is.null(chapter_pct) && !is.na(chapter_label) && nzchar(chapter_label)) {
+    chapter_label <- paste0(chapter_label, " [", chapter_pct, "]")
+  }
+
+  if (!is.na(book) && nzchar(book)) {
+    paste0(book_label, " - ", chapter_label, " [", identity, "] (sim ", sim, ")")
+  } else {
+    paste0(chapter_label, " [", identity, "] (sim ", sim, ")")
   }
 }
 
