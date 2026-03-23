@@ -88,11 +88,11 @@ run_simulation_pipeline <- function(
   if (is.null(total_steps)) {
     total_steps <- nrow(chapter_jobs) * n_simulations * length(groups)
   }
-  pb <- progress::progress_bar$new(
-    format = "  running [:bar] :percent eta: :eta :what",
-    total = total_steps,
-    clear = FALSE,
-    width = 60
+  progress_tracker <- new_progress_tracker(
+    chapter_jobs = chapter_jobs,
+    n_simulations = n_simulations,
+    n_identities = length(groups),
+    total_steps = total_steps
   )
 
   out <- executor(
@@ -107,7 +107,8 @@ run_simulation_pipeline <- function(
     model = model,
     base_url = base_url,
     excerpt_chars = excerpt_chars,
-    pb = pb,
+    pb = progress_tracker$pb,
+    progress_tick = progress_tracker$tick,
     ...
   )
 
@@ -125,6 +126,107 @@ run_simulation_pipeline <- function(
   }
 
   out
+}
+
+new_progress_tracker <- function(
+  chapter_jobs,
+  n_simulations,
+  n_identities,
+  total_steps
+) {
+  units_per_stage <- n_simulations * n_identities
+  book_ids <- progress_scope_id(chapter_jobs$book)
+  chapter_ids <- progress_scope_id(chapter_jobs$book, chapter_jobs$chapter)
+  book_stage_counts <- table(book_ids)
+  chapter_stage_counts <- table(chapter_ids)
+
+  pb <- progress::progress_bar$new(
+    format = paste(
+      "  running [:bar] :percent",
+      "total=:total_pct",
+      "book=:book_pct",
+      "chapter=:chapter_pct",
+      "eta: :eta :what"
+    ),
+    total = total_steps,
+    clear = FALSE,
+    width = 60
+  )
+
+  state <- new.env(parent = emptyenv())
+  state$total_done <- 0L
+  state$current_book_id <- NULL
+  state$current_book_done <- 0L
+  state$current_chapter_id <- NULL
+  state$current_chapter_done <- 0L
+
+  tick <- function(book, chapter, identity, sim) {
+    book_id <- progress_scope_id(book)
+    chapter_id <- progress_scope_id(book, chapter)
+
+    if (!identical(state$current_book_id, book_id)) {
+      state$current_book_id <- book_id
+      state$current_book_done <- 0L
+    }
+    if (!identical(state$current_chapter_id, chapter_id)) {
+      state$current_chapter_id <- chapter_id
+      state$current_chapter_done <- 0L
+    }
+
+    state$total_done <- state$total_done + 1L
+    state$current_book_done <- state$current_book_done + 1L
+    state$current_chapter_done <- state$current_chapter_done + 1L
+
+    book_total <- as.integer(book_stage_counts[[book_id]]) * units_per_stage
+    chapter_total <- as.integer(chapter_stage_counts[[chapter_id]]) * units_per_stage
+
+    pb$tick(tokens = list(
+      total_pct = format_progress_pct(state$total_done, total_steps),
+      book_pct = format_progress_pct(state$current_book_done, book_total),
+      chapter_pct = format_progress_pct(state$current_chapter_done, chapter_total),
+      what = format_progress_label(
+        book = book,
+        chapter = chapter,
+        identity = identity,
+        sim = sim
+      )
+    ))
+  }
+
+  list(
+    pb = pb,
+    tick = tick
+  )
+}
+
+progress_scope_id <- function(book, chapter = NULL) {
+  if (length(book) == 0) {
+    book_part <- character()
+  } else {
+    book_part <- as.character(book)
+    book_part[is.na(book_part) | !nzchar(book_part)] <- "__default_book__"
+  }
+
+  if (is.null(chapter)) {
+    return(book_part)
+  }
+
+  if (length(chapter) == 0) {
+    chapter_part <- character()
+  } else {
+    chapter_part <- as.character(chapter)
+    chapter_part[is.na(chapter_part) | !nzchar(chapter_part)] <- "__default_chapter__"
+  }
+
+  paste(book_part, chapter_part, sep = "::")
+}
+
+format_progress_pct <- function(done, total) {
+  if (is.na(total) || total < 1) {
+    return("--%")
+  }
+
+  sprintf("%3.0f%%", 100 * done / total)
 }
 
 build_chapter_jobs <- function(book_texts, default_unit_id = "chapter_1") {
@@ -210,9 +312,10 @@ new_portkey_chat <- function(model, base_url, temperature, seed) {
       msg <- conditionMessage(e)
       if (grepl("PORTKEY_VIRTUAL_KEY", msg, fixed = TRUE)) {
         stop(
-          "Please provide `virtual_key` (or set ",
-          "`options(nalanda.virtual_key=...)`), which is currently ",
-          "Nalanda's officially supported method. ",
+          "Please set `options(nalanda.integration=...)` first ",
+          "(preferred), or provide `integration` directly. ",
+          "Legacy fallback: set `options(nalanda.virtual_key=...)` ",
+          "or provide `virtual_key` directly. ",
           "Your installed `ellmer` expects `PORTKEY_VIRTUAL_KEY` when ",
           "`model` is not fully-qualified. ",
           "Alternative: use a fully-qualified model string in ",
@@ -270,19 +373,12 @@ format_progress_label <- function(
   book,
   chapter,
   identity,
-  sim,
-  book_index = NA_integer_,
-  total_books = 1L
+  sim
 ) {
-  prefix <- ""
-  if (!is.na(book_index) && total_books > 1L) {
-    prefix <- paste0("[book ", book_index, "/", total_books, "] ")
-  }
-
   if (!is.na(book) && nzchar(book)) {
-    paste0(prefix, book, " - ", chapter, " [", identity, "] (sim ", sim, ")")
+    paste0(book, " - ", chapter, " [", identity, "] (sim ", sim, ")")
   } else {
-    paste0(prefix, chapter, " [", identity, "] (sim ", sim, ")")
+    paste0(chapter, " [", identity, "] (sim ", sim, ")")
   }
 }
 

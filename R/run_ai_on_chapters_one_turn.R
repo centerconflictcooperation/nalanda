@@ -106,6 +106,7 @@ execute_one_turn_pipeline <- function(
   base_url,
   excerpt_chars,
   pb,
+  progress_tick,
   max_active,
   rpm
 ) {
@@ -191,15 +192,12 @@ execute_one_turn_pipeline <- function(
     for (i in seq_along(prompt_jobs)) {
       meta <- prompt_jobs[[i]]
       response <- response_list[[i]]
-      what_text <- format_progress_label(
+      progress_tick(
         book = meta$book,
         chapter = meta$chapter,
         identity = meta$identity,
-        sim = meta$sim,
-        book_index = meta$book_index,
-        total_books = meta$total_books
+        sim = meta$sim
       )
-      pb$tick(tokens = list(what = what_text))
 
       base_fields <- make_result_base_fields(
         book = meta$book,

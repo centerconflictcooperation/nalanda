@@ -395,6 +395,30 @@ test_that("run_ai_on_chapters_one_turn ignores lingering virtual_key option when
   ))
 })
 
+test_that("new_portkey_chat error prefers integration guidance", {
+  testthat::local_mocked_bindings(
+    chat_portkey = function(...) {
+      stop("Missing required env var PORTKEY_VIRTUAL_KEY", call. = FALSE)
+    },
+    .package = "ellmer"
+  )
+
+  expect_error(
+    nalanda:::new_portkey_chat(
+      model = "gemini-2.5-flash-lite",
+      base_url = "https://example.com/v1/",
+      temperature = 0,
+      seed = 42
+    ),
+    paste0(
+      "Please set `options\\(nalanda.integration=\\.\\.\\.\\)` first ",
+      "\\(preferred\\), or provide `integration` directly\\. ",
+      "Legacy fallback: set `options\\(nalanda.virtual_key=\\.\\.\\.\\)` ",
+      "or provide `virtual_key` directly\\."
+    )
+  )
+})
+
 test_that("compute_run_ai_metrics_one_turn computes one-turn per-group summaries", {
   x <- tibble::tibble(
     chapter = c("chapter_1", "chapter_1", "chapter_2", "chapter_2"),

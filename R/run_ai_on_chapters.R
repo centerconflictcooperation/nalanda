@@ -159,7 +159,8 @@ execute_two_turn_pipeline <- function(
   model,
   base_url,
   excerpt_chars,
-  pb
+  pb,
+  progress_tick
 ) {
   group_keys <- group_keys_from_groups(groups)
   turn_types <- build_turn_types(
@@ -181,15 +182,12 @@ execute_two_turn_pipeline <- function(
       identity_context <- context_text[[id_idx]]
 
       for (k in seq_len(n_simulations)) {
-        what_text <- format_progress_label(
+        progress_tick(
           book = chapter_job$book[[1]],
           chapter = chapter_job$chapter[[1]],
           identity = identity_label,
-          sim = k,
-          book_index = chapter_job$book_index[[1]],
-          total_books = chapter_job$total_books[[1]]
+          sim = k
         )
-        pb$tick(tokens = list(what = what_text))
 
         chat <- new_portkey_chat(
           model = model,

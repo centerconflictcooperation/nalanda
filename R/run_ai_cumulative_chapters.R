@@ -127,7 +127,8 @@ execute_cumulative_chapter_pipeline <- function(
   model,
   base_url,
   excerpt_chars,
-  pb
+  pb,
+  progress_tick
 ) {
   group_keys <- group_keys_from_groups(groups)
   turn_types <- build_turn_types(
@@ -152,15 +153,12 @@ execute_cumulative_chapter_pipeline <- function(
       identity_context <- context_text[[id_idx]]
 
       for (k in seq_len(n_simulations)) {
-        baseline_label <- format_progress_label(
+        progress_tick(
           book = book_name,
           chapter = "baseline",
           identity = identity_label,
-          sim = k,
-          book_index = book_index,
-          total_books = total_books
+          sim = k
         )
-        pb$tick(tokens = list(what = baseline_label))
 
         chat <- new_portkey_chat(
           model = model,
@@ -208,15 +206,12 @@ execute_cumulative_chapter_pipeline <- function(
 
         for (chapter_pos in seq_len(nrow(book_jobs))) {
           chapter_job <- book_jobs[chapter_pos, , drop = FALSE]
-          what_text <- format_progress_label(
+          progress_tick(
             book = book_name,
             chapter = chapter_job$chapter[[1]],
             identity = identity_label,
-            sim = k,
-            book_index = book_index,
-            total_books = total_books
+            sim = k
           )
-          pb$tick(tokens = list(what = what_text))
 
           full_post_prompt <- make_post_prompt(
             chapter_job$chapter_text[[1]],

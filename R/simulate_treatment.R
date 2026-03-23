@@ -150,6 +150,7 @@ execute_generic_treatment_pipeline <- function(
   base_url,
   excerpt_chars,
   pb,
+  progress_tick,
   prompt,
   response_type
 ) {
@@ -170,15 +171,12 @@ execute_generic_treatment_pipeline <- function(
       identity_context <- context_text[[id_idx]]
 
       for (k in seq_len(n_simulations)) {
-        what_text <- format_progress_label(
+        progress_tick(
           book = chapter_job$book[[1]],
           chapter = chapter_job$chapter[[1]],
           identity = if (is.na(identity_label)) "default" else identity_label,
-          sim = k,
-          book_index = chapter_job$book_index[[1]],
-          total_books = chapter_job$total_books[[1]]
+          sim = k
         )
-        pb$tick(tokens = list(what = what_text))
 
         chat <- new_portkey_chat(
           model = model,
