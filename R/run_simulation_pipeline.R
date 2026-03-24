@@ -143,8 +143,7 @@ new_progress_tracker <- function(
   pb <- progress::progress_bar$new(
     format = "  running [:bar] :percent eta: :eta :what",
     total = total_steps,
-    clear = FALSE,
-    width = 60
+    clear = FALSE
   )
 
   state <- new.env(parent = emptyenv())
