@@ -267,3 +267,11 @@ Use this vignette’s workflow when:
 
 Use the chapter-oriented workflows when your unit is still a book chapter and
 you care about pre/post changes across simulated identities.
+
+# Reference
+
+Rathje, S., Mirea, D. M., Sucholutsky, I., Marjieh, R., Robertson, C. E., &
+Van Bavel, J. J. (2024). GPT is an effective tool for multilingual
+psychological text analysis. *Proceedings of the National Academy of
+Sciences, *121*(34), e2308950121.
+<https://doi.org/10.1073/pnas.2308950121>
