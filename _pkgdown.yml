@@ -8,6 +8,7 @@ navbar:
   - text: Tutorials
     href: articles/index.html
     menu:
+    - text: Core Workflows
     - text: Getting Started
       href: articles/getting-started.html
     - text: Post-Only Identity Treatments
@@ -26,7 +27,7 @@ navbar:
     href: news/index.html
 
 articles:
-- title: Getting Started
+- title: Core Workflows
   navbar: ~
   contents:
   - getting-started

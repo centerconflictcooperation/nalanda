@@ -11,61 +11,6 @@ workflows that ask whether books shift prosocial attitudes, outgroup
 warmth, and affective polarization across chapters or across whole
 books.
 
-## Which simulation function should I use?
-
-``` mermaid
-flowchart TD
-    A["What are you simulating?"] --> B{"Unit of analysis"}
-    B -->|"Book chapters"| C{"Design"}
-    B -->|"Rows of text\ntweets, headlines,\ncomments"| D["run_text_analysis()"]
-    C -->|"Pre/post within the same simulated identity"| E["run_ai_on_chapters()"]
-    C -->|"Baseline once, then cumulative chapter updates"| F["run_ai_cumulative_chapters()"]
-    C -->|"One prompt only,\nno baseline turn"| G{"Need chapter-specific helper\nor generic prompt control?"}
-    G -->|"Simple chapter workflow"| H["run_ai_on_chapters_one_turn()"]
-    G -->|"Custom one-turn or multi-turn prompt sequence"| I["simulate_treatment()"]
-```
-
-In short:
-
-- Use `run_ai_on_chapters()` for the original two-turn chapter
-  workflow.
-- Use `run_ai_cumulative_chapters()` when later chapters should be
-  interpreted relative to a single baseline.
-- Use `run_ai_on_chapters_one_turn()` for a chapter-based,
-  single-prompt design.
-- Use `simulate_treatment()` when you want direct control over custom
-  prompt sequences and the intervention is not necessarily a chapter.
-- Use `run_text_analysis()` for dataset-first text annotation tasks such
-  as sentiment, emotion, offensiveness, or moral-foundation coding.
-
-## Overlap and consolidation
-
-There is some real overlap now, but it is mostly layered rather than
-accidental:
-
-- `run_ai_on_chapters()` and `run_ai_cumulative_chapters()` are
-  chapter-specific opinion-change workflows.
-- `run_ai_on_chapters_one_turn()` is a simplified chapter wrapper for
-  the common single-prompt case.
-- `simulate_treatment()` is the more generic prompt-first engine for
-  intervention-style simulations.
-- `run_text_analysis()` is the new dataset-first path for row-wise
-  psychological text analysis.
-
-The current direction should be to consolidate around fewer conceptual
-families, not necessarily fewer total exported functions:
-
-- `chapter workflows`: `run_ai_on_chapters()`,
-  `run_ai_cumulative_chapters()`
-- `generic intervention workflows`: `simulate_treatment()`
-- `dataset-first annotation workflows`: `run_text_analysis()`
-
-That likely means `run_ai_on_chapters_one_turn()` should be treated as a
-convenience wrapper over time rather than as a separate long-term
-family. The main redundancy is therefore between the one-turn chapter
-helper and the more general `simulate_treatment()` interface, not
-between all functions equally.
-
 ## Installation
 
 You can install the development version of nalanda from
@@ -178,6 +123,55 @@ For API setup and a live minimal simulation example, see the vignette:
 vignette("getting-started", package = "nalanda")
 ```
 
+## Which simulation function should I use?
+
+<figure>
+<img src="man/figures/README-function-choice.png"
+alt="Decision flow for choosing nalanda simulation functions." />
+<figcaption aria-hidden="true">Decision flow for choosing nalanda
+simulation functions.</figcaption>
+</figure>
+
+In short:
+
+- Use `run_ai_on_chapters()` for the original two-turn chapter workflow.
+- Use `run_ai_cumulative_chapters()` when later chapters should be
+  interpreted relative to a single baseline.
+- Use `run_ai_on_chapters_one_turn()` for a chapter-based, single-prompt
+  design.
+- Use `simulate_treatment()` when you want direct control over custom
+  prompt sequences and the intervention is not necessarily a chapter.
+- Use `run_text_analysis()` for dataset-first text annotation tasks such
+  as sentiment, emotion, offensiveness, or moral-foundation coding.
+
+## Overlap and consolidation
+
+There is some real overlap now, but it is mostly layered rather than
+accidental:
+
+- `run_ai_on_chapters()` and `run_ai_cumulative_chapters()` are
+  chapter-specific opinion-change workflows.
+- `run_ai_on_chapters_one_turn()` is a simplified chapter wrapper for
+  the common single-prompt case.
+- `simulate_treatment()` is the more generic prompt-first engine for
+  intervention-style simulations.
+- `run_text_analysis()` is the new dataset-first path for row-wise
+  psychological text analysis.
+
+The current direction should be to consolidate around fewer conceptual
+families, not necessarily fewer total exported functions:
+
+- `chapter workflows`: `run_ai_on_chapters()`,
+  `run_ai_cumulative_chapters()`
+- `generic intervention workflows`: `simulate_treatment()`
+- `dataset-first annotation workflows`: `run_text_analysis()`
+
+That likely means `run_ai_on_chapters_one_turn()` should be treated as a
+convenience wrapper over time rather than as a separate long-term
+family. The main redundancy is therefore between the one-turn chapter
+helper and the more general `simulate_treatment()` interface, not
+between all functions equally.
+
 ## About the Name
 
 The package is named after [Nalanda
@@ -202,7 +196,7 @@ library(nalanda)
 
 # Get a random fact about Nalanda University
 nalanda()
-#> [1] "Nalanda remained an active center of learning for roughly 700 years until the 12th century."
+#> [1] "Xuanzang, the 7th-century Chinese monk and scholar, studied at Nalanda for several years and documented its curriculum."
 ```
 
 Learn more about related research on books, learning, and prosociality:
