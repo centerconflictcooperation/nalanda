@@ -25,7 +25,7 @@ routing once at the top of your script.
 library(nalanda)
 
 options(
-  nalanda.integration = "vertexai",
+  nalanda.integration = "openai",
   nalanda.base_url = "https://ai-gateway.apps.cloud.rt.nyu.edu/v1/"
 )
 ```
@@ -39,24 +39,24 @@ uses the same pattern: one row per text.
 ``` r
 texts <- tibble::tibble(
   id = 1:4,
-  language = c("English", "English", "Arabic", "English"),
+  language = c("English", "English", "Arabic", "Simplified Chinese"),
   text = c(
     "I love this new community project.",
     "This policy announcement is fine, I guess.",
-    "هذا الخبر مزعج للغاية",
-    "I hate how they handled this issue."
+    "\u0647\u0630\u0627 \u0627\u0644\u062e\u0628\u0631 \u0631\u0627\u0626\u0639 \u0644\u0644\u063a\u0627\u064a\u0629",
+    "\u6211\u4e0d\u559c\u6b22\u4ed6\u4eec\u5904\u7406\u8fd9\u4e2a\u95ee\u9898\u7684\u65b9\u5f0f\u3002"
   ),
-  human_sentiment = c(1, 2, 3, 3)
+  human_sentiment = c(1, 2, 1, 3)
 )
 
 texts
 #> # A tibble: 4 × 4
-#>      id language text                                       human_sentiment
-#>   <int> <chr>    <chr>                                                <dbl>
-#> 1     1 English  I love this new community project.                       1
-#> 2     2 English  This policy announcement is fine, I guess.               2
-#> 3     3 Arabic   هذا الخبر مزعج للغاية                                    3
-#> 4     4 English  I hate how they handled this issue.                      3
+#>      id language           text                                  human_sentiment
+#>   <int> <chr>              <chr>                                           <dbl>
+#> 1     1 English            I love this new community project.                  1
+#> 2     2 English            This policy announcement is fine, I …               2
+#> 3     3 Arabic             هذا الخبر رائع للغاية                               1
+#> 4     4 Simplified Chinese 我不喜欢他们处理这个问题的方式。                    3
 ```
 
 If a right-to-left language such as Arabic looks visually out of order
@@ -75,12 +75,12 @@ texts_display$text[arabic_row] <- paste0(
 
 texts_display
 #> # A tibble: 4 × 4
-#>      id language text                                       human_sentiment
-#>   <int> <chr>    <chr>                                                <dbl>
-#> 1     1 English  I love this new community project.                       1
-#> 2     2 English  This policy announcement is fine, I guess.               2
-#> 3     3 Arabic   ⁧هذا الخبر مزعج للغاية⁩                                    3
-#> 4     4 English  I hate how they handled this issue.                      3
+#>      id language           text                                  human_sentiment
+#>   <int> <chr>              <chr>                                           <dbl>
+#> 1     1 English            I love this new community project.                  1
+#> 2     2 English            This policy announcement is fine, I …               2
+#> 3     3 Arabic             ⁧هذا الخبر رائع للغاية⁩                               1
+#> 4     4 Simplified Chinese 我不喜欢他们处理这个问题的方式。                    3
 ```
 
 Use the original `texts$text` values for API calls. The isolated version
@@ -133,7 +133,7 @@ res <- run_text_analysis(
   ),
   n_simulations = 1,
   temperature = 0,
-  model = "gemini-2.5-flash-lite"
+  model = "gpt-5-mini"
 )
 ```
 
@@ -149,12 +149,12 @@ The important differences from the older chapter-based functions are:
 
 Each row of the result corresponds to one text and one simulation run.
 
-|  id | language | sim | human_sentiment | gpt | text                                       |
-|----:|:---------|----:|----------------:|----:|:-------------------------------------------|
-|   1 | English  |   1 |               1 |   1 | I love this new community project.         |
-|   2 | English  |   1 |               2 |   2 | This policy announcement is fine, I guess. |
-|   3 | Arabic   |   1 |               3 |   3 | هذا الخبر مزعج للغاية                      |
-|   4 | English  |   1 |               3 |   3 | I hate how they handled this issue.        |
+|  id | language           | sim | human_sentiment | gpt | text                                       |
+|----:|:-------------------|----:|----------------:|----:|:-------------------------------------------|
+|   1 | English            |   1 |               1 |   1 | I love this new community project.         |
+|   2 | English            |   1 |               2 |   2 | This policy announcement is fine, I guess. |
+|   3 | Arabic             |   1 |               1 |   1 | هذا الخبر رائع للغاية                      |
+|   4 | Simplified Chinese |   1 |               3 |   3 | 我不喜欢他们处理这个问题的方式。           |
 
 This is the same basic structure as the screenshot workflow, but the
 parsing is already handled for you because the response is extracted as
@@ -179,10 +179,11 @@ scores <- evaluate_text_analysis(
 scores
 ```
 
-| language |   n | accuracy | macro_precision | macro_recall | macro_f1 |
-|:---------|----:|---------:|----------------:|-------------:|---------:|
-| Arabic   |   1 |        1 |               1 |            1 |        1 |
-| English  |   3 |        1 |               1 |            1 |        1 |
+| language           |   n | accuracy | macro_precision | macro_recall | macro_f1 |
+|:-------------------|----:|---------:|----------------:|-------------:|---------:|
+| Arabic             |   1 |        1 |               1 |            1 |        1 |
+| English            |   2 |        1 |               1 |            1 |        1 |
+| Simplified Chinese |   1 |        1 |               1 |            1 |        1 |
 
 For Likert-style tasks, switch the metric set to something like:
 
@@ -227,7 +228,8 @@ headline_res <- run_text_analysis(
   response_type = ellmer::type_object(
     gpt = ellmer::type_number()
   ),
-  temperature = 0
+  temperature = 0,
+  model = "gpt-5-mini"
 )
 ```
 
@@ -246,7 +248,8 @@ res_repeated <- run_text_analysis(
     gpt = ellmer::type_number()
   ),
   n_simulations = 2,
-  temperature = 0
+  temperature = 0,
+  model = "gpt-5-mini"
 )
 ```
 
@@ -269,7 +272,7 @@ chapter and you care about pre/post changes across simulated identities.
 ## Reference
 
 Rathje, S., Mirea, D. M., Sucholutsky, I., Marjieh, R., Robertson, C.
-E., & Van Bavel, J. J. (2024). GPT is an effective tool for multilingual
-psychological text analysis. *Proceedings of the National Academy of
-Sciences,* 121\*(34), e2308950121.
+E., & Van Bavel, J. J. (2024). *GPT is an effective tool for
+multilingual psychological text analysis*. *Proceedings of the National
+Academy of Sciences, 121*(34), e2308950121.
 <https://doi.org/10.1073/pnas.2308950121>
