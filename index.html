@@ -43,6 +43,7 @@
   <ul class="dropdown-menu" aria-labelledby="dropdown-tutorials">
 <li><a class="dropdown-item" href="articles/getting-started.html">Getting Started</a></li>
     <li><a class="dropdown-item" href="articles/post-only-identity-treatments.html">Post-Only Identity Treatments</a></li>
+    <li><a class="dropdown-item" href="articles/psychological-text-analysis.html">Psychological Text Analysis</a></li>
     <li><h6 class="dropdown-header" data-toc-skip>Methods and Roadmaps</h6></li>
     <li><a class="dropdown-item" href="articles/simulation-roadmap.html">Simulation Roadmap</a></li>
     <li><h6 class="dropdown-header" data-toc-skip>Paper Context</h6></li>
@@ -75,10 +76,59 @@
 <p>The <strong>nalanda</strong> package provides tools for simulating, summarizing, and plotting chapter-level AI reading responses. It is designed for workflows that ask whether books shift prosocial attitudes, outgroup warmth, and affective polarization across chapters or across whole books.</p>
 </div>
 <div class="section level2">
+<h2 id="which-simulation-function-should-i-use">Which simulation function should I use?<a class="anchor" aria-label="anchor" href="#which-simulation-function-should-i-use"></a>
+</h2>
+<pre class="mermaid"><code>flowchart TD
+    A["What are you simulating?"] --&gt; B{"Unit of analysis"}
+    B --&gt;|"Book chapters"| C{"Design"}
+    B --&gt;|"Rows of text\ntweets, headlines,\ncomments"| D["run_text_analysis()"]
+    C --&gt;|"Pre/post within the same simulated identity"| E["run_ai_on_chapters()"]
+    C --&gt;|"Baseline once, then cumulative chapter updates"| F["run_ai_cumulative_chapters()"]
+    C --&gt;|"One prompt only,\nno baseline turn"| G{"Need chapter-specific helper\nor generic prompt control?"}
+    G --&gt;|"Simple chapter workflow"| H["run_ai_on_chapters_one_turn()"]
+    G --&gt;|"Custom one-turn or multi-turn prompt sequence"| I["simulate_treatment()"]</code></pre>
+<p>In short:</p>
+<ul>
+<li>Use <code><a href="reference/run_ai_on_chapters.html">run_ai_on_chapters()</a></code> for the original two-turn chapter workflow.</li>
+<li>Use <code><a href="reference/run_ai_cumulative_chapters.html">run_ai_cumulative_chapters()</a></code> when later chapters should be interpreted relative to a single baseline.</li>
+<li>Use <code><a href="reference/run_ai_on_chapters_one_turn.html">run_ai_on_chapters_one_turn()</a></code> for a chapter-based, single-prompt design.</li>
+<li>Use <code><a href="reference/simulate_treatment.html">simulate_treatment()</a></code> when you want direct control over custom prompt sequences and the intervention is not necessarily a chapter.</li>
+<li>Use <code><a href="reference/run_text_analysis.html">run_text_analysis()</a></code> for dataset-first text annotation tasks such as sentiment, emotion, offensiveness, or moral-foundation coding.</li>
+</ul>
+</div>
+<div class="section level2">
+<h2 id="overlap-and-consolidation">Overlap and consolidation<a class="anchor" aria-label="anchor" href="#overlap-and-consolidation"></a>
+</h2>
+<p>There is some real overlap now, but it is mostly layered rather than accidental:</p>
+<ul>
+<li>
+<code><a href="reference/run_ai_on_chapters.html">run_ai_on_chapters()</a></code> and <code><a href="reference/run_ai_cumulative_chapters.html">run_ai_cumulative_chapters()</a></code> are chapter-specific opinion-change workflows.</li>
+<li>
+<code><a href="reference/run_ai_on_chapters_one_turn.html">run_ai_on_chapters_one_turn()</a></code> is a simplified chapter wrapper for the common single-prompt case.</li>
+<li>
+<code><a href="reference/simulate_treatment.html">simulate_treatment()</a></code> is the more generic prompt-first engine for intervention-style simulations.</li>
+<li>
+<code><a href="reference/run_text_analysis.html">run_text_analysis()</a></code> is the new dataset-first path for row-wise psychological text analysis.</li>
+</ul>
+<p>The current direction should be to consolidate around fewer conceptual families, not necessarily fewer total exported functions:</p>
+<ul>
+<li>
+<code>chapter workflows</code>: <code><a href="reference/run_ai_on_chapters.html">run_ai_on_chapters()</a></code>, <code><a href="reference/run_ai_cumulative_chapters.html">run_ai_cumulative_chapters()</a></code>
+</li>
+<li>
+<code>generic intervention workflows</code>: <code><a href="reference/simulate_treatment.html">simulate_treatment()</a></code>
+</li>
+<li>
+<code>dataset-first annotation workflows</code>: <code><a href="reference/run_text_analysis.html">run_text_analysis()</a></code>
+</li>
+</ul>
+<p>That likely means <code><a href="reference/run_ai_on_chapters_one_turn.html">run_ai_on_chapters_one_turn()</a></code> should be treated as a convenience wrapper over time rather than as a separate long-term family. The main redundancy is therefore between the one-turn chapter helper and the more general <code><a href="reference/simulate_treatment.html">simulate_treatment()</a></code> interface, not between all functions equally.</p>
+</div>
+<div class="section level2">
 <h2 id="installation">Installation<a class="anchor" aria-label="anchor" href="#installation"></a>
 </h2>
 <p>You can install the development version of nalanda from <a href="https://github.com/" class="external-link">GitHub</a> with:</p>
-<div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span></span>
 <span>  <span class="st">'nalanda'</span>, repos <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span></span>
 <span>    <span class="st">'https://centerconflictcooperation.r-universe.dev'</span>, </span>
@@ -95,7 +145,7 @@
 <li>summarize or plot the processed results</li>
 </ol>
 <p>This README uses bundled toy data so it renders quickly and does not require live API calls.</p>
-<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://centerconflictcooperation.github.io/nalanda/">nalanda</a></span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">raw_turns</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/run_ai_on_chapters.html">run_ai_on_chapters</a></span><span class="op">(</span></span>
@@ -109,7 +159,7 @@
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">chapter_results</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/compute_run_ai_metrics.html">compute_run_ai_metrics</a></span><span class="op">(</span><span class="va">raw_turns</span><span class="op">)</span></span></code></pre></div>
-<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://centerconflictcooperation.github.io/nalanda/">nalanda</a></span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">img_paths</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
@@ -130,7 +180,7 @@
 <span><span class="co">#&gt; 5 Bridge Stories chapter_1     2 Democrat         3.5</span></span>
 <span><span class="co">#&gt; 6 Common Ground  chapter_1     2 Democrat         4.5</span></span></code></pre></div>
 <p>Use the processed chapter-level results directly with the time-series plotting helper:</p>
-<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="reference/plot_chapters_over_time.html">plot_chapters_over_time</a></span><span class="op">(</span></span>
 <span>  chapters <span class="op">=</span> <span class="va">chapter_results</span>,</span>
 <span>  dv <span class="op">=</span> <span class="st">"delta_gap"</span>,</span>
@@ -165,7 +215,7 @@ Synthetic chapter-level trajectories of affective polarization change by party.
 </li>
 </ul>
 <p>For API setup and a live minimal simulation example, see the vignette:</p>
-<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/vignette.html" class="external-link">vignette</a></span><span class="op">(</span><span class="st">"getting-started"</span>, package <span class="op">=</span> <span class="st">"nalanda"</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
@@ -174,7 +224,7 @@ Synthetic chapter-level trajectories of affective polarization change by party.
 <p>The package is named after <a href="https://en.wikipedia.org/wiki/Nalanda" class="external-link">Nalanda Mahavihara</a>, one of the most renowned centers of learning in ancient India. Founded in the 5th century CE, Nalanda was a Buddhist monastic university that attracted scholars from across Asia and became a symbol of knowledge, wisdom, and the pursuit of learning through texts and collaboration.</p>
 <p>This name is particularly fitting for a package related to the study of books and prosociality, reflecting the historical significance of Nalanda as a center for both scholarly texts and the cooperative exchange of ideas. The connection resonates with contemporary research on how books and shared learning can foster prosocial behavior and cooperation.</p>
 <p>The package also includes a small helper to explore historical facts about Nalanda University:</p>
-<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://centerconflictcooperation.github.io/nalanda/">nalanda</a></span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Get a random fact about Nalanda University</span></span>

@@ -6,6 +6,8 @@
   Nalanda](https://centerconflictcooperation.github.io/nalanda/articles/getting-started.md):
 - [Post-Only Identity Treatments with
   \`simulate_treatment()\`](https://centerconflictcooperation.github.io/nalanda/articles/post-only-identity-treatments.md):
+- [Psychological Text Analysis with
+  \`nalanda\`](https://centerconflictcooperation.github.io/nalanda/articles/psychological-text-analysis.md):
 
 ### Methods and Roadmaps
 

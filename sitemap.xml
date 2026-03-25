@@ -8,6 +8,7 @@
 <url><loc>https://centerconflictcooperation.github.io/nalanda/articles/getting-started.html</loc></url>
 <url><loc>https://centerconflictcooperation.github.io/nalanda/articles/index.html</loc></url>
 <url><loc>https://centerconflictcooperation.github.io/nalanda/articles/post-only-identity-treatments.html</loc></url>
+<url><loc>https://centerconflictcooperation.github.io/nalanda/articles/psychological-text-analysis.html</loc></url>
 <url><loc>https://centerconflictcooperation.github.io/nalanda/articles/simulation-roadmap.html</loc></url>
 <url><loc>https://centerconflictcooperation.github.io/nalanda/articles/understanding-hewitt-et-al.html</loc></url>
 <url><loc>https://centerconflictcooperation.github.io/nalanda/authors.html</loc></url>
@@ -17,9 +18,11 @@
 <url><loc>https://centerconflictcooperation.github.io/nalanda/reference/compute_run_ai_metrics.html</loc></url>
 <url><loc>https://centerconflictcooperation.github.io/nalanda/reference/compute_run_ai_metrics_cumulative.html</loc></url>
 <url><loc>https://centerconflictcooperation.github.io/nalanda/reference/compute_run_ai_metrics_one_turn.html</loc></url>
+<url><loc>https://centerconflictcooperation.github.io/nalanda/reference/evaluate_text_analysis.html</loc></url>
 <url><loc>https://centerconflictcooperation.github.io/nalanda/reference/fix_text_file.html</loc></url>
 <url><loc>https://centerconflictcooperation.github.io/nalanda/reference/index.html</loc></url>
 <url><loc>https://centerconflictcooperation.github.io/nalanda/reference/list_book_chapters.html</loc></url>
+<url><loc>https://centerconflictcooperation.github.io/nalanda/reference/make_annotation_prompt.html</loc></url>
 <url><loc>https://centerconflictcooperation.github.io/nalanda/reference/make_baseline_prompt.html</loc></url>
 <url><loc>https://centerconflictcooperation.github.io/nalanda/reference/make_post_prompt.html</loc></url>
 <url><loc>https://centerconflictcooperation.github.io/nalanda/reference/make_treatment_prompt.html</loc></url>
@@ -37,6 +40,7 @@
 <url><loc>https://centerconflictcooperation.github.io/nalanda/reference/run_ai_cumulative_chapters.html</loc></url>
 <url><loc>https://centerconflictcooperation.github.io/nalanda/reference/run_ai_on_chapters.html</loc></url>
 <url><loc>https://centerconflictcooperation.github.io/nalanda/reference/run_ai_on_chapters_one_turn.html</loc></url>
+<url><loc>https://centerconflictcooperation.github.io/nalanda/reference/run_text_analysis.html</loc></url>
 <url><loc>https://centerconflictcooperation.github.io/nalanda/reference/save_forest_plot.html</loc></url>
 <url><loc>https://centerconflictcooperation.github.io/nalanda/reference/simulate_treatment.html</loc></url>
 <url><loc>https://centerconflictcooperation.github.io/nalanda/reference/summarize_chapter_scores.html</loc></url>

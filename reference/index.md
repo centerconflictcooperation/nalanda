@@ -11,11 +11,17 @@
 - [`compute_run_ai_metrics_one_turn()`](https://centerconflictcooperation.github.io/nalanda/reference/compute_run_ai_metrics_one_turn.md)
   : Compute one-turn ingroup/outgroup metrics from raw output
 
+- [`evaluate_text_analysis()`](https://centerconflictcooperation.github.io/nalanda/reference/evaluate_text_analysis.md)
+  : Evaluate text-analysis outputs against reference labels
+
 - [`fix_text_file()`](https://centerconflictcooperation.github.io/nalanda/reference/fix_text_file.md)
   : Fix text file encoding and normalize punctuation/whitespace
 
 - [`list_book_chapters()`](https://centerconflictcooperation.github.io/nalanda/reference/list_book_chapters.md)
   : List book chapter files inside a books directory
+
+- [`make_annotation_prompt()`](https://centerconflictcooperation.github.io/nalanda/reference/make_annotation_prompt.md)
+  : Build a numeric-response prompt for text analysis
 
 - [`make_baseline_prompt()`](https://centerconflictcooperation.github.io/nalanda/reference/make_baseline_prompt.md)
   : Build the baseline (Turn 1) prompt
@@ -68,6 +74,9 @@
 
 - [`run_ai_on_chapters_one_turn()`](https://centerconflictcooperation.github.io/nalanda/reference/run_ai_on_chapters_one_turn.md)
   : Run AI model on book chapters with a single prompt per simulation
+
+- [`run_text_analysis()`](https://centerconflictcooperation.github.io/nalanda/reference/run_text_analysis.md)
+  : Run row-wise text analysis with a prompt template
 
 - [`save_forest_plot()`](https://centerconflictcooperation.github.io/nalanda/reference/save_forest_plot.md)
   : Save a forest plot to PNG and PDF formats
