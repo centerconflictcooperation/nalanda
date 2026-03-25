@@ -12,6 +12,8 @@ navbar:
       href: articles/getting-started.html
     - text: Post-Only Identity Treatments
       href: articles/post-only-identity-treatments.html
+    - text: Psychological Text Analysis
+      href: articles/psychological-text-analysis.html
     - text: Methods and Roadmaps
     - text: Simulation Roadmap
       href: articles/simulation-roadmap.html
@@ -29,6 +31,7 @@ articles:
   contents:
   - getting-started
   - post-only-identity-treatments
+  - psychological-text-analysis
 - title: Methods and Roadmaps
   navbar: ~
   contents:

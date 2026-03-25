@@ -64,6 +64,26 @@ texts <- tibble::tibble(
 texts
 ```
 
+If a right-to-left language such as Arabic looks visually out of order in your
+console or knitted output, that is usually a bidi rendering issue rather than a
+row-order issue. One safe display-only workaround is to wrap the printed Arabic
+string in Unicode directional isolates:
+
+```{r}
+texts_display <- texts
+arabic_row <- texts_display$language == "Arabic"
+texts_display$text[arabic_row] <- paste0(
+  "\u2067",
+  texts_display$text[arabic_row],
+  "\u2069"
+)
+
+texts_display
+```
+
+Use the original `texts$text` values for API calls. The isolated version is
+mainly useful when printing or rendering tables.
+
 Here the human labels follow the same coding style used in the paper:
 
 1. `1 = positive`
