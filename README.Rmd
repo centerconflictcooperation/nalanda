@@ -109,7 +109,7 @@ vignette("getting-started", package = "nalanda")
 
 ![Decision flow for choosing nalanda simulation functions.](man/figures/README-function-choice.png)
 
-In short:
+In short: 
 
 - Use `run_ai_on_chapters()` for the original two-turn chapter workflow.
 - Use `run_ai_cumulative_chapters()` when later chapters should be interpreted relative to a single baseline.

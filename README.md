@@ -196,7 +196,7 @@ library(nalanda)
 
 # Get a random fact about Nalanda University
 nalanda()
-#> [1] "Xuanzang, the 7th-century Chinese monk and scholar, studied at Nalanda for several years and documented its curriculum."
+#> [1] "Excavations at Nalanda reveal an extensive campus with monasteries, temples, and lecture halls."
 ```
 
 Learn more about related research on books, learning, and prosociality:
