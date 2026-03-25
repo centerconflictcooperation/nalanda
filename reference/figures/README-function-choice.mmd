@@ -1,0 +1,9 @@
+flowchart TD
+    A["What are you simulating?"] --> B{"Unit of analysis"}
+    B -->|"Book chapters"| C{"Design"}
+    B -->|"Rows of text<br/>tweets, headlines,<br/>comments"| D["run_text_analysis()"]
+    C -->|"Pre/post within the same<br/>simulated identity"| E["run_ai_on_chapters()"]
+    C -->|"Baseline once, then<br/>cumulative chapter updates"| F["run_ai_cumulative_chapters()"]
+    C -->|"One prompt only,<br/>no baseline turn"| G{"Need chapter-specific<br/>helper or generic prompt<br/>control?"}
+    G -->|"Simple chapter workflow"| H["run_ai_on_chapters_one_turn()"]
+    G -->|"Custom one-turn or multi-<br/>turn prompt sequence"| I["simulate_treatment()"]
