@@ -37,12 +37,15 @@
 #' @param model Character. Model name for the chat backend (for example,
 #'   `"gemini-2.5-flash-lite"`). The value is passed directly to
 #'   `ellmer::chat_portkey(model = ...)`.
-#' @param integration Optional integration/provider slug. Should look like
-#'   `"vertexai"` or similar. If supplied and `model` is not fully-qualified
-#'   (does not start with `"@"`), nalanda will build `"@{integration}/{model}"`.
-#'   Preferred for new Portkey/NYU setups. When both `nalanda.integration` and
-#'   `nalanda.virtual_key` options are set and neither argument is supplied,
-#'   `integration` is preferred.
+#' @param integration Optional Portkey/gateway route slug. Should look like
+#'   `"vertexai"` or another route returned by
+#'   `ellmer::models_portkey(base_url = "https://ai-gateway.apps.cloud.rt.nyu.edu/v1/")`.
+#'   If supplied and `model` is not fully-qualified (does not start with `"@"`),
+#'   nalanda will build `"@{integration}/{model}"`. In some gateways this slug
+#'   is not the upstream provider name. When available, a fully-qualified model
+#'   string such as `"@gpt-5-mini/gpt-5-mini"` is the most reliable option.
+#'   When both `nalanda.integration` and `nalanda.virtual_key` options are set
+#'   and neither argument is supplied, `integration` is preferred.
 #' @param virtual_key Optional legacy virtual key. Should look like
 #'   `"gemini-8c2498"` or similar. If supplied and `model` is not
 #'   fully-qualified, nalanda will build `"@{virtual_key}/{model}"`.

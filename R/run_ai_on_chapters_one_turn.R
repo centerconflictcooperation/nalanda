@@ -25,9 +25,11 @@
 #'   [run_ai_on_chapters()], the seed varies by simulation index only, so all
 #'   chapters and identities within the same `sim` share the same seed.
 #' @param model Character. Model name for the chat backend.
-#' @param integration Optional integration/provider slug. If supplied and
+#' @param integration Optional Portkey/gateway route slug. If supplied and
 #'   `model` is not fully-qualified, nalanda will build
-#'   `"@{integration}/{model}"`. When both `nalanda.integration` and
+#'   `"@{integration}/{model}"`. Use a route returned by
+#'   `ellmer::models_portkey(base_url = "https://ai-gateway.apps.cloud.rt.nyu.edu/v1/")`
+#'   when working with the NYU gateway. When both `nalanda.integration` and
 #'   `nalanda.virtual_key` options are set and neither argument is supplied,
 #'   `integration` is preferred.
 #' @param virtual_key Optional legacy virtual key. If supplied and `model` is

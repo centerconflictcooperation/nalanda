@@ -18,7 +18,9 @@
 #' @param seed Integer. Random seed for reproducibility (incremented for each
 #'   simulation).
 #' @param model Character. Model name for the chat backend.
-#' @param integration Optional integration/provider slug.
+#' @param integration Optional Portkey/gateway route slug. Use a route returned
+#'   by `ellmer::models_portkey(base_url = "https://ai-gateway.apps.cloud.rt.nyu.edu/v1/")`
+#'   when working with the NYU gateway.
 #' @param virtual_key Optional legacy virtual key.
 #' @param base_url Character. Base URL for API calls.
 #' @param excerpt_chars Integer. Number of chapter characters to retain in the

@@ -50,12 +50,15 @@ simulation).}
 \code{"gemini-2.5-flash-lite"}). The value is passed directly to
 \code{ellmer::chat_portkey(model = ...)}.}
 
-\item{integration}{Optional integration/provider slug. Should look like
-\code{"vertexai"} or similar. If supplied and \code{model} is not fully-qualified
-(does not start with \code{"@"}), nalanda will build \code{"@{integration}/{model}"}.
-Preferred for new Portkey/NYU setups. When both \code{nalanda.integration} and
-\code{nalanda.virtual_key} options are set and neither argument is supplied,
-\code{integration} is preferred.}
+\item{integration}{Optional Portkey/gateway route slug. Should look like
+\code{"vertexai"} or another route returned by
+\code{ellmer::models_portkey(base_url = "https://ai-gateway.apps.cloud.rt.nyu.edu/v1/")}.
+If supplied and \code{model} is not fully-qualified (does not start with \code{"@"}),
+nalanda will build \code{"@{integration}/{model}"}. In some gateways this slug
+is not the upstream provider name. When available, a fully-qualified model
+string such as \code{"@gpt-5-mini/gpt-5-mini"} is the most reliable option.
+When both \code{nalanda.integration} and \code{nalanda.virtual_key} options are set
+and neither argument is supplied, \code{integration} is preferred.}
 
 \item{virtual_key}{Optional legacy virtual key. Should look like
 \code{"gemini-8c2498"} or similar. If supplied and \code{model} is not

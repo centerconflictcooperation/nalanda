@@ -38,8 +38,19 @@ once at the top of your script.
 library(nalanda)
 
 options(
-  nalanda.integration = "openai",
+  nalanda.integration = "gpt-5-mini",
   nalanda.base_url = "https://ai-gateway.apps.cloud.rt.nyu.edu/v1/"
+)
+
+# In some Portkey/gateway setups the route slug is not the provider name.
+# Verify the route with ellmer::models_portkey() or use a fully-qualified
+# model string such as "@gpt-5-mini/gpt-5-mini" if that is the route that works
+# in your gateway.
+```
+
+```{r, eval = FALSE}
+ellmer::models_portkey(
+  base_url = "https://ai-gateway.apps.cloud.rt.nyu.edu/v1/"
 )
 ```
 

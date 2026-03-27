@@ -51,9 +51,11 @@ chapters and identities within the same \code{sim} share the same seed.}
 
 \item{model}{Character. Model name for the chat backend.}
 
-\item{integration}{Optional integration/provider slug. If supplied and
+\item{integration}{Optional Portkey/gateway route slug. If supplied and
 \code{model} is not fully-qualified, nalanda will build
-\code{"@{integration}/{model}"}. When both \code{nalanda.integration} and
+\code{"@{integration}/{model}"}. Use a route returned by
+\code{ellmer::models_portkey(base_url = "https://ai-gateway.apps.cloud.rt.nyu.edu/v1/")}
+when working with the NYU gateway. When both \code{nalanda.integration} and
 \code{nalanda.virtual_key} options are set and neither argument is supplied,
 \code{integration} is preferred.}
 

@@ -26,9 +26,11 @@
 #' @param seed Integer. Random seed for reproducibility (incremented for each
 #'   simulation index).
 #' @param model Character. Model name for the chat backend.
-#' @param integration Optional integration/provider slug. If supplied and
+#' @param integration Optional Portkey/gateway route slug. If supplied and
 #'   `model` is not fully-qualified, nalanda will build
-#'   `"@{integration}/{model}"`.
+#'   `"@{integration}/{model}"`. Use a route returned by
+#'   `ellmer::models_portkey(base_url = "https://ai-gateway.apps.cloud.rt.nyu.edu/v1/")`
+#'   when working with the NYU gateway.
 #' @param virtual_key Optional legacy virtual key. If supplied and `model` is
 #'   not fully-qualified, nalanda will build `"@{virtual_key}/{model}"`.
 #' @param base_url Character. Base URL for API calls.

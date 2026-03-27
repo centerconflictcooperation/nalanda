@@ -50,9 +50,11 @@ simulation index).}
 
 \item{model}{Character. Model name for the chat backend.}
 
-\item{integration}{Optional integration/provider slug. If supplied and
+\item{integration}{Optional Portkey/gateway route slug. If supplied and
 \code{model} is not fully-qualified, nalanda will build
-\code{"@{integration}/{model}"}.}
+\code{"@{integration}/{model}"}. Use a route returned by
+\code{ellmer::models_portkey(base_url = "https://ai-gateway.apps.cloud.rt.nyu.edu/v1/")}
+when working with the NYU gateway.}
 
 \item{virtual_key}{Optional legacy virtual key. If supplied and \code{model} is
 not fully-qualified, nalanda will build \code{"@{virtual_key}/{model}"}.}
