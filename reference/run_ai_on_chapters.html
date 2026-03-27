@@ -141,12 +141,15 @@ simulation).</p></dd>
 
 
 <dt id="arg-integration">integration<a class="anchor" aria-label="anchor" href="#arg-integration"></a></dt>
-<dd><p>Optional integration/provider slug. Should look like
-<code>"vertexai"</code> or similar. If supplied and <code>model</code> is not fully-qualified
-(does not start with <code>"@"</code>), nalanda will build <code>"@{integration}/{model}"</code>.
-Preferred for new Portkey/NYU setups. When both <code>nalanda.integration</code> and
-<code>nalanda.virtual_key</code> options are set and neither argument is supplied,
-<code>integration</code> is preferred.</p></dd>
+<dd><p>Optional Portkey/gateway route slug. Should look like
+<code>"vertexai"</code> or another route returned by
+<code>ellmer::models_portkey(base_url = "https://ai-gateway.apps.cloud.rt.nyu.edu/v1/")</code>.
+If supplied and <code>model</code> is not fully-qualified (does not start with <code>"@"</code>),
+nalanda will build <code>"@{integration}/{model}"</code>. In some gateways this slug
+is not the upstream provider name. When available, a fully-qualified model
+string such as <code>"@gpt-5-mini/gpt-5-mini"</code> is the most reliable option.
+When both <code>nalanda.integration</code> and <code>nalanda.virtual_key</code> options are set
+and neither argument is supplied, <code>integration</code> is preferred.</p></dd>
 
 
 <dt id="arg-virtual-key">virtual_key<a class="anchor" aria-label="anchor" href="#arg-virtual-key"></a></dt>

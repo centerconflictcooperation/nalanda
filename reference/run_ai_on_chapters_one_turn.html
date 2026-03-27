@@ -122,9 +122,11 @@ chapters and identities within the same <code>sim</code> share the same seed.</p
 
 
 <dt id="arg-integration">integration<a class="anchor" aria-label="anchor" href="#arg-integration"></a></dt>
-<dd><p>Optional integration/provider slug. If supplied and
+<dd><p>Optional Portkey/gateway route slug. If supplied and
 <code>model</code> is not fully-qualified, nalanda will build
-<code>"@{integration}/{model}"</code>. When both <code>nalanda.integration</code> and
+<code>"@{integration}/{model}"</code>. Use a route returned by
+<code>ellmer::models_portkey(base_url = "https://ai-gateway.apps.cloud.rt.nyu.edu/v1/")</code>
+when working with the NYU gateway. When both <code>nalanda.integration</code> and
 <code>nalanda.virtual_key</code> options are set and neither argument is supplied,
 <code>integration</code> is preferred.</p></dd>
 

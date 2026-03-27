@@ -76,10 +76,13 @@ run_ai_on_chapters_one_turn(
 
 - integration:
 
-  Optional integration/provider slug. If supplied and `model` is not
-  fully-qualified, nalanda will build `"@{integration}/{model}"`. When
-  both `nalanda.integration` and `nalanda.virtual_key` options are set
-  and neither argument is supplied, `integration` is preferred.
+  Optional Portkey/gateway route slug. If supplied and `model` is not
+  fully-qualified, nalanda will build `"@{integration}/{model}"`. Use a
+  route returned by
+  `ellmer::models_portkey(base_url = "https://ai-gateway.apps.cloud.rt.nyu.edu/v1/")`
+  when working with the NYU gateway. When both `nalanda.integration` and
+  `nalanda.virtual_key` options are set and neither argument is
+  supplied, `integration` is preferred.
 
 - virtual_key:
 

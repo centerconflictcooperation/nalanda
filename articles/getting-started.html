@@ -112,7 +112,7 @@ to obtain your NYU Portkey API key.</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://ellmer.tidyverse.org" class="external-link">ellmer</a></span><span class="op">)</span></span>
 <span></span>
-<span><span class="va">integration</span> <span class="op">=</span> <span class="st">"vertexai"</span> <span class="co"># portkey integration choice</span></span>
+<span><span class="va">integration</span> <span class="op">=</span> <span class="st">"vertexai"</span> <span class="co"># gateway route slug from ellmer::models_portkey()</span></span>
 <span><span class="va">model</span> <span class="op">&lt;-</span> <span class="st">"gemini-2.5-flash-lite"</span></span>
 <span><span class="va">model_string</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"@"</span>, <span class="va">integration</span>, <span class="st">"/"</span>, <span class="va">model</span><span class="op">)</span></span>
 <span></span>
@@ -128,6 +128,15 @@ to obtain your NYU Portkey API key.</p>
 <span><span class="co">## Because it had too many issues!</span></span></code></pre></div>
 <p>If this call returns successfully, your base configuration is
 working.</p>
+<p>For NYU/Portkey-style gateways, note that the route prefix is the
+gateway’s recognized slug, not always the upstream provider name. If you
+are unsure, check <code><a href="https://ellmer.tidyverse.org/reference/chat_portkey.html" class="external-link">ellmer::models_portkey()</a></code> first or use the
+fully-qualified model string that already works in
+<code><a href="https://ellmer.tidyverse.org/reference/chat_portkey.html" class="external-link">chat_portkey()</a></code>.</p>
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu">ellmer</span><span class="fu">::</span><span class="fu"><a href="https://ellmer.tidyverse.org/reference/chat_portkey.html" class="external-link">models_portkey</a></span><span class="op">(</span></span>
+<span>  base_url <span class="op">=</span> <span class="st">"https://ai-gateway.apps.cloud.rt.nyu.edu/v1/"</span></span>
+<span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="step-2-run-a-minimal-nalanda-workflow">Step 2: Run a minimal <code>nalanda</code> workflow<a class="anchor" aria-label="anchor" href="#step-2-run-a-minimal-nalanda-workflow"></a>
@@ -137,7 +146,7 @@ working.</p>
 returns structured outputs for chapter simulations.</p>
 <p>We also set package options at the beginning of a script so we do not
 need to repeat the same arguments in each call.</p>
-<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://centerconflictcooperation.github.io/nalanda/">nalanda</a></span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/options.html" class="external-link">options</a></span><span class="op">(</span></span>
@@ -166,7 +175,7 @@ need to repeat the same arguments in each call.</p>
 <span><span class="co">## # ℹ 11 more variables: post_rating_republican &lt;int&gt;, pre_ingroup &lt;int&gt;, post_ingroup &lt;int&gt;, pre_outgroup &lt;dbl&gt;,</span></span>
 <span><span class="co">## #   post_outgroup &lt;dbl&gt;, pre_gap &lt;dbl&gt;, post_gap &lt;dbl&gt;, delta_ingroup &lt;int&gt;, delta_outgroup &lt;dbl&gt;, delta_gap &lt;dbl&gt;,</span></span>
 <span><span class="co">## #   chapter_excerpt &lt;chr&gt;</span></span></code></pre></div>
-<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Inspect a real example output in a scrollable interactive table</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/rstudio/DT" class="external-link">DT</a></span><span class="op">)</span></span>
 <span></span>

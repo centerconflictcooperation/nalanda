@@ -77,8 +77,11 @@ simulate_treatment(
 
 - integration:
 
-  Optional integration/provider slug. If supplied and `model` is not
-  fully-qualified, nalanda will build `"@{integration}/{model}"`.
+  Optional Portkey/gateway route slug. If supplied and `model` is not
+  fully-qualified, nalanda will build `"@{integration}/{model}"`. Use a
+  route returned by
+  `ellmer::models_portkey(base_url = "https://ai-gateway.apps.cloud.rt.nyu.edu/v1/")`
+  when working with the NYU gateway.
 
 - virtual_key:
 

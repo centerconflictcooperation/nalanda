@@ -32,7 +32,7 @@ Run a small smoke test directly with `ellmer`:
 ``` r
 library(ellmer)
 
-integration = "vertexai" # portkey integration choice
+integration = "vertexai" # gateway route slug from ellmer::models_portkey()
 model <- "gemini-2.5-flash-lite"
 model_string = paste0("@", integration, "/", model)
 
@@ -49,6 +49,19 @@ chat$chat("Tell me one short joke about books.")
 ```
 
 If this call returns successfully, your base configuration is working.
+
+For NYU/Portkey-style gateways, note that the route prefix is the
+gateway’s recognized slug, not always the upstream provider name. If you
+are unsure, check
+[`ellmer::models_portkey()`](https://ellmer.tidyverse.org/reference/chat_portkey.html)
+first or use the fully-qualified model string that already works in
+[`chat_portkey()`](https://ellmer.tidyverse.org/reference/chat_portkey.html).
+
+``` r
+ellmer::models_portkey(
+  base_url = "https://ai-gateway.apps.cloud.rt.nyu.edu/v1/"
+)
+```
 
 ## Step 2: Run a minimal `nalanda` workflow
 

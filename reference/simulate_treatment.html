@@ -131,9 +131,11 @@ simulation index).</p></dd>
 
 
 <dt id="arg-integration">integration<a class="anchor" aria-label="anchor" href="#arg-integration"></a></dt>
-<dd><p>Optional integration/provider slug. If supplied and
+<dd><p>Optional Portkey/gateway route slug. If supplied and
 <code>model</code> is not fully-qualified, nalanda will build
-<code>"@{integration}/{model}"</code>.</p></dd>
+<code>"@{integration}/{model}"</code>. Use a route returned by
+<code>ellmer::models_portkey(base_url = "https://ai-gateway.apps.cloud.rt.nyu.edu/v1/")</code>
+when working with the NYU gateway.</p></dd>
 
 
 <dt id="arg-virtual-key">virtual_key<a class="anchor" aria-label="anchor" href="#arg-virtual-key"></a></dt>

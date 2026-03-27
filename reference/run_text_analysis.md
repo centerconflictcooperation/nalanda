@@ -70,7 +70,9 @@ run_text_analysis(
 
 - integration:
 
-  Optional integration/provider slug.
+  Optional Portkey/gateway route slug. Use a route returned by
+  `ellmer::models_portkey(base_url = "https://ai-gateway.apps.cloud.rt.nyu.edu/v1/")`
+  when working with the NYU gateway.
 
 - virtual_key:
 

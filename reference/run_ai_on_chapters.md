@@ -87,11 +87,15 @@ run_ai_on_chapters(
 
 - integration:
 
-  Optional integration/provider slug. Should look like `"vertexai"` or
-  similar. If supplied and `model` is not fully-qualified (does not
-  start with `"@"`), nalanda will build `"@{integration}/{model}"`.
-  Preferred for new Portkey/NYU setups. When both `nalanda.integration`
-  and `nalanda.virtual_key` options are set and neither argument is
+  Optional Portkey/gateway route slug. Should look like `"vertexai"` or
+  another route returned by
+  `ellmer::models_portkey(base_url = "https://ai-gateway.apps.cloud.rt.nyu.edu/v1/")`.
+  If supplied and `model` is not fully-qualified (does not start with
+  `"@"`), nalanda will build `"@{integration}/{model}"`. In some
+  gateways this slug is not the upstream provider name. When available,
+  a fully-qualified model string such as `"@gpt-5-mini/gpt-5-mini"` is
+  the most reliable option. When both `nalanda.integration` and
+  `nalanda.virtual_key` options are set and neither argument is
   supplied, `integration` is preferred.
 
 - virtual_key:
