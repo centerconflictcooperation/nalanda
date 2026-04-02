@@ -21,6 +21,8 @@ plot_forest_books(
   header = NULL,
   title = "",
   xlab = "",
+  xticks = NULL,
+  xticks.digits = NULL,
   zero = NA,
   show_overall = TRUE,
   ci.vertices = FALSE
@@ -102,6 +104,16 @@ plot_forest_books(
 - xlab:
 
   X-axis label
+
+- xticks:
+
+  Optional numeric vector of x-axis tick positions. Defaults to `NULL`,
+  in which case readable pretty breaks are computed automatically.
+
+- xticks.digits:
+
+  Integer number of digits for x-axis tick labels. Defaults to `NULL`,
+  in which case it is inferred from the tick positions.
 
 - zero:
 

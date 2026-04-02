@@ -68,6 +68,8 @@ polarization across books, including 95% confidence intervals.</p>
 <span>  header <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  title <span class="op">=</span> <span class="st">""</span>,</span>
 <span>  xlab <span class="op">=</span> <span class="st">""</span>,</span>
+<span>  xticks <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  xticks.digits <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  zero <span class="op">=</span> <span class="cn">NA</span>,</span>
 <span>  show_overall <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  ci.vertices <span class="op">=</span> <span class="cn">FALSE</span></span>
@@ -146,6 +148,16 @@ Useful when grouped party CIs are shown on multiple lines.</p></dd>
 
 <dt id="arg-xlab">xlab<a class="anchor" aria-label="anchor" href="#arg-xlab"></a></dt>
 <dd><p>X-axis label</p></dd>
+
+
+<dt id="arg-xticks">xticks<a class="anchor" aria-label="anchor" href="#arg-xticks"></a></dt>
+<dd><p>Optional numeric vector of x-axis tick positions. Defaults to
+<code>NULL</code>, in which case readable pretty breaks are computed automatically.</p></dd>
+
+
+<dt id="arg-xticks-digits">xticks.digits<a class="anchor" aria-label="anchor" href="#arg-xticks-digits"></a></dt>
+<dd><p>Integer number of digits for x-axis tick labels.
+Defaults to <code>NULL</code>, in which case it is inferred from the tick positions.</p></dd>
 
 
 <dt id="arg-zero">zero<a class="anchor" aria-label="anchor" href="#arg-zero"></a></dt>
