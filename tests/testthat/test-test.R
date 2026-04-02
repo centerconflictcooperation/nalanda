@@ -821,6 +821,30 @@ test_that("plot_forest_books allows compact CI text styling", {
   )
 })
 
+test_that("plot_forest_books computes readable integer x-axis ticks by default", {
+  ticks <- nalanda:::.compute_forest_xticks(
+    lower = c(6.56, 18.81, 22.02),
+    upper = c(9.80, 26.19, 29.23),
+    mean = c(8.18, 22.50, 27.92)
+  )
+
+  expect_equal(ticks$xticks, c(5, 10, 15, 20, 25, 30))
+  expect_equal(ticks$xticks.digits, 0L)
+})
+
+test_that("plot_forest_books respects manual x-axis tick settings", {
+  ticks <- nalanda:::.compute_forest_xticks(
+    lower = c(0.12, 0.35),
+    upper = c(0.44, 0.61),
+    mean = c(0.22, 0.48),
+    xticks = c(0.2, 0.4, 0.6),
+    xticks.digits = 1
+  )
+
+  expect_equal(ticks$xticks, c(0.2, 0.4, 0.6))
+  expect_equal(ticks$xticks.digits, 1)
+})
+
 test_that("ungrouped forest plot prints without fn.ci_norm mismatch", {
   summary_books <- tibble::tibble(
     book = c("Book A", "Book B"),

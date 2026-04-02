@@ -31,6 +31,10 @@
 #'   `label_cols`.
 #' @param title Plot title
 #' @param xlab X-axis label
+#' @param xticks Optional numeric vector of x-axis tick positions. Defaults to
+#'   `NULL`, in which case readable pretty breaks are computed automatically.
+#' @param xticks.digits Integer number of digits for x-axis tick labels.
+#'   Defaults to `NULL`, in which case it is inferred from the tick positions.
 #' @param zero Numeric scalar, NA, or NULL. Reference line position for
 #'   forestplot. Defaults to NA (no zero/reference line). NULL is
 #'   treated as NA for convenience.
@@ -83,6 +87,8 @@ plot_forest_books <- function(
   header = NULL,
   title = "",
   xlab = "",
+  xticks = NULL,
+  xticks.digits = NULL,
   zero = NA,
   show_overall = TRUE,
   ci.vertices = FALSE
@@ -129,6 +135,14 @@ plot_forest_books <- function(
     attr(line_pos, "gp") <- grid::gpar(col = "darkgray", lwd = 2, lty = 2)
   }
 
+  tick_spec <- .compute_forest_xticks(
+    lower = input$lower,
+    upper = input$upper,
+    mean = input$mean,
+    xticks = xticks,
+    xticks.digits = xticks.digits
+  )
+
   n_estimates <- if (is.matrix(input$mean)) ncol(input$mean) else 1
   fn_cis <- if (n_estimates == 1) {
     forestplot::fpDrawCircleCI
@@ -156,6 +170,8 @@ plot_forest_books <- function(
     upper = input$upper,
     title = title,
     xlab = xlab,
+    xticks = tick_spec$xticks,
+    xticks.digits = tick_spec$xticks.digits,
     ci.vertices = ci.vertices,
     legend_args = forestplot::fpLegend(
       pos = list(x = 0.85, y = 0.15),
@@ -213,6 +229,45 @@ plot_forest_books <- function(
   }
 
   p
+}
+
+.compute_forest_xticks <- function(
+  lower,
+  upper,
+  mean,
+  xticks = NULL,
+  xticks.digits = NULL
+) {
+  if (!is.null(xticks)) {
+    ticks <- sort(unique(as.numeric(xticks)))
+    ticks <- ticks[is.finite(ticks)]
+  } else {
+    vals <- c(as.numeric(lower), as.numeric(upper), as.numeric(mean))
+    vals <- vals[is.finite(vals)]
+    if (length(vals) == 0) {
+      ticks <- NULL
+    } else {
+      ticks <- pretty(range(vals), n = 6)
+      ticks <- ticks[is.finite(ticks)]
+    }
+  }
+
+  digits <- xticks.digits
+  if (is.null(digits) && !is.null(ticks) && length(ticks) > 0) {
+    frac_part <- abs(ticks - round(ticks))
+    if (all(frac_part < sqrt(.Machine$double.eps))) {
+      digits <- 0L
+    } else if (all(abs(ticks * 10 - round(ticks * 10)) < sqrt(.Machine$double.eps))) {
+      digits <- 1L
+    } else {
+      digits <- 2L
+    }
+  }
+
+  list(
+    xticks = ticks,
+    xticks.digits = digits
+  )
 }
 
 .build_forestplot_inputs <- function(

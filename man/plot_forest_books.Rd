@@ -19,6 +19,8 @@ plot_forest_books(
   header = NULL,
   title = "",
   xlab = "",
+  xticks = NULL,
+  xticks.digits = NULL,
   zero = NA,
   show_overall = TRUE,
   ci.vertices = FALSE
@@ -68,6 +70,12 @@ Useful when grouped party CIs are shown on multiple lines.}
 \item{title}{Plot title}
 
 \item{xlab}{X-axis label}
+
+\item{xticks}{Optional numeric vector of x-axis tick positions. Defaults to
+\code{NULL}, in which case readable pretty breaks are computed automatically.}
+
+\item{xticks.digits}{Integer number of digits for x-axis tick labels.
+Defaults to \code{NULL}, in which case it is inferred from the tick positions.}
 
 \item{zero}{Numeric scalar, NA, or NULL. Reference line position for
 forestplot. Defaults to NA (no zero/reference line). NULL is
