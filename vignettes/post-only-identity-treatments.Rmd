@@ -126,7 +126,7 @@ Each row is one simulated response for one identity and one simulation draw.
 
 ```{r, echo = FALSE}
 example_res <- tibble::tibble(
-  chapter = "intervention_1",
+  treatment = "intervention_1",
   sim = c(1L, 2L, 1L, 2L),
   identity = c("American", "American", "Brazilian", "Brazilian"),
   turn_index = 1L,

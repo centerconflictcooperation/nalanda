@@ -38,9 +38,10 @@
 #'   retain in stored prompt previews.
 #'
 #' @return A tibble of raw turn-level responses, or a named list of tibbles
-#'   (one per book/intervention collection). Each row includes `chapter`, `sim`,
-#'   `identity`, `turn_index`, `turn_type`, and one column per field returned by
-#'   `response_type`, plus stored prompt previews and metadata columns.
+#'   (one per book/intervention collection). Each row includes `treatment`,
+#'   `sim`, `identity`, `turn_index`, `turn_type`, and one column per field
+#'   returned by `response_type`, plus stored prompt previews and metadata
+#'   columns.
 #'
 #' @examples
 #' \dontrun{
@@ -132,11 +133,29 @@ simulate_treatment <- function(
 
   if (is.list(out) && !inherits(out, "data.frame")) {
     for (nm in names(out)) {
+      out[[nm]] <- rename_treatment_output_columns(out[[nm]])
       attr(out[[nm]], "model") <- normalize_model_name(attr(out[[nm]], "model"))
     }
   }
+  out <- rename_treatment_output_columns(out)
   attr(out, "model") <- normalize_model_name(attr(out, "model"))
   out
+}
+
+rename_treatment_output_columns <- function(x) {
+  if (!inherits(x, "data.frame")) {
+    return(x)
+  }
+
+  if ("chapter" %in% names(x) && !"treatment" %in% names(x)) {
+    x <- dplyr::rename(x, treatment = .data$chapter)
+  }
+
+  if ("chapter_index" %in% names(x) && !"treatment_index" %in% names(x)) {
+    x <- dplyr::rename(x, treatment_index = .data$chapter_index)
+  }
+
+  x
 }
 
 execute_generic_treatment_pipeline <- function(

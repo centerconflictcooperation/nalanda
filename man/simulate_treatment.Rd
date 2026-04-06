@@ -66,9 +66,10 @@ retain in stored prompt previews.}
 }
 \value{
 A tibble of raw turn-level responses, or a named list of tibbles
-(one per book/intervention collection). Each row includes \code{chapter}, \code{sim},
-\code{identity}, \code{turn_index}, \code{turn_type}, and one column per field returned by
-\code{response_type}, plus stored prompt previews and metadata columns.
+(one per book/intervention collection). Each row includes \code{treatment},
+\code{sim}, \code{identity}, \code{turn_index}, \code{turn_type}, and one column per field
+returned by \code{response_type}, plus stored prompt previews and metadata
+columns.
 }
 \description{
 This function provides a simpler, prompt-first interface for running one or

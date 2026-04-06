@@ -510,10 +510,24 @@ test_that("build_chapter_jobs can use intervention-style default ids", {
   expect_equal(out$chapter, "intervention_1")
 })
 
-test_that("summarize_treatment_results summarizes readability fields by chapter", {
+test_that("rename_treatment_output_columns renames treatment-facing columns", {
   x <- tibble::tibble(
-    book = c("Book A", "Book A", "Book A"),
-    chapter = c("chapter_1", "chapter_1", "chapter_2"),
+    chapter = "intervention_1",
+    chapter_index = 1L,
+    sim = 1L
+  )
+
+  out <- nalanda:::rename_treatment_output_columns(x)
+
+  expect_true("treatment" %in% names(out))
+  expect_true("treatment_index" %in% names(out))
+  expect_false("chapter" %in% names(out))
+  expect_false("chapter_index" %in% names(out))
+})
+
+test_that("summarize_treatment_results summarizes readability fields by treatment", {
+  x <- tibble::tibble(
+    treatment = c("treatment_1", "treatment_1", "treatment_2"),
     sim = c(1, 2, 1),
     turn_type = "turn_1",
     readability_score = c(6, 8, 7),
@@ -530,7 +544,7 @@ test_that("summarize_treatment_results summarizes readability fields by chapter"
     "mean_readability_score",
     "sd_readability_score",
     "mean_readability_confidence",
-    "chapter_index",
+    "treatment_index",
     "turn_type"
   ) %in% names(out)))
   expect_equal(out$mean_readability_score, c(7, 7))
@@ -539,28 +553,27 @@ test_that("summarize_treatment_results summarizes readability fields by chapter"
   expect_equal(attr(out, "n_simulations"), 2)
 })
 
-test_that("summarize_treatment_results supports book-level aggregation", {
+test_that("summarize_treatment_results ignores unrelated grouping columns", {
   x <- tibble::tibble(
     book = c("Book A", "Book A", "Book B"),
-    chapter = c("chapter_1", "chapter_2", "chapter_1"),
+    treatment = c("treatment_1", "treatment_2", "treatment_1"),
     sim = c(1, 2, 1),
     turn_type = "turn_1",
     readability_score = c(6, 8, 7),
     readability_confidence = c(4, 5, 4)
   )
 
-  out <- summarize_treatment_results(x, aggregate_level = "book")
+  out <- summarize_treatment_results(x)
 
   expect_equal(nrow(out), 2)
-  expect_false("chapter" %in% names(out))
-  expect_true(all(c("book", "sim", "mean_readability_score") %in% names(out)))
-  expect_equal(out$mean_readability_score, c(7, 7))
+  expect_false("book" %in% names(out))
+  expect_true(all(c("treatment", "sim", "mean_readability_score") %in% names(out)))
+  expect_equal(out$mean_readability_score, c(6.5, 8))
 })
 
 test_that("summarize_treatment_results can split by identity", {
   x <- tibble::tibble(
-    book = c("Book A", "Book A"),
-    chapter = c("chapter_1", "chapter_1"),
+    treatment = c("treatment_1", "treatment_1"),
     sim = c(1, 1),
     identity = c("Democrat", "Republican"),
     turn_type = "turn_1",
@@ -573,6 +586,7 @@ test_that("summarize_treatment_results can split by identity", {
   expect_true("identity" %in% names(out))
   expect_equal(out$mean_readability_score, c(6, 8))
 })
+
 
 test_that("compute_run_ai_metrics_cumulative compares each chapter to baseline", {
   x <- tibble::tibble(

@@ -6,7 +6,6 @@
 \usage{
 summarize_treatment_results(
   x,
-  aggregate_level = c("chapter", "book"),
   by_identity = FALSE,
   by_turn = TRUE,
   fields = NULL
@@ -17,8 +16,6 @@ summarize_treatment_results(
 \code{\link[=simulate_treatment]{simulate_treatment()}}. If a list is supplied, nested data frames are
 flattened before summarising.}
 
-\item{aggregate_level}{Character. One of \code{"chapter"} (default) or \code{"book"}.}
-
 \item{by_identity}{Logical. If \code{TRUE}, summaries are computed separately by
 identity when an \code{identity} column is present.}
 
@@ -27,7 +24,7 @@ separately by turn using \code{turn_type} when available, otherwise \code{turn_i
 
 \item{fields}{Optional character vector of numeric columns to summarize.
 Defaults to all numeric columns except common bookkeeping fields such as
-\code{sim}, \code{turn_index}, and \code{chapter_index}.}
+\code{sim}, \code{turn_index}, and \code{treatment_index}.}
 }
 \value{
 A tibble summarizing the requested aggregation level. Numeric fields
@@ -35,15 +32,14 @@ are returned as \verb{mean_*} and \verb{sd_*} columns, alongside a \code{sim} co
 Model metadata attributes are copied to the result.
 }
 \description{
-Aggregate raw outputs from \code{\link[=simulate_treatment]{simulate_treatment()}} by chapter or book,
+Aggregate raw outputs from \code{\link[=simulate_treatment]{simulate_treatment()}} by treatment,
 computing counts plus means and SDs for numeric response fields. This is
 useful for structured outputs such as readability, sentiment, or any other
 custom numeric scores returned by the model.
 }
 \examples{
 readability <- tibble::tibble(
-  book = c("Book A", "Book A", "Book A"),
-  chapter = c("chapter_1", "chapter_1", "chapter_2"),
+  treatment = c("treatment_1", "treatment_1", "treatment_2"),
   sim = c(1, 2, 1),
   turn_type = "turn_1",
   readability_score = c(6, 8, 7),
@@ -51,5 +47,4 @@ readability <- tibble::tibble(
 )
 
 summarize_treatment_results(readability)
-summarize_treatment_results(readability, aggregate_level = "book")
 }
