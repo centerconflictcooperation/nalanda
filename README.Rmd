@@ -55,17 +55,13 @@ install.packages(
 ## Example workflows
 
 If you want to run the live minimal example below, first set your Portkey-compatible
-API key in `.Renviron` (for example, `PORTKEY_API_KEY=...`) and see the getting
-started vignette for the full setup:
-
-```{r, eval=FALSE}
-vignette("getting-started", package = "nalanda")
-```
+API key in `.Renviron` (for example, `PORTKEY_API_KEY=...`) and see the [getting
+started tutorial](https://centerconflictcooperation.github.io/nalanda/articles/getting-started.html) for the full setup.
 
 > **Note:** _NYU users can request an NYU Portkey API key at
 > `Genai-research-support@nyu.edu`._
 
-Run this setup once before either workflow:
+Run this setup once before either workflow (the example below is for the NYU Portkey integration):
 
 ```{r, eval=FALSE}
 library(nalanda)
@@ -109,9 +105,6 @@ example_treatment_res <- tibble::tibble(
 
 example_treatment_res
 ```
-
-The rendered examples below use bundled toy data so the README builds quickly
-and does not require live API calls.
 
 ### Chapter-level example with `run_ai_on_chapters()`
 
@@ -171,7 +164,7 @@ plot_chapters_over_time(
 
 ## Which simulation function should I use?
 
-![Decision flow for choosing nalanda simulation functions.](man/figures/README-function-choice.png)
+![](man/figures/README-function-choice.png)
 
 ## About the Name
 
