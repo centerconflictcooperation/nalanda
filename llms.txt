@@ -42,17 +42,15 @@ install.packages(
 
 If you want to run the live minimal example below, first set your
 Portkey-compatible API key in `.Renviron` (for example,
-`PORTKEY_API_KEY=...`) and see the getting started vignette for the full
-setup:
-
-``` r
-vignette("getting-started", package = "nalanda")
-```
+`PORTKEY_API_KEY=...`) and see the [getting started
+tutorial](https://centerconflictcooperation.github.io/nalanda/articles/getting-started.html)
+for the full setup.
 
 > **Note:** *NYU users can request an NYU Portkey API key at
 > `Genai-research-support@nyu.edu`.*
 
-Run this setup once before either workflow:
+Run this setup once before either workflow (the example below is for the
+NYU Portkey integration):
 
 ``` r
 library(nalanda)
@@ -90,9 +88,6 @@ res
 | intervention_1 |   2 | American  |          1 | turn_1    |      76 |
 | intervention_1 |   1 | Brazilian |          1 | turn_1    |      71 |
 | intervention_1 |   2 | Brazilian |          1 | turn_1    |      69 |
-
-The rendered examples below use bundled toy data so the README builds
-quickly and does not require live API calls.
 
 ### Chapter-level example with `run_ai_on_chapters()`
 
@@ -167,10 +162,7 @@ plot_chapters_over_time(
 
 ## Which simulation function should I use?
 
-![Decision flow for choosing nalanda simulation
-functions.](reference/figures/README-function-choice.png)
-
-Decision flow for choosing nalanda simulation functions.
+![](reference/figures/README-function-choice.png)
 
 ## About the Name
 
@@ -196,7 +188,7 @@ library(nalanda)
 
 # Get a random fact about Nalanda University
 nalanda()
-#> [1] "Nalanda remained an active center of learning for roughly 700 years until the 12th century."
+#> [1] "Excavations at Nalanda reveal an extensive campus with monasteries, temples, and lecture halls."
 ```
 
 Learn more about related research on books, learning, and prosociality:
