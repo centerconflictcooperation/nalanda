@@ -50,11 +50,11 @@ uses the same pattern: one row per text.
 ``` r
 texts <- tibble::tibble(
   id = 1:4,
-  language = c("English", "English", "Arabic", "Simplified Chinese"),
+  language = c("English", "English", "Hindi", "Simplified Chinese"),
   text = c(
     "I love this new community project.",
     "This policy announcement is fine, I guess.",
-    "\u0647\u0630\u0627 \u0627\u0644\u062e\u0628\u0631 \u0631\u0627\u0626\u0639 \u0644\u0644\u063a\u0627\u064a\u0629",
+    "\u092f\u0939 \u0916\u092c\u0930 \u092c\u0939\u0941\u0924 \u0905\u091a\u094d\u091b\u0940 \u0939\u0948\u0964",
     "\u6211\u4e0d\u559c\u6b22\u4ed6\u4eec\u5904\u7406\u8fd9\u4e2a\u95ee\u9898\u7684\u65b9\u5f0f\u3002"
   ),
   human_sentiment = c(1, 2, 1, 3)
@@ -66,36 +66,9 @@ texts
 #>   <int> <chr>              <chr>                                           <dbl>
 #> 1     1 English            I love this new community project.                  1
 #> 2     2 English            This policy announcement is fine, I …               2
-#> 3     3 Arabic             هذا الخبر رائع للغاية                               1
+#> 3     3 Hindi              यह खबर बहुत अच्छी है।                                  1
 #> 4     4 Simplified Chinese 我不喜欢他们处理这个问题的方式。                    3
 ```
-
-If a right-to-left language such as Arabic looks visually out of order
-in your console or knitted output, that is usually a bidi rendering
-issue rather than a row-order issue. One safe display-only workaround is
-to wrap the printed Arabic string in Unicode directional isolates:
-
-``` r
-texts_display <- texts
-arabic_row <- texts_display$language == "Arabic"
-texts_display$text[arabic_row] <- paste0(
-  "\u2067",
-  texts_display$text[arabic_row],
-  "\u2069"
-)
-
-texts_display
-#> # A tibble: 4 × 4
-#>      id language           text                                  human_sentiment
-#>   <int> <chr>              <chr>                                           <dbl>
-#> 1     1 English            I love this new community project.                  1
-#> 2     2 English            This policy announcement is fine, I …               2
-#> 3     3 Arabic             ⁧هذا الخبر رائع للغاية⁩                               1
-#> 4     4 Simplified Chinese 我不喜欢他们处理这个问题的方式。                    3
-```
-
-Use the original `texts$text` values for API calls. The isolated version
-is mainly useful when printing or rendering tables.
 
 Here the human labels follow the same coding style used in the paper:
 
@@ -164,7 +137,7 @@ Each row of the result corresponds to one text and one simulation run.
 |----:|:-------------------|----:|----------------:|----:|:-------------------------------------------|
 |   1 | English            |   1 |               1 |   1 | I love this new community project.         |
 |   2 | English            |   1 |               2 |   2 | This policy announcement is fine, I guess. |
-|   3 | Arabic             |   1 |               1 |   1 | هذا الخبر رائع للغاية                      |
+|   3 | Hindi              |   1 |               1 |   1 | यह खबर बहुत अच्छी है।                         |
 |   4 | Simplified Chinese |   1 |               3 |   3 | 我不喜欢他们处理这个问题的方式。           |
 
 This is the same basic structure as the screenshot workflow, but the
@@ -192,8 +165,8 @@ scores
 
 | language           |   n | accuracy | macro_precision | macro_recall | macro_f1 |
 |:-------------------|----:|---------:|----------------:|-------------:|---------:|
-| Arabic             |   1 |        1 |               1 |            1 |        1 |
 | English            |   2 |        1 |               1 |            1 |        1 |
+| Hindi              |   1 |        1 |               1 |            1 |        1 |
 | Simplified Chinese |   1 |        1 |               1 |            1 |        1 |
 
 For Likert-style tasks, switch the metric set to something like:

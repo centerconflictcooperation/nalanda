@@ -28,7 +28,7 @@
 
     <a class="navbar-brand me-2" href="index.html">nalanda</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.1.2</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.1.3</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -74,7 +74,14 @@
 <div class="section level2">
 <h2 id="overview">Overview<a class="anchor" aria-label="anchor" href="#overview"></a>
 </h2>
-<p>The <strong>nalanda</strong> package provides tools for simulating, summarizing, and plotting chapter-level AI reading responses. It is designed for workflows that ask whether books shift prosocial attitudes, outgroup warmth, and affective polarization across chapters or across whole books.</p>
+<p>The <strong>nalanda</strong> package helps researchers work with large language models from R. It supports structured prompting workflows, simulation studies, and LLM-based text analysis with outputs that are easy to inspect, summarize, and plot.</p>
+<p>Two common use cases are:</p>
+<ul>
+<li>psychological text analysis, where models annotate or score text data row by row</li>
+<li>simulation workflows, where models are prompted as synthetic respondents across repeated scenarios</li>
+</ul>
+<p>A central goal of the package is to support different experimental designs in LLM-based research, including between-group designs, post-only designs, within-subject pre-post designs, mixed designs, and longitudinal or repeated-turn interactions.</p>
+<p>One motivating application is the study of whether books change attitudes and social judgments. In that setting, <strong>nalanda</strong> can simulate chapter-level responses, summarize shifts in ingroup and outgroup ratings, and visualize change across chapters or whole books. The simulation workflow figure below highlights the main chapter-based entry points.</p>
 </div>
 <div class="section level2">
 <h2 id="installation">Installation<a class="anchor" aria-label="anchor" href="#installation"></a>
@@ -87,20 +94,104 @@
 <span>    <span class="st">'https://cloud.r-project.org'</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
-<h2 id="example-workflow">Example workflow<a class="anchor" aria-label="anchor" href="#example-workflow"></a>
+<h2 id="example-workflows">Example workflows<a class="anchor" aria-label="anchor" href="#example-workflows"></a>
 </h2>
-<p>The main workflow has three steps:</p>
+<p>If you want to run the live minimal example below, first set your Portkey-compatible API key in <code>.Renviron</code> (for example, <code>PORTKEY_API_KEY=...</code>) and see the getting started vignette for the full setup:</p>
+<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/vignette.html" class="external-link">vignette</a></span><span class="op">(</span><span class="st">"getting-started"</span>, package <span class="op">=</span> <span class="st">"nalanda"</span><span class="op">)</span></span></code></pre></div>
+<blockquote>
+<p><strong>Note:</strong> <em>NYU users can request an NYU Portkey API key at <code>Genai-research-support@nyu.edu</code>.</em></p>
+</blockquote>
+<p>Run this setup once before either workflow:</p>
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://centerconflictcooperation.github.io/nalanda/">nalanda</a></span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/options.html" class="external-link">options</a></span><span class="op">(</span></span>
+<span>  nalanda.integration <span class="op">=</span> <span class="st">"vertexai"</span>,</span>
+<span>  nalanda.base_url <span class="op">=</span> <span class="st">"https://ai-gateway.apps.cloud.rt.nyu.edu/v1/"</span></span>
+<span><span class="op">)</span></span></code></pre></div>
+<div class="section level3">
+<h3 id="minimal-prompt-first-example-with-simulate_treatment">Minimal prompt-first example with <code>simulate_treatment()</code>
+<a class="anchor" aria-label="anchor" href="#minimal-prompt-first-example-with-simulate_treatment"></a>
+</h3>
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">res</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/simulate_treatment.html">simulate_treatment</a></span><span class="op">(</span></span>
+<span>  intervention_text <span class="op">=</span> <span class="st">"A short community message encourages people from different backgrounds to cooperate on a shared local goal."</span>,</span>
+<span>  groups <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"American"</span>, <span class="st">"Brazilian"</span><span class="op">)</span>,</span>
+<span>  context_text <span class="op">=</span> <span class="st">"You are simulating an adult who identifies as {identity}."</span>,</span>
+<span>  prompt <span class="op">=</span> <span class="st">"{intervention_text}</span></span>
+<span><span class="st"></span></span>
+<span><span class="st">On a scale from 0 to 100, how much do you support this message?"</span>,</span>
+<span>  response_type <span class="op">=</span> <span class="fu">ellmer</span><span class="fu">::</span><span class="fu"><a href="https://ellmer.tidyverse.org/reference/type_boolean.html" class="external-link">type_object</a></span><span class="op">(</span></span>
+<span>    support <span class="op">=</span> <span class="fu">ellmer</span><span class="fu">::</span><span class="fu"><a href="https://ellmer.tidyverse.org/reference/type_boolean.html" class="external-link">type_number</a></span><span class="op">(</span><span class="op">)</span></span>
+<span>  <span class="op">)</span>,</span>
+<span>  n_simulations <span class="op">=</span> <span class="fl">2</span>,</span>
+<span>  temperature <span class="op">=</span> <span class="fl">0</span>,</span>
+<span>  model <span class="op">=</span> <span class="st">"gemini-2.5-flash-lite"</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">res</span></span></code></pre></div>
+<div class="kable-table">
+<table class="table">
+<thead><tr class="header">
+<th align="left">treatment</th>
+<th align="right">sim</th>
+<th align="left">identity</th>
+<th align="right">turn_index</th>
+<th align="left">turn_type</th>
+<th align="right">support</th>
+</tr></thead>
+<tbody>
+<tr class="odd">
+<td align="left">intervention_1</td>
+<td align="right">1</td>
+<td align="left">American</td>
+<td align="right">1</td>
+<td align="left">turn_1</td>
+<td align="right">78</td>
+</tr>
+<tr class="even">
+<td align="left">intervention_1</td>
+<td align="right">2</td>
+<td align="left">American</td>
+<td align="right">1</td>
+<td align="left">turn_1</td>
+<td align="right">76</td>
+</tr>
+<tr class="odd">
+<td align="left">intervention_1</td>
+<td align="right">1</td>
+<td align="left">Brazilian</td>
+<td align="right">1</td>
+<td align="left">turn_1</td>
+<td align="right">71</td>
+</tr>
+<tr class="even">
+<td align="left">intervention_1</td>
+<td align="right">2</td>
+<td align="left">Brazilian</td>
+<td align="right">1</td>
+<td align="left">turn_1</td>
+<td align="right">69</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>The rendered examples below use bundled toy data so the README builds quickly and does not require live API calls.</p>
+</div>
+<div class="section level3">
+<h3 id="chapter-level-example-with-run_ai_on_chapters">Chapter-level example with <code>run_ai_on_chapters()</code>
+<a class="anchor" aria-label="anchor" href="#chapter-level-example-with-run_ai_on_chapters"></a>
+</h3>
+<p>For chapter-based pre/post simulations, the main workflow is:</p>
 <ol style="list-style-type: decimal">
 <li>run <code><a href="reference/run_ai_on_chapters.html">run_ai_on_chapters()</a></code> to get raw turn-level output</li>
 <li>convert the raw turns to chapter-level metrics with <code><a href="reference/compute_run_ai_metrics.html">compute_run_ai_metrics()</a></code>
 </li>
-<li>summarize or plot the processed results</li>
+<li>plot or summarize the processed results</li>
 </ol>
-<p>This README uses bundled toy data so it renders quickly and does not require live API calls.</p>
-<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://centerconflictcooperation.github.io/nalanda/">nalanda</a></span><span class="op">)</span></span>
-<span></span>
-<span><span class="va">raw_turns</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/run_ai_on_chapters.html">run_ai_on_chapters</a></span><span class="op">(</span></span>
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">raw_turns</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/run_ai_on_chapters.html">run_ai_on_chapters</a></span><span class="op">(</span></span>
 <span>  book_texts <span class="op">=</span> <span class="st">"A short chapter about people from different groups cooperating."</span>,</span>
 <span>  groups <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Democrat"</span>, <span class="st">"Republican"</span><span class="op">)</span>,</span>
 <span>  context_text <span class="op">=</span> <span class="st">"You are simulating an American adult who politically identifies as a {identity}."</span>,</span>
@@ -111,7 +202,7 @@
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">chapter_results</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/compute_run_ai_metrics.html">compute_run_ai_metrics</a></span><span class="op">(</span><span class="va">raw_turns</span><span class="op">)</span></span></code></pre></div>
-<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://centerconflictcooperation.github.io/nalanda/">nalanda</a></span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">img_paths</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
@@ -121,18 +212,64 @@
 <span></span>
 <span><span class="va">chapter_results</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/compute_run_ai_metrics.html">compute_run_ai_metrics</a></span><span class="op">(</span><span class="va">toy_run_ai_turns</span><span class="op">)</span></span>
 <span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">chapter_results</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"book"</span>, <span class="st">"chapter"</span>, <span class="st">"sim"</span>, <span class="st">"party"</span>, <span class="st">"delta_gap"</span><span class="op">)</span><span class="op">]</span><span class="op">)</span></span>
-<span><span class="co">#&gt; # A tibble: 6 × 5</span></span>
-<span><span class="co">#&gt;   book           chapter     sim party      delta_gap</span></span>
-<span><span class="co">#&gt;   &lt;chr&gt;          &lt;chr&gt;     &lt;int&gt; &lt;chr&gt;          &lt;dbl&gt;</span></span>
-<span><span class="co">#&gt; 1 Bridge Stories chapter_1     1 Democrat         3  </span></span>
-<span><span class="co">#&gt; 2 Common Ground  chapter_1     1 Democrat         4  </span></span>
-<span><span class="co">#&gt; 3 Bridge Stories chapter_1     1 Republican      11  </span></span>
-<span><span class="co">#&gt; 4 Common Ground  chapter_1     1 Republican       5  </span></span>
-<span><span class="co">#&gt; 5 Bridge Stories chapter_1     2 Democrat         3.5</span></span>
-<span><span class="co">#&gt; 6 Common Ground  chapter_1     2 Democrat         4.5</span></span></code></pre></div>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">chapter_results</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"book"</span>, <span class="st">"chapter"</span>, <span class="st">"sim"</span>, <span class="st">"party"</span>, <span class="st">"delta_gap"</span><span class="op">)</span><span class="op">]</span><span class="op">)</span></span></code></pre></div>
+<div class="kable-table">
+<table class="table">
+<thead><tr class="header">
+<th align="left">book</th>
+<th align="left">chapter</th>
+<th align="right">sim</th>
+<th align="left">party</th>
+<th align="right">delta_gap</th>
+</tr></thead>
+<tbody>
+<tr class="odd">
+<td align="left">Bridge Stories</td>
+<td align="left">chapter_1</td>
+<td align="right">1</td>
+<td align="left">Democrat</td>
+<td align="right">3.0</td>
+</tr>
+<tr class="even">
+<td align="left">Common Ground</td>
+<td align="left">chapter_1</td>
+<td align="right">1</td>
+<td align="left">Democrat</td>
+<td align="right">4.0</td>
+</tr>
+<tr class="odd">
+<td align="left">Bridge Stories</td>
+<td align="left">chapter_1</td>
+<td align="right">1</td>
+<td align="left">Republican</td>
+<td align="right">11.0</td>
+</tr>
+<tr class="even">
+<td align="left">Common Ground</td>
+<td align="left">chapter_1</td>
+<td align="right">1</td>
+<td align="left">Republican</td>
+<td align="right">5.0</td>
+</tr>
+<tr class="odd">
+<td align="left">Bridge Stories</td>
+<td align="left">chapter_1</td>
+<td align="right">2</td>
+<td align="left">Democrat</td>
+<td align="right">3.5</td>
+</tr>
+<tr class="even">
+<td align="left">Common Ground</td>
+<td align="left">chapter_1</td>
+<td align="right">2</td>
+<td align="left">Democrat</td>
+<td align="right">4.5</td>
+</tr>
+</tbody>
+</table>
+</div>
 <p>Use the processed chapter-level results directly with the time-series plotting helper:</p>
-<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="reference/plot_chapters_over_time.html">plot_chapters_over_time</a></span><span class="op">(</span></span>
 <span>  chapters <span class="op">=</span> <span class="va">chapter_results</span>,</span>
 <span>  dv <span class="op">=</span> <span class="st">"delta_gap"</span>,</span>
@@ -149,68 +286,15 @@
 <span>  point_images <span class="op">=</span> <span class="va">img_paths</span>,</span>
 <span>  image_size <span class="op">=</span> <span class="fl">0.09</span></span>
 <span><span class="op">)</span></span></code></pre></div>
-<div class="figure">
-<img src="reference/figures/README-pressure-1.png" alt="Synthetic chapter-level trajectories of affective polarization change by party." width="100%"><p class="caption">
-Synthetic chapter-level trajectories of affective polarization change by party.
-</p>
+<p><img src="reference/figures/README-pressure-1.png" alt="" width="100%"></p>
 </div>
-<p>The same workflow scales to:</p>
-<ul>
-<li>raw turn-level output from <code><a href="reference/run_ai_on_chapters.html">run_ai_on_chapters()</a></code> after processing with <code><a href="reference/compute_run_ai_metrics.html">compute_run_ai_metrics()</a></code>
-</li>
-<li>summary tables via <code><a href="reference/summarize_chapter_scores.html">summarize_chapter_scores()</a></code>
-</li>
-<li>saved <code>.rds</code> simulation outputs</li>
-<li>book-level summaries via <code>summarize_chapter_scores(..., aggregate_level = "book")</code>
-</li>
-<li>visualization with <code><a href="reference/plot_chapter_trajectories.html">plot_chapter_trajectories()</a></code>, <code><a href="reference/plot_chapters_over_time.html">plot_chapters_over_time()</a></code>, and <code><a href="reference/plot_forest_books.html">plot_forest_books()</a></code>
-</li>
-</ul>
-<p>For API setup and a live minimal simulation example, see the vignette:</p>
-<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/vignette.html" class="external-link">vignette</a></span><span class="op">(</span><span class="st">"getting-started"</span>, package <span class="op">=</span> <span class="st">"nalanda"</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="which-simulation-function-should-i-use">Which simulation function should I use?<a class="anchor" aria-label="anchor" href="#which-simulation-function-should-i-use"></a>
 </h2>
 <figure><img src="reference/figures/README-function-choice.png" alt="Decision flow for choosing nalanda simulation functions."><figcaption aria-hidden="true">
 Decision flow for choosing nalanda simulation functions.
-</figcaption></figure><p>In short:</p>
-<ul>
-<li>Use <code><a href="reference/run_ai_on_chapters.html">run_ai_on_chapters()</a></code> for the original two-turn chapter workflow.</li>
-<li>Use <code><a href="reference/run_ai_cumulative_chapters.html">run_ai_cumulative_chapters()</a></code> when later chapters should be interpreted relative to a single baseline.</li>
-<li>Use <code><a href="reference/run_ai_on_chapters_one_turn.html">run_ai_on_chapters_one_turn()</a></code> for a chapter-based, single-prompt design.</li>
-<li>Use <code><a href="reference/simulate_treatment.html">simulate_treatment()</a></code> when you want direct control over custom prompt sequences and the intervention is not necessarily a chapter.</li>
-<li>Use <code><a href="reference/run_text_analysis.html">run_text_analysis()</a></code> for dataset-first text annotation tasks such as sentiment, emotion, offensiveness, or moral-foundation coding.</li>
-</ul>
-</div>
-<div class="section level2">
-<h2 id="overlap-and-consolidation">Overlap and consolidation<a class="anchor" aria-label="anchor" href="#overlap-and-consolidation"></a>
-</h2>
-<p>There is some real overlap now, but it is mostly layered rather than accidental:</p>
-<ul>
-<li>
-<code><a href="reference/run_ai_on_chapters.html">run_ai_on_chapters()</a></code> and <code><a href="reference/run_ai_cumulative_chapters.html">run_ai_cumulative_chapters()</a></code> are chapter-specific opinion-change workflows.</li>
-<li>
-<code><a href="reference/run_ai_on_chapters_one_turn.html">run_ai_on_chapters_one_turn()</a></code> is a simplified chapter wrapper for the common single-prompt case.</li>
-<li>
-<code><a href="reference/simulate_treatment.html">simulate_treatment()</a></code> is the more generic prompt-first engine for intervention-style simulations.</li>
-<li>
-<code><a href="reference/run_text_analysis.html">run_text_analysis()</a></code> is the new dataset-first path for row-wise psychological text analysis.</li>
-</ul>
-<p>The current direction should be to consolidate around fewer conceptual families, not necessarily fewer total exported functions:</p>
-<ul>
-<li>
-<code>chapter workflows</code>: <code><a href="reference/run_ai_on_chapters.html">run_ai_on_chapters()</a></code>, <code><a href="reference/run_ai_cumulative_chapters.html">run_ai_cumulative_chapters()</a></code>
-</li>
-<li>
-<code>generic intervention workflows</code>: <code><a href="reference/simulate_treatment.html">simulate_treatment()</a></code>
-</li>
-<li>
-<code>dataset-first annotation workflows</code>: <code><a href="reference/run_text_analysis.html">run_text_analysis()</a></code>
-</li>
-</ul>
-<p>That likely means <code><a href="reference/run_ai_on_chapters_one_turn.html">run_ai_on_chapters_one_turn()</a></code> should be treated as a convenience wrapper over time rather than as a separate long-term family. The main redundancy is therefore between the one-turn chapter helper and the more general <code><a href="reference/simulate_treatment.html">simulate_treatment()</a></code> interface, not between all functions equally.</p>
+</figcaption></figure>
 </div>
 <div class="section level2">
 <h2 id="about-the-name">About the Name<a class="anchor" aria-label="anchor" href="#about-the-name"></a>
@@ -218,12 +302,12 @@ Decision flow for choosing nalanda simulation functions.
 <p>The package is named after <a href="https://en.wikipedia.org/wiki/Nalanda" class="external-link">Nalanda Mahavihara</a>, one of the most renowned centers of learning in ancient India. Founded in the 5th century CE, Nalanda was a Buddhist monastic university that attracted scholars from across Asia and became a symbol of knowledge, wisdom, and the pursuit of learning through texts and collaboration.</p>
 <p>This name is particularly fitting for a package related to the study of books and prosociality, reflecting the historical significance of Nalanda as a center for both scholarly texts and the cooperative exchange of ideas. The connection resonates with contemporary research on how books and shared learning can foster prosocial behavior and cooperation.</p>
 <p>The package also includes a small helper to explore historical facts about Nalanda University:</p>
-<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://centerconflictcooperation.github.io/nalanda/">nalanda</a></span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Get a random fact about Nalanda University</span></span>
 <span><span class="fu"><a href="reference/nalanda.html">nalanda</a></span><span class="op">(</span><span class="op">)</span></span>
-<span><span class="co">#&gt; [1] "Excavations at Nalanda reveal an extensive campus with monasteries, temples, and lecture halls."</span></span></code></pre></div>
+<span><span class="co">#&gt; [1] "Nalanda remained an active center of learning for roughly 700 years until the 12th century."</span></span></code></pre></div>
 <p>Learn more about related research on books, learning, and prosociality: <a href="https://mindandlife-europe.org/2024-eva-recipients-projects/" class="external-link">Mind and Life Europe - 2024 EVA Recipients &amp; Projects</a></p>
 </div>
 </div>

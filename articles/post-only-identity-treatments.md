@@ -134,7 +134,7 @@ per turn.
 Each row is one simulated response for one identity and one simulation
 draw.
 
-| chapter        | sim | identity  | turn_index | turn_type | climate_belief | policy_support |
+| treatment      | sim | identity  | turn_index | turn_type | climate_belief | policy_support |
 |:---------------|----:|:----------|-----------:|:----------|---------------:|---------------:|
 | intervention_1 |   1 | American  |          1 | turn_1    |             84 |             71 |
 | intervention_1 |   2 | American  |          1 | turn_1    |             82 |             69 |

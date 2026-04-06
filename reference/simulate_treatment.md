@@ -100,7 +100,7 @@ simulate_treatment(
 ## Value
 
 A tibble of raw turn-level responses, or a named list of tibbles (one
-per book/intervention collection). Each row includes `chapter`, `sim`,
+per book/intervention collection). Each row includes `treatment`, `sim`,
 `identity`, `turn_index`, `turn_type`, and one column per field returned
 by `response_type`, plus stored prompt previews and metadata columns.
 

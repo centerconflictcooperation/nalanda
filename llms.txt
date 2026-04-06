@@ -2,11 +2,29 @@
 
 ## Overview
 
-The **nalanda** package provides tools for simulating, summarizing, and
-plotting chapter-level AI reading responses. It is designed for
-workflows that ask whether books shift prosocial attitudes, outgroup
-warmth, and affective polarization across chapters or across whole
-books.
+The **nalanda** package helps researchers work with large language
+models from R. It supports structured prompting workflows, simulation
+studies, and LLM-based text analysis with outputs that are easy to
+inspect, summarize, and plot.
+
+Two common use cases are:
+
+- psychological text analysis, where models annotate or score text data
+  row by row
+- simulation workflows, where models are prompted as synthetic
+  respondents across repeated scenarios
+
+A central goal of the package is to support different experimental
+designs in LLM-based research, including between-group designs,
+post-only designs, within-subject pre-post designs, mixed designs, and
+longitudinal or repeated-turn interactions.
+
+One motivating application is the study of whether books change
+attitudes and social judgments. In that setting, **nalanda** can
+simulate chapter-level responses, summarize shifts in ingroup and
+outgroup ratings, and visualize change across chapters or whole books.
+The simulation workflow figure below highlights the main chapter-based
+entry points.
 
 ## Installation
 
@@ -20,23 +38,74 @@ install.packages(
     'https://cloud.r-project.org'))
 ```
 
-## Example workflow
+## Example workflows
 
-The main workflow has three steps:
+If you want to run the live minimal example below, first set your
+Portkey-compatible API key in `.Renviron` (for example,
+`PORTKEY_API_KEY=...`) and see the getting started vignette for the full
+setup:
+
+``` r
+vignette("getting-started", package = "nalanda")
+```
+
+> **Note:** *NYU users can request an NYU Portkey API key at
+> `Genai-research-support@nyu.edu`.*
+
+Run this setup once before either workflow:
+
+``` r
+library(nalanda)
+
+options(
+  nalanda.integration = "vertexai",
+  nalanda.base_url = "https://ai-gateway.apps.cloud.rt.nyu.edu/v1/"
+)
+```
+
+### Minimal prompt-first example with `simulate_treatment()`
+
+``` r
+res <- simulate_treatment(
+  intervention_text = "A short community message encourages people from different backgrounds to cooperate on a shared local goal.",
+  groups = c("American", "Brazilian"),
+  context_text = "You are simulating an adult who identifies as {identity}.",
+  prompt = "{intervention_text}
+
+On a scale from 0 to 100, how much do you support this message?",
+  response_type = ellmer::type_object(
+    support = ellmer::type_number()
+  ),
+  n_simulations = 2,
+  temperature = 0,
+  model = "gemini-2.5-flash-lite"
+)
+
+res
+```
+
+| treatment      | sim | identity  | turn_index | turn_type | support |
+|:---------------|----:|:----------|-----------:|:----------|--------:|
+| intervention_1 |   1 | American  |          1 | turn_1    |      78 |
+| intervention_1 |   2 | American  |          1 | turn_1    |      76 |
+| intervention_1 |   1 | Brazilian |          1 | turn_1    |      71 |
+| intervention_1 |   2 | Brazilian |          1 | turn_1    |      69 |
+
+The rendered examples below use bundled toy data so the README builds
+quickly and does not require live API calls.
+
+### Chapter-level example with `run_ai_on_chapters()`
+
+For chapter-based pre/post simulations, the main workflow is:
 
 1.  run
     [`run_ai_on_chapters()`](https://centerconflictcooperation.github.io/nalanda/reference/run_ai_on_chapters.md)
     to get raw turn-level output
 2.  convert the raw turns to chapter-level metrics with
     [`compute_run_ai_metrics()`](https://centerconflictcooperation.github.io/nalanda/reference/compute_run_ai_metrics.md)
-3.  summarize or plot the processed results
-
-This README uses bundled toy data so it renders quickly and does not
-require live API calls.
+3.  plot or summarize the processed results
 
 ``` r
-library(nalanda)
-
 raw_turns <- run_ai_on_chapters(
   book_texts = "A short chapter about people from different groups cooperating.",
   groups = c("Democrat", "Republican"),
@@ -61,16 +130,16 @@ img_paths <- list(
 chapter_results <- compute_run_ai_metrics(toy_run_ai_turns)
 
 head(chapter_results[, c("book", "chapter", "sim", "party", "delta_gap")])
-#> # A tibble: 6 × 5
-#>   book           chapter     sim party      delta_gap
-#>   <chr>          <chr>     <int> <chr>          <dbl>
-#> 1 Bridge Stories chapter_1     1 Democrat         3  
-#> 2 Common Ground  chapter_1     1 Democrat         4  
-#> 3 Bridge Stories chapter_1     1 Republican      11  
-#> 4 Common Ground  chapter_1     1 Republican       5  
-#> 5 Bridge Stories chapter_1     2 Democrat         3.5
-#> 6 Common Ground  chapter_1     2 Democrat         4.5
 ```
+
+| book           | chapter   | sim | party      | delta_gap |
+|:---------------|:----------|----:|:-----------|----------:|
+| Bridge Stories | chapter_1 |   1 | Democrat   |       3.0 |
+| Common Ground  | chapter_1 |   1 | Democrat   |       4.0 |
+| Bridge Stories | chapter_1 |   1 | Republican |      11.0 |
+| Common Ground  | chapter_1 |   1 | Republican |       5.0 |
+| Bridge Stories | chapter_1 |   2 | Democrat   |       3.5 |
+| Common Ground  | chapter_1 |   2 | Democrat   |       4.5 |
 
 Use the processed chapter-level results directly with the time-series
 plotting helper:
@@ -94,34 +163,7 @@ plot_chapters_over_time(
 )
 ```
 
-![Synthetic chapter-level trajectories of affective polarization change
-by party.](reference/figures/README-pressure-1.png)
-
-Synthetic chapter-level trajectories of affective polarization change by
-party.
-
-The same workflow scales to:
-
-- raw turn-level output from
-  [`run_ai_on_chapters()`](https://centerconflictcooperation.github.io/nalanda/reference/run_ai_on_chapters.md)
-  after processing with
-  [`compute_run_ai_metrics()`](https://centerconflictcooperation.github.io/nalanda/reference/compute_run_ai_metrics.md)
-- summary tables via
-  [`summarize_chapter_scores()`](https://centerconflictcooperation.github.io/nalanda/reference/summarize_chapter_scores.md)
-- saved `.rds` simulation outputs
-- book-level summaries via
-  `summarize_chapter_scores(..., aggregate_level = "book")`
-- visualization with
-  [`plot_chapter_trajectories()`](https://centerconflictcooperation.github.io/nalanda/reference/plot_chapter_trajectories.md),
-  [`plot_chapters_over_time()`](https://centerconflictcooperation.github.io/nalanda/reference/plot_chapters_over_time.md),
-  and
-  [`plot_forest_books()`](https://centerconflictcooperation.github.io/nalanda/reference/plot_forest_books.md)
-
-For API setup and a live minimal simulation example, see the vignette:
-
-``` r
-vignette("getting-started", package = "nalanda")
-```
+![](reference/figures/README-pressure-1.png)
 
 ## Which simulation function should I use?
 
@@ -129,64 +171,6 @@ vignette("getting-started", package = "nalanda")
 functions.](reference/figures/README-function-choice.png)
 
 Decision flow for choosing nalanda simulation functions.
-
-In short:
-
-- Use
-  [`run_ai_on_chapters()`](https://centerconflictcooperation.github.io/nalanda/reference/run_ai_on_chapters.md)
-  for the original two-turn chapter workflow.
-- Use
-  [`run_ai_cumulative_chapters()`](https://centerconflictcooperation.github.io/nalanda/reference/run_ai_cumulative_chapters.md)
-  when later chapters should be interpreted relative to a single
-  baseline.
-- Use
-  [`run_ai_on_chapters_one_turn()`](https://centerconflictcooperation.github.io/nalanda/reference/run_ai_on_chapters_one_turn.md)
-  for a chapter-based, single-prompt design.
-- Use
-  [`simulate_treatment()`](https://centerconflictcooperation.github.io/nalanda/reference/simulate_treatment.md)
-  when you want direct control over custom prompt sequences and the
-  intervention is not necessarily a chapter.
-- Use
-  [`run_text_analysis()`](https://centerconflictcooperation.github.io/nalanda/reference/run_text_analysis.md)
-  for dataset-first text annotation tasks such as sentiment, emotion,
-  offensiveness, or moral-foundation coding.
-
-## Overlap and consolidation
-
-There is some real overlap now, but it is mostly layered rather than
-accidental:
-
-- [`run_ai_on_chapters()`](https://centerconflictcooperation.github.io/nalanda/reference/run_ai_on_chapters.md)
-  and
-  [`run_ai_cumulative_chapters()`](https://centerconflictcooperation.github.io/nalanda/reference/run_ai_cumulative_chapters.md)
-  are chapter-specific opinion-change workflows.
-- [`run_ai_on_chapters_one_turn()`](https://centerconflictcooperation.github.io/nalanda/reference/run_ai_on_chapters_one_turn.md)
-  is a simplified chapter wrapper for the common single-prompt case.
-- [`simulate_treatment()`](https://centerconflictcooperation.github.io/nalanda/reference/simulate_treatment.md)
-  is the more generic prompt-first engine for intervention-style
-  simulations.
-- [`run_text_analysis()`](https://centerconflictcooperation.github.io/nalanda/reference/run_text_analysis.md)
-  is the new dataset-first path for row-wise psychological text
-  analysis.
-
-The current direction should be to consolidate around fewer conceptual
-families, not necessarily fewer total exported functions:
-
-- `chapter workflows`:
-  [`run_ai_on_chapters()`](https://centerconflictcooperation.github.io/nalanda/reference/run_ai_on_chapters.md),
-  [`run_ai_cumulative_chapters()`](https://centerconflictcooperation.github.io/nalanda/reference/run_ai_cumulative_chapters.md)
-- `generic intervention workflows`:
-  [`simulate_treatment()`](https://centerconflictcooperation.github.io/nalanda/reference/simulate_treatment.md)
-- `dataset-first annotation workflows`:
-  [`run_text_analysis()`](https://centerconflictcooperation.github.io/nalanda/reference/run_text_analysis.md)
-
-That likely means
-[`run_ai_on_chapters_one_turn()`](https://centerconflictcooperation.github.io/nalanda/reference/run_ai_on_chapters_one_turn.md)
-should be treated as a convenience wrapper over time rather than as a
-separate long-term family. The main redundancy is therefore between the
-one-turn chapter helper and the more general
-[`simulate_treatment()`](https://centerconflictcooperation.github.io/nalanda/reference/simulate_treatment.md)
-interface, not between all functions equally.
 
 ## About the Name
 
@@ -212,7 +196,7 @@ library(nalanda)
 
 # Get a random fact about Nalanda University
 nalanda()
-#> [1] "Excavations at Nalanda reveal an extensive campus with monasteries, temples, and lecture halls."
+#> [1] "Nalanda remained an active center of learning for roughly 700 years until the 12th century."
 ```
 
 Learn more about related research on books, learning, and prosociality:
