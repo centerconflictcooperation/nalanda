@@ -16,10 +16,12 @@
 <url><loc>https://centerconflictcooperation.github.io/nalanda/index.html</loc></url>
 <url><loc>https://centerconflictcooperation.github.io/nalanda/news/index.html</loc></url>
 <url><loc>https://centerconflictcooperation.github.io/nalanda/reference/add_point_images.html</loc></url>
+<url><loc>https://centerconflictcooperation.github.io/nalanda/reference/combine_book_files.html</loc></url>
 <url><loc>https://centerconflictcooperation.github.io/nalanda/reference/compute_run_ai_metrics.html</loc></url>
 <url><loc>https://centerconflictcooperation.github.io/nalanda/reference/compute_run_ai_metrics_cumulative.html</loc></url>
 <url><loc>https://centerconflictcooperation.github.io/nalanda/reference/compute_run_ai_metrics_one_turn.html</loc></url>
 <url><loc>https://centerconflictcooperation.github.io/nalanda/reference/evaluate_text_analysis.html</loc></url>
+<url><loc>https://centerconflictcooperation.github.io/nalanda/reference/extract_pdf_text_with_llm.html</loc></url>
 <url><loc>https://centerconflictcooperation.github.io/nalanda/reference/fix_text_file.html</loc></url>
 <url><loc>https://centerconflictcooperation.github.io/nalanda/reference/index.html</loc></url>
 <url><loc>https://centerconflictcooperation.github.io/nalanda/reference/list_book_chapters.html</loc></url>
@@ -45,6 +47,9 @@
 <url><loc>https://centerconflictcooperation.github.io/nalanda/reference/save_forest_plot.html</loc></url>
 <url><loc>https://centerconflictcooperation.github.io/nalanda/reference/simulate_treatment.html</loc></url>
 <url><loc>https://centerconflictcooperation.github.io/nalanda/reference/summarize_chapter_scores.html</loc></url>
+<url><loc>https://centerconflictcooperation.github.io/nalanda/reference/summarize_identity_adherence.html</loc></url>
+<url><loc>https://centerconflictcooperation.github.io/nalanda/reference/summarize_identity_match_rates.html</loc></url>
+<url><loc>https://centerconflictcooperation.github.io/nalanda/reference/summarize_simulation_stability.html</loc></url>
 <url><loc>https://centerconflictcooperation.github.io/nalanda/reference/summarize_treatment_results.html</loc></url>
 <url><loc>https://centerconflictcooperation.github.io/nalanda/reference/toy_run_ai_turns.html</loc></url>
 <url><loc>https://centerconflictcooperation.github.io/nalanda/reference/toy_sim_results.html</loc></url>

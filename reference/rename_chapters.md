@@ -1,20 +1,25 @@
 # Rename chapter text files in a folder to a sequential order
 
-Scans a folder for .txt files and renames them to chapter1.txt,
-chapter2.txt, ... using heuristics for ordering (intro, part 1/2,
+Scans a folder for chapter files and renames them to `chapter1.ext`,
+`chapter2.ext`, ... using heuristics for ordering (intro, part 1/2,
 numeric chapter numbers, appendix, etc.).
 
 ## Usage
 
 ``` r
-rename_chapters(folder)
+rename_chapters(folder, extension = "txt")
 ```
 
 ## Arguments
 
 - folder:
 
-  Character scalar. Path to the folder containing .txt files.
+  Character scalar. Path to the folder containing chapter files.
+
+- extension:
+
+  Character scalar file extension to match, without a leading dot by
+  default. Defaults to `"txt"`.
 
 ## Value
 

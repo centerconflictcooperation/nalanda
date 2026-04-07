@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">nalanda</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.1.3</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.1.4</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -43,6 +43,12 @@
       <small>Source: <a href="https://github.com/centerconflictcooperation/nalanda/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.0.1.4" id="nalanda-0014">nalanda 0.0.1.4<a class="anchor" aria-label="anchor" href="#nalanda-0014"></a></h2>
+<ul><li>Added shared multi-model support across the simulation pipeline so <code><a href="../reference/simulate_treatment.html">simulate_treatment()</a></code>, <code><a href="../reference/run_ai_on_chapters.html">run_ai_on_chapters()</a></code>, <code><a href="../reference/run_ai_on_chapters_one_turn.html">run_ai_on_chapters_one_turn()</a></code>, and <code><a href="../reference/run_ai_cumulative_chapters.html">run_ai_cumulative_chapters()</a></code> can accept <code>length(model) &gt;= 1</code>.</li>
+<li>Added a <code>model</code> column to raw simulation outputs and updated downstream summaries to preserve model-specific results instead of collapsing across models.</li>
+<li>Added <code><a href="../reference/summarize_identity_adherence.html">summarize_identity_adherence()</a></code> and <code><a href="../reference/summarize_identity_match_rates.html">summarize_identity_match_rates()</a></code> to tally whether models adopt the requested identity and to summarize per-model adoption rates.</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.0.1.3" id="nalanda-0013">nalanda 0.0.1.3<a class="anchor" aria-label="anchor" href="#nalanda-0013"></a></h2>
 <ul><li>Renamed <code><a href="../reference/simulate_treatment.html">simulate_treatment()</a></code> output columns to use <code>treatment</code> terminology instead of <code>chapter</code>.</li>

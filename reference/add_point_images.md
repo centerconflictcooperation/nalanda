@@ -14,7 +14,8 @@ add_point_images(
   image_nudge_y = 0,
   image_jitter_width = 0,
   image_jitter_height = 0,
-  facet = NULL
+  facet = NULL,
+  point_size = 4
 )
 ```
 

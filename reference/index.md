@@ -2,6 +2,9 @@
 
 ## All functions
 
+- [`combine_book_files()`](https://centerconflictcooperation.github.io/nalanda/reference/combine_book_files.md)
+  : Combine chapter text files into one numbered file per book
+
 - [`compute_run_ai_metrics()`](https://centerconflictcooperation.github.io/nalanda/reference/compute_run_ai_metrics.md)
   : Compute derived pre/post effect metrics from raw turn-level output
 
@@ -13,6 +16,9 @@
 
 - [`evaluate_text_analysis()`](https://centerconflictcooperation.github.io/nalanda/reference/evaluate_text_analysis.md)
   : Evaluate text-analysis outputs against reference labels
+
+- [`extract_pdf_text_with_llm()`](https://centerconflictcooperation.github.io/nalanda/reference/extract_pdf_text_with_llm.md)
+  : Extract text from a PDF with a multimodal LLM
 
 - [`fix_text_file()`](https://centerconflictcooperation.github.io/nalanda/reference/fix_text_file.md)
   : Fix text file encoding and normalize punctuation/whitespace
@@ -86,6 +92,15 @@
 
 - [`summarize_chapter_scores()`](https://centerconflictcooperation.github.io/nalanda/reference/summarize_chapter_scores.md)
   : Summarize simulated chapter scores
+
+- [`summarize_identity_adherence()`](https://centerconflictcooperation.github.io/nalanda/reference/summarize_identity_adherence.md)
+  : Summarize whether the model adopts the requested identity
+
+- [`summarize_identity_match_rates()`](https://centerconflictcooperation.github.io/nalanda/reference/summarize_identity_match_rates.md)
+  : Summarize identity match rates by model
+
+- [`summarize_simulation_stability()`](https://centerconflictcooperation.github.io/nalanda/reference/summarize_simulation_stability.md)
+  : Summarize simulation stability across chapters
 
 - [`summarize_treatment_results()`](https://centerconflictcooperation.github.io/nalanda/reference/summarize_treatment_results.md)
   : Summarize generic treatment results
