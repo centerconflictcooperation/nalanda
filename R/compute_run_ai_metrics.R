@@ -37,6 +37,7 @@ compute_run_ai_metrics <- function(x, per_group = NULL) {
   x <- tibble::as_tibble(x)
 
   model <- attr(input, "model")
+  models <- attr(input, "models")
   temperature <- attr(input, "temperature")
   n_simulations <- attr(input, "n_simulations")
   chapter_excerpts <- chapter_excerpt_index(input)
@@ -48,6 +49,7 @@ compute_run_ai_metrics <- function(x, per_group = NULL) {
     n_simulations <- rlang::`%||%`(n_simulations, attr(input[[1]], "n_simulations"))
   }
   model <- normalize_model_name(model)
+  models <- normalize_model_metadata(models)
 
   required_cols <- c("chapter", "sim", "identity", "turn_type", "rating")
   missing_cols <- setdiff(required_cols, names(x))
@@ -68,6 +70,7 @@ compute_run_ai_metrics <- function(x, per_group = NULL) {
 
   id_cols <- c("chapter", "sim", "identity")
   optional_id <- c(
+    "model",
     "book",
     "party",
     "baseline_prompt",
@@ -153,6 +156,9 @@ compute_run_ai_metrics <- function(x, per_group = NULL) {
   }
 
   attr(out, "model") <- model
+  if (length(models) > 1) {
+    attr(out, "models") <- models
+  }
   attr(out, "temperature") <- temperature
   attr(out, "n_simulations") <- n_simulations
   attr(out, "chapter_excerpts") <- chapter_excerpts

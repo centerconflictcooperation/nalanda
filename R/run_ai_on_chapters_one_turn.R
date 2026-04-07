@@ -67,15 +67,6 @@ run_ai_on_chapters_one_turn <- function(
   max_active = 10,
   rpm = 500
 ) {
-  route <- resolve_model_route(
-    integration = integration,
-    virtual_key = virtual_key,
-    integration_missing = missing(integration),
-    virtual_key_missing = missing(virtual_key)
-  )
-  integration <- route$integration
-  virtual_key <- route$virtual_key
-
   run_simulation_pipeline(
     book_texts = book_texts,
     groups = groups,
@@ -87,6 +78,8 @@ run_ai_on_chapters_one_turn <- function(
     model = model,
     integration = integration,
     virtual_key = virtual_key,
+    integration_missing = missing(integration),
+    virtual_key_missing = missing(virtual_key),
     base_url = base_url,
     excerpt_chars = excerpt_chars,
     executor = execute_one_turn_pipeline,
@@ -273,6 +266,7 @@ compute_run_ai_metrics_one_turn <- function(x, per_group = NULL) {
   x <- tibble::as_tibble(x)
 
   model <- attr(input, "model")
+  models <- attr(input, "models")
   temperature <- attr(input, "temperature")
   n_simulations <- attr(input, "n_simulations")
   chapter_excerpts <- chapter_excerpt_index(input)
@@ -282,6 +276,8 @@ compute_run_ai_metrics_one_turn <- function(x, per_group = NULL) {
     model <- rlang::`%||%`(model, attr(input[[1]], "model"))
     temperature <- rlang::`%||%`(temperature, attr(input[[1]], "temperature"))
   }
+  model <- normalize_model_name(model)
+  models <- normalize_model_metadata(models)
 
   required_cols <- c("chapter", "sim", "identity", "rating")
   missing_cols <- setdiff(required_cols, names(x))
@@ -301,7 +297,7 @@ compute_run_ai_metrics_one_turn <- function(x, per_group = NULL) {
   }
 
   id_cols <- c("chapter", "sim", "identity")
-  optional_id <- c("book", "party", "prompt")
+  optional_id <- c("model", "book", "party", "prompt")
   id_cols <- c(id_cols, intersect(optional_id, names(x)))
 
   unit_key <- interaction(x[id_cols], drop = TRUE, lex.order = TRUE)
@@ -354,6 +350,9 @@ compute_run_ai_metrics_one_turn <- function(x, per_group = NULL) {
   }
 
   attr(out, "model") <- model
+  if (length(models) > 1) {
+    attr(out, "models") <- models
+  }
   attr(out, "temperature") <- temperature
   attr(out, "n_simulations") <- n_simulations
   attr(out, "chapter_excerpts") <- chapter_excerpts

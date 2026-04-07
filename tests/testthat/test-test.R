@@ -329,18 +329,14 @@ test_that("run_ai_on_chapters ignores lingering virtual_key option when integrat
     )
   )
 
-  expect_message(
-    expect_error(
-      run_ai_on_chapters(
-        book_texts = bad_book_texts,
-        groups = c("Democrat", "Republican"),
-        context_text = "You are simulating a {identity}.",
-        question_text = "How warmly do you feel towards your outgroup?"
-      ),
-      "Duplicate chapters identified while parsing"
+  expect_error(
+    run_ai_on_chapters(
+      book_texts = bad_book_texts,
+      groups = c("Democrat", "Republican"),
+      context_text = "You are simulating a {identity}.",
+      question_text = "How warmly do you feel towards your outgroup?"
     ),
-    "Both `nalanda.integration` and `nalanda.virtual_key` options are set; prioritizing `integration`.",
-    fixed = TRUE
+    "Duplicate chapters identified while parsing"
   )
 })
 
@@ -587,6 +583,208 @@ test_that("summarize_treatment_results can split by identity", {
   expect_equal(out$mean_readability_score, c(6, 8))
 })
 
+test_that("summarize_identity_adherence deduplicates repeated one-turn rows", {
+  x <- tibble::tibble(
+    book = c("Book A", "Book A", "Book A", "Book A", "Book A", "Book A"),
+    chapter = c("chapter_1", "chapter_1", "chapter_1", "chapter_1", "chapter_1", "chapter_1"),
+    sim = c(1, 1, 2, 2, 3, 3),
+    identity = c("Democrat", "Democrat", "Democrat", "Democrat", "Democrat", "Democrat"),
+    party = c("Democrat", "Democrat", "Republican", "Republican", "Independent", "Independent"),
+    target_group = c("Democrat", "Republican", "Democrat", "Republican", "Democrat", "Republican"),
+    rating = c(70, 45, 68, 40, 55, 50)
+  )
+  attr(x, "model") <- "@vertexai/gemini-3.1-pro-preview"
+  attr(x, "temperature") <- 0
+  attr(x, "n_simulations") <- 3
+
+  out <- summarize_identity_adherence(x)
+
+  expect_equal(nrow(out), 3)
+  expect_equal(out$n, c(1, 1, 1))
+  expect_equal(out$total_n, c(3, 3, 3))
+  expect_equal(out$prop, c(1 / 3, 1 / 3, 1 / 3))
+  expect_equal(out$matches_requested, c(TRUE, FALSE, FALSE))
+  expect_equal(attr(out, "model"), "gemini-3.1-pro-preview")
+  expect_equal(attr(out, "temperature"), 0)
+  expect_equal(attr(out, "n_simulations"), 3)
+})
+
+test_that("summarize_identity_adherence can aggregate over requested identity only", {
+  x <- tibble::tibble(
+    sim = c(1, 1, 2, 2, 3, 3, 4, 4),
+    identity = c("Democrat", "Democrat", "Democrat", "Democrat", "Republican", "Republican", "Republican", "Republican"),
+    party = c("Democrat", "Democrat", "Independent", "Independent", "Republican", "Republican", "Republican", "Republican"),
+    target_group = c("Democrat", "Republican", "Democrat", "Republican", "Democrat", "Republican", "Democrat", "Republican"),
+    rating = c(70, 40, 55, 50, 65, 25, 66, 30)
+  )
+
+  out <- summarize_identity_adherence(x, by = "identity")
+
+  expect_equal(nrow(out), 3)
+  expect_equal(out$identity, c("Democrat", "Democrat", "Republican"))
+  expect_equal(out$party, c("Democrat", "Independent", "Republican"))
+  expect_equal(out$n, c(1, 1, 2))
+  expect_equal(out$total_n, c(2, 2, 2))
+  expect_equal(out$prop, c(0.5, 0.5, 1))
+  expect_equal(out$matches_requested, c(TRUE, FALSE, TRUE))
+})
+
+test_that("simulate_treatment binds multiple models into one raw table", {
+  testthat::local_mocked_bindings(
+    new_portkey_chat = function(model, base_url, temperature, seed) {
+      list(
+        chat_structured = function(full_prompt, type) {
+          if (grepl("Democrat", full_prompt, fixed = TRUE)) {
+            return(list(party = "Democrat"))
+          }
+          list(party = "Republican")
+        }
+      )
+    },
+    .package = "nalanda"
+  )
+
+  out <- simulate_treatment(
+    model = c("gemini-2.5-pro", "@vertexai/gemini-3.1-pro-preview"),
+    groups = c("Democrat", "Republican"),
+    context_text = "You are simulating a {identity}.",
+    prompt = "Which political identity best describes you?",
+    response_type = ellmer::type_object(
+      party = ellmer::type_string()
+    )
+  )
+
+  expect_equal(nrow(out), 4)
+  expect_true(all(c("model", "identity", "party") %in% names(out)))
+  expect_equal(
+    unique(out$model),
+    c("gemini-2.5-pro", "gemini-3.1-pro-preview")
+  )
+  expect_equal(attr(out, "model"), c("gemini-2.5-pro", "gemini-3.1-pro-preview"))
+  expect_equal(attr(out, "models"), c("gemini-2.5-pro", "gemini-3.1-pro-preview"))
+})
+
+test_that("summarize_identity_match_rates computes one row per model and identity", {
+  x <- tibble::tibble(
+    model = c(
+      "gemini-3.1-pro-preview", "gemini-3.1-pro-preview",
+      "gemini-3.1-pro-preview", "gemini-3.1-pro-preview",
+      "gemini-2.5-pro", "gemini-2.5-pro",
+      "gemini-2.5-pro", "gemini-2.5-pro"
+    ),
+    sim = c(1, 2, 1, 2, 1, 2, 1, 2),
+    identity = c(
+      "Democrat", "Democrat", "Republican", "Republican",
+      "Democrat", "Democrat", "Republican", "Republican"
+    ),
+    party = c(
+      "Republican", "Independent", "Republican", "Republican",
+      "Democrat", "Democrat", "Republican", "Independent"
+    )
+  )
+
+  out <- summarize_identity_match_rates(x)
+
+  expect_equal(nrow(out), 4)
+  expect_equal(
+    out$model,
+    c(
+      "gemini-2.5-pro", "gemini-2.5-pro",
+      "gemini-3.1-pro-preview", "gemini-3.1-pro-preview"
+    )
+  )
+  expect_equal(
+    out$identity,
+    c("Democrat", "Republican", "Democrat", "Republican")
+  )
+  expect_equal(out$n_requested, c(2, 2, 2, 2))
+  expect_equal(out$n_match, c(2, 1, 0, 2))
+  expect_equal(out$adoption_rate, c(1, 0.5, 0, 1))
+  expect_equal(out$n_mismatch, c(0, 1, 2, 0))
+})
+
+test_that("summarize_identity_match_rates can return compact one-row-per-model output", {
+  x <- tibble::tibble(
+    model = c(
+      "gemini-3.1-pro-preview", "gemini-3.1-pro-preview",
+      "gemini-3.1-pro-preview", "gemini-3.1-pro-preview",
+      "gemini-2.5-pro", "gemini-2.5-pro",
+      "gemini-2.5-pro", "gemini-2.5-pro"
+    ),
+    sim = c(1, 2, 1, 2, 1, 2, 1, 2),
+    identity = c(
+      "Democrat", "Democrat", "Republican", "Republican",
+      "Democrat", "Democrat", "Republican", "Republican"
+    ),
+    party = c(
+      "Republican", "Independent", "Republican", "Republican",
+      "Democrat", "Democrat", "Republican", "Independent"
+    )
+  )
+
+  out <- summarize_identity_match_rates(x, compact = TRUE)
+
+  expect_equal(nrow(out), 2)
+  expect_equal(out$model, c("gemini-2.5-pro", "gemini-3.1-pro-preview"))
+  expect_equal(out$n, c(2, 2))
+  expect_equal(out$rate_democrat, c(1, 0))
+  expect_equal(out$rate_republican, c(0.5, 1))
+})
+
+test_that("summarize_identity_adherence can return compact one-row-per-model output", {
+  x <- tibble::tibble(
+    model = c(
+      "gemini-3.1-pro-preview", "gemini-3.1-pro-preview",
+      "gemini-3.1-pro-preview", "gemini-3.1-pro-preview",
+      "gemini-2.5-pro", "gemini-2.5-pro",
+      "gemini-2.5-pro", "gemini-2.5-pro"
+    ),
+    sim = c(1, 2, 3, 4, 1, 2, 3, 4),
+    identity = c(
+      "Democrat", "Democrat", "Republican", "Republican",
+      "Democrat", "Democrat", "Republican", "Republican"
+    ),
+    party = c(
+      "Republican", "Independent", "Republican", "Republican",
+      "Democrat", "Democrat", "Republican", "Independent"
+    )
+  )
+
+  out <- summarize_identity_adherence(x, by = "model", compact = TRUE)
+
+  expect_equal(nrow(out), 2)
+  expect_equal(out$model, c("gemini-2.5-pro", "gemini-3.1-pro-preview"))
+  expect_equal(out$n, c(4, 4))
+  expect_equal(out$rate_democrat, c(0.5, NA))
+  expect_equal(out$rate_republican, c(0.25, 0.75))
+  expect_equal(out$rate_independent, c(0.25, 0.25))
+})
+
+test_that("identity summaries preserve original model order when available", {
+  x <- tibble::tibble(
+    model = c(
+      "gemini-3.1-pro-preview", "gemini-3.1-pro-preview",
+      "gemini-2.5-pro", "gemini-2.5-pro"
+    ),
+    sim = c(1, 2, 1, 2),
+    identity = c("Democrat", "Republican", "Democrat", "Republican"),
+    party = c("Republican", "Republican", "Democrat", "Independent")
+  )
+  attr(x, "models") <- c("gemini-3.1-pro-preview", "gemini-2.5-pro")
+
+  out_match <- summarize_identity_match_rates(x, compact = TRUE)
+  out_adherence <- summarize_identity_adherence(x, by = "model", compact = TRUE)
+
+  expect_equal(
+    out_match$model,
+    c("gemini-3.1-pro-preview", "gemini-2.5-pro")
+  )
+  expect_equal(
+    out_adherence$model,
+    c("gemini-3.1-pro-preview", "gemini-2.5-pro")
+  )
+})
+
 
 test_that("compute_run_ai_metrics_cumulative compares each chapter to baseline", {
   x <- tibble::tibble(
@@ -687,6 +885,68 @@ test_that("summarize_chapter_scores splits by party when by_party = TRUE", {
   expect_equal(nrow(out), 2)
   expect_true("party" %in% names(out))
   expect_false("identity" %in% names(out))
+})
+
+test_that("summarize_simulation_stability compacts chapter-level variation", {
+  x <- tibble::tibble(
+    book = c("Book A", "Book A", "Book A", "Book A"),
+    chapter = c("chapter_1", "chapter_1", "chapter_2", "chapter_2"),
+    party = c("Democrat", "Republican", "Democrat", "Republican"),
+    sim = c(2, 2, 2, 2),
+    sd_pre_ingroup = c(0, 0, 0, 0),
+    sd_post_ingroup = c(1, 0, 0.5, 0),
+    sd_pre_outgroup = c(0, 0, 0, 0),
+    sd_post_outgroup = c(0, 0, 0.25, 0),
+    sd_pre_gap = c(0, 0, 0, 0),
+    sd_post_gap = c(1, 0, 0.25, 0),
+    sd_delta_outgroup = c(0, 0, 0.25, 0),
+    sd_delta_ingroup = c(1, 0, 0.5, 0),
+    sd_delta_gap = c(1, 0, 0.25, 0)
+  )
+  attr(x, "model") <- "@vertexai/gemini-3.1-pro-preview"
+  attr(x, "temperature") <- 0
+  attr(x, "n_simulations") <- 2
+
+  out <- summarize_simulation_stability(x)
+
+  expect_equal(nrow(out), 2)
+  expect_equal(out$party, c("Democrat", "Republican"))
+  expect_equal(out$n_units, c(2, 2))
+  expect_equal(out$prop_units_any_pre_variation, c(0, 0))
+  expect_equal(out$prop_units_any_post_variation, c(1, 0))
+  expect_equal(out$all_stable, c(FALSE, TRUE))
+  expect_equal(attr(out, "model"), "gemini-3.1-pro-preview")
+  expect_equal(attr(out, "temperature"), 0)
+  expect_equal(attr(out, "n_simulations"), 2)
+})
+
+test_that("summarize_simulation_stability can derive summaries from raw metrics", {
+  x <- tibble::tibble(
+    book = c("Book A", "Book A", "Book A", "Book A"),
+    chapter = c("chapter_1", "chapter_1", "chapter_1", "chapter_1"),
+    sim = c(1, 2, 1, 2),
+    identity = c("Democrat", "Democrat", "Republican", "Republican"),
+    party = c("Democrat", "Democrat", "Republican", "Republican"),
+    pre_ingroup = c(60, 60, 55, 55),
+    post_ingroup = c(64, 66, 58, 58),
+    pre_outgroup = c(40, 40, 42, 42),
+    post_outgroup = c(48, 50, 46, 46),
+    pre_gap = c(20, 20, 13, 13),
+    post_gap = c(16, 16, 12, 12),
+    delta_outgroup = c(8, 10, 4, 4),
+    delta_ingroup = c(4, 6, 3, 3),
+    delta_gap = c(4, 4, 1, 1)
+  )
+
+  out <- summarize_simulation_stability(x, by = c("book", "party"))
+
+  expect_equal(nrow(out), 2)
+  expect_equal(out$book, c("Book A", "Book A"))
+  expect_equal(out$party, c("Democrat", "Republican"))
+  expect_equal(out$n_units, c(1, 1))
+  expect_equal(out$prop_units_any_pre_variation, c(0, 0))
+  expect_equal(out$prop_units_any_post_variation, c(1, 0))
+  expect_equal(out$all_stable, c(FALSE, TRUE))
 })
 
 test_that("plot_forest_books can prepare internally from summary data", {

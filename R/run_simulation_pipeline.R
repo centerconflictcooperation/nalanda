@@ -9,6 +9,8 @@ run_simulation_pipeline <- function(
   model,
   integration,
   virtual_key,
+  integration_missing = FALSE,
+  virtual_key_missing = FALSE,
   base_url,
   excerpt_chars,
   executor,
@@ -62,17 +64,13 @@ run_simulation_pipeline <- function(
     )
   }
 
-  if (!startsWith(model, "@")) {
-    prefix <- NULL
-    if (!is.null(integration) && nzchar(integration)) {
-      prefix <- integration
-    } else if (!is.null(virtual_key) && nzchar(virtual_key)) {
-      prefix <- virtual_key
-    }
-    if (!is.null(prefix)) {
-      model <- paste0("@", prefix, "/", model)
-    }
-  }
+  model_specs <- expand_model_specs(
+    model = model,
+    integration = integration,
+    virtual_key = virtual_key,
+    integration_missing = integration_missing,
+    virtual_key_missing = virtual_key_missing
+  )
 
   chapter_jobs <- build_chapter_jobs(
     book_texts,
@@ -88,38 +86,67 @@ run_simulation_pipeline <- function(
   if (is.null(total_steps)) {
     total_steps <- nrow(chapter_jobs) * n_simulations * length(groups)
   }
+  total_steps <- total_steps * length(model_specs)
   progress_tracker <- new_progress_tracker(
     chapter_jobs = chapter_jobs,
     n_simulations = n_simulations,
     n_identities = length(groups),
-    total_steps = total_steps
+    total_steps = total_steps,
+    n_models = length(model_specs)
   )
 
-  out <- executor(
-    chapter_jobs = chapter_jobs,
-    groups = groups,
-    context_text = context_text,
-    per_group = per_group,
-    question_text = question_text,
-    n_simulations = n_simulations,
-    temperature = temperature,
-    seed = seed,
-    model = model,
-    base_url = base_url,
-    excerpt_chars = excerpt_chars,
-    pb = progress_tracker$pb,
-    progress_tick = progress_tracker$tick,
-    ...
-  )
+  out_list <- vector("list", length(model_specs))
+  for (i in seq_along(model_specs)) {
+    spec <- model_specs[[i]]
+    out_i <- executor(
+      chapter_jobs = chapter_jobs,
+      groups = groups,
+      context_text = context_text,
+      per_group = per_group,
+      question_text = question_text,
+      n_simulations = n_simulations,
+      temperature = temperature,
+      seed = seed,
+      model = spec$model,
+      base_url = base_url,
+      excerpt_chars = excerpt_chars,
+      pb = progress_tracker$pb,
+      progress_tick = function(book, chapter, identity, sim) {
+        progress_tracker$tick(
+          book = book,
+          chapter = chapter,
+          identity = identity,
+          sim = sim,
+          model = spec$model_label
+        )
+      },
+      ...
+    )
+    out_list[[i]] <- add_model_column_to_output(out_i, spec$model_label)
+  }
 
-  class(out) <- c(class(out), "nalanda")
-  attr(out, "model") <- model
+  out <- merge_simulation_outputs(out_list)
+
+  class(out) <- unique(c("nalanda", class(out)))
+  model_labels <- normalize_model_metadata(vapply(model_specs, `[[`, character(1), "model_label"))
+  if (length(model_labels) == 1) {
+    attr(out, "model") <- model_labels
+  } else {
+    attr(out, "model") <- NULL
+    attr(out, "models") <- model_labels
+  }
   attr(out, "temperature") <- temperature
   attr(out, "n_simulations") <- n_simulations
 
   if (is.list(out) && !inherits(out, "data.frame")) {
     for (nm in names(out)) {
-      attr(out[[nm]], "model") <- model
+      if (length(model_labels) == 1) {
+        attr(out[[nm]], "model") <- model_labels
+      } else {
+        attr(out[[nm]], "model") <- NULL
+        attr(out[[nm]], "models") <- model_labels
+      }
+      class(out[[nm]]) <- unique(c("nalanda", class(out[[nm]])))
       attr(out[[nm]], "temperature") <- temperature
       attr(out[[nm]], "n_simulations") <- n_simulations
     }
@@ -132,9 +159,10 @@ new_progress_tracker <- function(
   chapter_jobs,
   n_simulations,
   n_identities,
-  total_steps
+  total_steps,
+  n_models = 1L
 ) {
-  units_per_stage <- n_simulations * n_identities
+  units_per_stage <- n_simulations * n_identities * n_models
   book_ids <- progress_scope_id(chapter_jobs$book)
   chapter_ids <- progress_scope_id(chapter_jobs$book, chapter_jobs$chapter)
   book_stage_counts <- table(book_ids)
@@ -153,7 +181,7 @@ new_progress_tracker <- function(
   state$current_chapter_id <- NULL
   state$current_chapter_done <- 0L
 
-  tick <- function(book, chapter, identity, sim) {
+  tick <- function(book, chapter, identity, sim, model = NULL) {
     book_id <- progress_scope_id(book)
     chapter_id <- progress_scope_id(book, chapter)
 
@@ -179,6 +207,7 @@ new_progress_tracker <- function(
         chapter = chapter,
         identity = identity,
         sim = sim,
+        model = model,
         book_pct = format_progress_pct(state$current_book_done, book_total),
         chapter_pct = format_progress_pct(state$current_chapter_done, chapter_total)
       )
@@ -366,6 +395,7 @@ format_progress_label <- function(
   chapter,
   identity,
   sim,
+  model = NULL,
   book_pct = NULL,
   chapter_pct = NULL
 ) {
@@ -383,10 +413,16 @@ format_progress_label <- function(
     chapter_label <- paste0(chapter_label, " [", chapter_pct, "]")
   }
 
-  if (!is.na(book) && nzchar(book)) {
-    paste0(book_label, " - ", chapter_label, " [", identity, "] (sim ", sim, ")")
+  model_suffix <- if (!is.null(model) && !is.na(model) && nzchar(model)) {
+    paste0("; ", model)
   } else {
-    paste0(chapter_label, " [", identity, "] (sim ", sim, ")")
+    ""
+  }
+
+  if (!is.na(book) && nzchar(book)) {
+    paste0(book_label, " - ", chapter_label, " [", identity, "] (sim ", sim, model_suffix, ")")
+  } else {
+    paste0(chapter_label, " [", identity, "] (sim ", sim, model_suffix, ")")
   }
 }
 
@@ -435,5 +471,55 @@ finalize_simulation_output <- function(out_rows, long_cols, chapter_jobs) {
   }
 
   attr(out, "chapter_excerpts") <- chapter_excerpts
+  out
+}
+
+add_model_column_to_output <- function(out, model_label) {
+  if (inherits(out, "data.frame")) {
+    out <- tibble::as_tibble(out)
+    out$model <- model_label
+    return(out[, c("model", setdiff(names(out), "model"))])
+  }
+
+  if (is.list(out)) {
+    for (nm in names(out)) {
+      out[[nm]] <- tibble::as_tibble(out[[nm]])
+      out[[nm]]$model <- model_label
+      out[[nm]] <- out[[nm]][, c("model", setdiff(names(out[[nm]]), "model"))]
+    }
+    return(out)
+  }
+
+  out
+}
+
+merge_simulation_outputs <- function(outputs) {
+  outputs <- Filter(Negate(is.null), outputs)
+  if (length(outputs) == 0) {
+    return(NULL)
+  }
+
+  first <- outputs[[1]]
+  if (inherits(first, "data.frame")) {
+    out <- dplyr::bind_rows(outputs)
+    attrs <- attributes(first)
+    attr(out, "chapter_excerpts") <- attrs$chapter_excerpts
+    return(out)
+  }
+
+  book_names <- unique(unlist(lapply(outputs, names), use.names = FALSE))
+  out <- stats::setNames(vector("list", length(book_names)), book_names)
+
+  for (book_name in book_names) {
+    pieces <- Filter(
+      function(x) !is.null(x[[book_name]]),
+      outputs
+    )
+    out[[book_name]] <- dplyr::bind_rows(lapply(pieces, `[[`, book_name))
+    first_piece <- pieces[[1]][[book_name]]
+    attr(out[[book_name]], "chapter_excerpts") <- attr(first_piece, "chapter_excerpts")
+  }
+
+  attr(out, "chapter_excerpts") <- attr(first, "chapter_excerpts")
   out
 }

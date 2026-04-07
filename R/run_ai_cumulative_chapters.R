@@ -64,15 +64,6 @@ run_ai_cumulative_chapters <- function(
   base_url = getOption("nalanda.base_url"),
   excerpt_chars = 200
 ) {
-  route <- resolve_model_route(
-    integration = integration,
-    virtual_key = virtual_key,
-    integration_missing = missing(integration),
-    virtual_key_missing = missing(virtual_key)
-  )
-  integration <- route$integration
-  virtual_key <- route$virtual_key
-
   if (!is.list(book_texts) || is.character(book_texts)) {
     stop("`book_texts` must be a nested list of books and chapters.")
   }
@@ -102,18 +93,14 @@ run_ai_cumulative_chapters <- function(
     model = model,
     integration = integration,
     virtual_key = virtual_key,
+    integration_missing = missing(integration),
+    virtual_key_missing = missing(virtual_key),
     base_url = base_url,
     excerpt_chars = excerpt_chars,
     executor = execute_cumulative_chapter_pipeline,
     total_steps = total_steps
   )
 
-  if (is.list(out) && !inherits(out, "data.frame")) {
-    for (nm in names(out)) {
-      attr(out[[nm]], "model") <- normalize_model_name(attr(out[[nm]], "model"))
-    }
-  }
-  attr(out, "model") <- normalize_model_name(attr(out, "model"))
   out
 }
 
@@ -330,6 +317,7 @@ compute_run_ai_metrics_cumulative <- function(x, per_group = NULL) {
   x <- tibble::as_tibble(x)
 
   model <- attr(input, "model")
+  models <- attr(input, "models")
   temperature <- attr(input, "temperature")
   n_simulations <- attr(input, "n_simulations")
   chapter_excerpts <- chapter_excerpt_index(input)
@@ -341,6 +329,7 @@ compute_run_ai_metrics_cumulative <- function(x, per_group = NULL) {
     n_simulations <- rlang::`%||%`(n_simulations, attr(input[[1]], "n_simulations"))
   }
   model <- normalize_model_name(model)
+  models <- normalize_model_metadata(models)
 
   required_cols <- c("book", "chapter", "chapter_index", "sim", "identity", "turn_type", "rating")
   missing_cols <- setdiff(required_cols, names(x))
@@ -361,6 +350,7 @@ compute_run_ai_metrics_cumulative <- function(x, per_group = NULL) {
 
   convo_cols <- c("book", "sim", "identity")
   optional_cols <- c("party", "baseline_prompt")
+  convo_cols <- c(convo_cols, intersect("model", names(x)))
   convo_cols <- c(convo_cols, intersect(optional_cols, names(x)))
 
   include_token_col <- "input_tokens" %in% names(x)
@@ -442,6 +432,9 @@ compute_run_ai_metrics_cumulative <- function(x, per_group = NULL) {
   }
 
   attr(out, "model") <- model
+  if (length(models) > 1) {
+    attr(out, "models") <- models
+  }
   attr(out, "temperature") <- temperature
   attr(out, "n_simulations") <- n_simulations
   attr(out, "chapter_excerpts") <- chapter_excerpts

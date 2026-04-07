@@ -102,15 +102,6 @@ simulate_treatment <- function(
     stop("Please provide `response_type`.")
   }
 
-  route <- resolve_model_route(
-    integration = integration,
-    virtual_key = virtual_key,
-    integration_missing = missing(integration),
-    virtual_key_missing = missing(virtual_key)
-  )
-  integration <- route$integration
-  virtual_key <- route$virtual_key
-
   out <- run_simulation_pipeline(
     book_texts = intervention_text,
     groups = groups,
@@ -122,6 +113,8 @@ simulate_treatment <- function(
     model = model,
     integration = integration,
     virtual_key = virtual_key,
+    integration_missing = missing(integration),
+    virtual_key_missing = missing(virtual_key),
     base_url = base_url,
     excerpt_chars = excerpt_chars,
     executor = execute_generic_treatment_pipeline,
@@ -134,11 +127,9 @@ simulate_treatment <- function(
   if (is.list(out) && !inherits(out, "data.frame")) {
     for (nm in names(out)) {
       out[[nm]] <- rename_treatment_output_columns(out[[nm]])
-      attr(out[[nm]], "model") <- normalize_model_name(attr(out[[nm]], "model"))
     }
   }
   out <- rename_treatment_output_columns(out)
-  attr(out, "model") <- normalize_model_name(attr(out, "model"))
   out
 }
 

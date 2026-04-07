@@ -38,6 +38,7 @@ summarize_treatment_results <- function(
   fields = NULL
 ) {
   model <- attr(x, "model")
+  models <- attr(x, "models")
   temperature <- attr(x, "temperature")
   n_simulations <- attr(x, "n_simulations")
 
@@ -48,6 +49,7 @@ summarize_treatment_results <- function(
     n_simulations <- n_simulations %||% attr(x[[1]], "n_simulations")
   }
   model <- normalize_model_name(model)
+  models <- normalize_model_metadata(models)
 
   df <- if (is.list(x) && !inherits(x, "data.frame")) {
     flatten_sim_results(x)
@@ -107,6 +109,7 @@ summarize_treatment_results <- function(
   }
 
   group_cols <- character()
+  if ("model" %in% names(df)) group_cols <- c(group_cols, "model")
   group_cols <- c(group_cols, "treatment")
   if (by_identity && has_identity) group_cols <- c(group_cols, "identity")
   if (by_turn) {
@@ -169,6 +172,9 @@ summarize_treatment_results <- function(
   df <- dplyr::select(df, -dplyr::all_of("treatment_num"))
 
   attr(df, "model") <- model
+  if (length(models) > 1) {
+    attr(df, "models") <- models
+  }
   attr(df, "temperature") <- temperature
   attr(df, "n_simulations") <- n_simulations
   df

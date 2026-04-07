@@ -344,6 +344,157 @@ test_that("plot_chapters_over_time supports image nudging", {
   unlink(c(tmp_dem, tmp_rep))
 })
 
+test_that("plot_chapters_over_time warns but does not error when images are missing for some groups", {
+  skip_if_not_installed("Rmisc")
+  skip_if_not_installed("ggimage")
+
+  chapters <- tibble::tibble(
+    book = rep("Book A", 6),
+    chapter = rep(c("Chapter 1", "Chapter 2"), 3),
+    party = c(
+      "Democrat",
+      "Democrat",
+      "Independent",
+      "Independent",
+      "Republican",
+      "Republican"
+    ),
+    sim = c(1L, 1L, 2L, 2L, 3L, 3L),
+    delta_gap = c(-5, -10, -3, -8, -15, -20)
+  )
+
+  png_bytes <- as.raw(c(
+    0x89,
+    0x50,
+    0x4e,
+    0x47,
+    0x0d,
+    0x0a,
+    0x1a,
+    0x0a,
+    0x00,
+    0x00,
+    0x00,
+    0x0d,
+    0x49,
+    0x48,
+    0x44,
+    0x52,
+    0x00,
+    0x00,
+    0x00,
+    0x01,
+    0x00,
+    0x00,
+    0x00,
+    0x01,
+    0x08,
+    0x02,
+    0x00,
+    0x00,
+    0x00,
+    0x90,
+    0x77,
+    0x53,
+    0xde,
+    0x00,
+    0x00,
+    0x00,
+    0x0c,
+    0x49,
+    0x44,
+    0x41,
+    0x54,
+    0x08,
+    0xd7,
+    0x63,
+    0xf8,
+    0xcf,
+    0xc0,
+    0x00,
+    0x00,
+    0x00,
+    0x02,
+    0x00,
+    0x01,
+    0xe2,
+    0x21,
+    0xbc,
+    0x33,
+    0x00,
+    0x00,
+    0x00,
+    0x00,
+    0x49,
+    0x45,
+    0x4e,
+    0x44,
+    0xae,
+    0x42,
+    0x60,
+    0x82
+  ))
+  tmp_dem <- tempfile(fileext = ".png")
+  tmp_rep <- tempfile(fileext = ".png")
+  writeBin(png_bytes, tmp_dem)
+  writeBin(png_bytes, tmp_rep)
+
+  expect_warning(
+    p <- plot_chapters_over_time(
+      chapters,
+      group = "party",
+      point_images = list(Democrat = tmp_dem, Republican = tmp_rep)
+    ),
+    "Independent"
+  )
+
+  has_point <- any(vapply(
+    p$layers,
+    function(l) {
+      inherits(l$geom, "GeomPoint")
+    },
+    logical(1)
+  ))
+  has_image <- any(vapply(
+    p$layers,
+    function(l) {
+      inherits(l$geom, "GeomImage")
+    },
+    logical(1)
+  ))
+  expect_true(has_point)
+  expect_true(has_image)
+
+  unlink(c(tmp_dem, tmp_rep))
+})
+
+test_that("plot_chapters_over_time supports Independent party styling", {
+  skip_if_not_installed("Rmisc")
+
+  chapters <- tibble::tibble(
+    book = rep("Book A", 6),
+    chapter = rep(c("Chapter 1", "Chapter 2"), 3),
+    party = c(
+      "Democrat",
+      "Democrat",
+      "Independent",
+      "Independent",
+      "Republican",
+      "Republican"
+    ),
+    sim = c(1L, 1L, 2L, 2L, 3L, 3L),
+    delta_gap = c(-5, -10, -3, -8, -15, -20)
+  )
+
+  p <- plot_chapters_over_time(chapters, group = "party")
+  built <- ggplot2::ggplot_build(p)
+  layer_colours <- unique(unlist(lapply(built$data, `[[`, "colour")))
+  layer_shapes <- unique(unlist(lapply(built$data, `[[`, "shape")))
+
+  expect_true(all(c("#00AEF3", "#E69F00", "#E81B23") %in% layer_colours))
+  expect_true(all(c(21, 22, 24) %in% layer_shapes))
+})
+
 test_that("plot_chapters_over_time keeps points when point_images is NULL", {
   skip_if_not_installed("Rmisc")
 

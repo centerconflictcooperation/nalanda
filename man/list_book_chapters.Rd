@@ -4,15 +4,19 @@
 \alias{list_book_chapters}
 \title{List book chapter files inside a books directory}
 \usage{
-list_book_chapters(books_path = "books")
+list_book_chapters(books_path = "books", extension = "txt")
 }
 \arguments{
 \item{books_path}{Character scalar. Path containing subdirectories for each book (default "books").}
+
+\item{extension}{Character scalar file extension to match, without a leading
+dot by default. Defaults to \code{"txt"}.}
 }
 \value{
 A named list of character vectors of file paths.
 }
 \description{
-Given a path to a directory of book folders, return a named list where each
-element is a character vector of chapter file paths (ordered by number or name).
+Given either a path to a directory of book folders or a single folder that
+directly contains chapter files, return a named list where each element is a
+character vector of chapter file paths (ordered by number or name).
 }

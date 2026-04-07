@@ -103,15 +103,6 @@ run_ai_on_chapters <- function(
   base_url = getOption("nalanda.base_url"),
   excerpt_chars = 200
 ) {
-  route <- resolve_model_route(
-    integration = integration,
-    virtual_key = virtual_key,
-    integration_missing = missing(integration),
-    virtual_key_missing = missing(virtual_key)
-  )
-  integration <- route$integration
-  virtual_key <- route$virtual_key
-
   if (is.list(book_texts)) {
     book_names <- names(book_texts)
     for (i in seq_along(book_texts)) {
@@ -136,17 +127,13 @@ run_ai_on_chapters <- function(
     model = model,
     integration = integration,
     virtual_key = virtual_key,
+    integration_missing = missing(integration),
+    virtual_key_missing = missing(virtual_key),
     base_url = base_url,
     excerpt_chars = excerpt_chars,
     executor = execute_two_turn_pipeline
   )
 
-  if (is.list(out) && !inherits(out, "data.frame")) {
-    for (nm in names(out)) {
-      attr(out[[nm]], "model") <- normalize_model_name(attr(out[[nm]], "model"))
-    }
-  }
-  attr(out, "model") <- normalize_model_name(attr(out, "model"))
   out
 }
 

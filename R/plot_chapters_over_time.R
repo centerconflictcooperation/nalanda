@@ -99,6 +99,7 @@ plot_chapters_over_time <- function(
   # Extract metadata before binding (works for tibble, list-of-tibbles, or
   # individual tibbles loaded via readRDS and reassembled into a plain list)
   model_name <- attr(input, "model")
+  model_names <- attr(input, "models")
   model_temp <- attr(input, "temperature")
 
   # Fallback: check first list element (covers lapply(files, readRDS) workflow)
@@ -109,6 +110,7 @@ plot_chapters_over_time <- function(
     model_temp <- rlang::`%||%`(model_temp, attr(first, "temperature"))
   }
   model_name <- normalize_model_name(model_name)
+  model_names <- normalize_model_metadata(model_names)
 
   df <- bind_simulation_results(input)
   if (!"book" %in% names(df)) {
@@ -167,7 +169,7 @@ plot_chapters_over_time <- function(
   # Create a unique simulation ID to handle cases with multiple identities/parties per sim
   # This ensures pivot_wider has a unique key for each row
   grouping_cols <- intersect(
-    c("book", "sim", "identity", "party"),
+    c("model", "book", "sim", "identity", "party"),
     names(df)
   )
   if (length(grouping_cols) > 0) {
@@ -272,9 +274,14 @@ plot_chapters_over_time <- function(
   }
 
   if (isTRUE(append_model_info)) {
+    model_display <- if (length(model_names) > 1) {
+      paste(model_names, collapse = ", ")
+    } else {
+      rlang::`%||%`(model_name, "unknown")
+    }
     model_info <- paste0(
       "model = \"",
-      rlang::`%||%`(model_name, "unknown"),
+      model_display,
       "\"; temperature = ",
       rlang::`%||%`(model_temp, "unknown")
     )
@@ -293,15 +300,24 @@ plot_chapters_over_time <- function(
 
   if (group %in% names(df_wide)) {
     group_levels <- tolower(levels(as.factor(df_wide[[group]])))
-    if (all(group_levels %in% c("democrat", "republican"))) {
+    if (all(group_levels %in% c("democrat", "independent", "republican"))) {
+      party_colours <- c(
+        "Democrat" = "#00AEF3",
+        "Independent" = "#E69F00",
+        "Republican" = "#E81B23"
+      )
+      party_shapes <- c(
+        "Democrat" = 21,
+        "Independent" = 22,
+        "Republican" = 24
+      )
+      party_colours <- party_colours[names(party_colours) %in% unique(df_wide[[group]])]
+      party_shapes <- party_shapes[names(party_shapes) %in% unique(df_wide[[group]])]
+
       p <- suppress_party_shape_scale_message(
         p +
-          ggplot2::scale_colour_manual(
-            values = c("Democrat" = "#00AEF3", "Republican" = "#E81B23")
-          ) +
-          ggplot2::scale_shape_manual(
-            values = c("Democrat" = 21, "Republican" = 24)
-          ) +
+          ggplot2::scale_colour_manual(values = party_colours) +
+          ggplot2::scale_shape_manual(values = party_shapes) +
           ggplot2::theme(
             panel.spacing = ggplot2::unit(1.2, "lines"),
             axis.line = ggplot2::element_line(linewidth = 0.6),
@@ -333,11 +349,13 @@ plot_chapters_over_time <- function(
       image_nudge_y = image_nudge_y,
       image_jitter_width = image_jitter_width,
       image_jitter_height = image_jitter_height,
-      facet = facet
+      facet = facet,
+      point_size = point_size
     )
     p <- add_image_legend_labels(
       p = p,
-      point_images = point_images
+      point_images = point_images,
+      group = group
     )
   }
 
@@ -386,15 +404,25 @@ add_point_images <- function(
   image_nudge_y = 0,
   image_jitter_width = 0,
   image_jitter_height = 0,
-  facet = NULL
+  facet = NULL,
+  point_size = 4
 ) {
   # Retrieve the plot data (data_summary from rempsyc)
   plot_data <- p$data
 
-  # Map group levels to image paths (ensure it's a character vector, not a list)
-  plot_data$image <- unlist(unname(point_images[as.character(plot_data[[
-    group
-  ]])]))
+  # Map group levels to image paths while preserving row count for unmatched groups
+  group_values <- as.character(plot_data[[group]])
+  plot_data$image <- vapply(
+    group_values,
+    function(group_value) {
+      image_path <- point_images[[group_value]]
+      if (is.null(image_path)) {
+        return(NA_character_)
+      }
+      as.character(image_path)[1]
+    },
+    character(1)
+  )
 
   # Validate that all groups were matched
   if (any(is.na(plot_data$image))) {
@@ -405,7 +433,7 @@ add_point_images <- function(
     warning(
       "No image path found for group level(s): ",
       paste(missing, collapse = ", "),
-      ". Those points will not display images."
+      ". Those points will fall back to regular markers."
     )
   }
 
@@ -454,31 +482,62 @@ add_point_images <- function(
     )
   }
 
-  p <- p +
-    ggimage::geom_image(
-      data = plot_data,
-      mapping = ggplot2::aes(
-        x = .data$x_image,
-        y = .data$y_image,
-        image = .data$image
-      ),
-      size = image_size,
-      inherit.aes = FALSE
-    )
+  image_data <- plot_data[!is.na(plot_data$image), , drop = FALSE]
+  fallback_point_data <- plot_data[is.na(plot_data$image), , drop = FALSE]
+
+  if (nrow(fallback_point_data) > 0) {
+    p <- p +
+      ggplot2::geom_point(
+        data = fallback_point_data,
+        mapping = ggplot2::aes(
+          x = .data$x_image,
+          y = .data$y_image,
+          colour = .data[[group]],
+          shape = .data[[group]]
+        ),
+        size = point_size,
+        inherit.aes = FALSE
+      )
+  }
+
+  if (nrow(image_data) > 0) {
+    p <- p +
+      ggimage::geom_image(
+        data = image_data,
+        mapping = ggplot2::aes(
+          x = .data$x_image,
+          y = .data$y_image,
+          image = .data$image
+        ),
+        size = image_size,
+        inherit.aes = FALSE
+      )
+  }
 
   p
 }
 
-add_image_legend_labels <- function(p, point_images) {
+add_image_legend_labels <- function(p, point_images, group) {
   if (!requireNamespace("ggtext", quietly = TRUE)) {
     return(p)
   }
 
+  colour_scale <- p$scales$get_scales("colour")
+  if (is.null(colour_scale)) {
+    return(p)
+  }
+
+  scale_breaks <- unique(as.character(p$data[[group]]))
+
   image_labels <- vapply(
-    names(point_images),
+    scale_breaks,
     function(group_name) {
+      image_path <- point_images[[group_name]]
+      if (is.null(image_path)) {
+        return(group_name)
+      }
       image_path <- normalizePath(
-        point_images[[group_name]],
+        image_path,
         winslash = "/",
         mustWork = FALSE
       )
@@ -492,19 +551,16 @@ add_image_legend_labels <- function(p, point_images) {
     character(1)
   )
 
-  colour_scale <- p$scales$get_scales("colour")
-  if (!is.null(colour_scale)) {
-    colour_scale$labels <- image_labels
-    colour_scale$guide <- ggplot2::guide_legend(
-      override.aes = list(
-        alpha = 0,
-        linewidth = 0,
-        linetype = 0,
-        shape = NA,
-        size = 0
-      )
+  colour_scale$labels <- image_labels
+  colour_scale$guide <- ggplot2::guide_legend(
+    override.aes = list(
+      alpha = 0,
+      linewidth = 0,
+      linetype = 0,
+      shape = NA,
+      size = 0
     )
-  }
+  )
 
   p +
     ggplot2::theme(

@@ -40,6 +40,7 @@ summarize_chapter_scores <- function(
 ) {
   aggregate_level <- match.arg(aggregate_level)
   model <- attr(x, "model")
+  models <- attr(x, "models")
   temperature <- attr(x, "temperature")
   n_simulations <- attr(x, "n_simulations")
   chapter_excerpts <- chapter_excerpt_index(x)
@@ -52,6 +53,7 @@ summarize_chapter_scores <- function(
     n_simulations <- n_simulations %||% attr(x[[1]], "n_simulations")
   }
   model <- normalize_model_name(model)
+  models <- normalize_model_metadata(models)
 
   df <- if (is.list(x) && !inherits(x, "data.frame")) {
     flatten_sim_results(x)
@@ -90,6 +92,7 @@ summarize_chapter_scores <- function(
 
   # --- Determine grouping columns ---
   group_cols <- c()
+  if ("model" %in% names(df)) group_cols <- c(group_cols, "model")
   if (has_book) group_cols <- c(group_cols, "book")
   if (aggregate_level == "chapter") group_cols <- c(group_cols, "chapter")
   if (by_party) {
@@ -157,6 +160,9 @@ summarize_chapter_scores <- function(
   }
 
   attr(df, "model") <- model
+  if (length(models) > 1) {
+    attr(df, "models") <- models
+  }
   attr(df, "temperature") <- temperature
   attr(df, "n_simulations") <- n_simulations
   df

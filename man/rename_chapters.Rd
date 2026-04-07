@@ -4,15 +4,19 @@
 \alias{rename_chapters}
 \title{Rename chapter text files in a folder to a sequential order}
 \usage{
-rename_chapters(folder)
+rename_chapters(folder, extension = "txt")
 }
 \arguments{
-\item{folder}{Character scalar. Path to the folder containing .txt files.}
+\item{folder}{Character scalar. Path to the folder containing chapter files.}
+
+\item{extension}{Character scalar file extension to match, without a leading
+dot by default. Defaults to \code{"txt"}.}
 }
 \value{
 A tibble with columns \code{old_path}, \code{base}, \code{order_score}, \code{new_name}, and \code{new_path}.
 }
 \description{
-Scans a folder for .txt files and renames them to chapter1.txt, chapter2.txt, ...
+Scans a folder for chapter files and renames them to \code{chapter1.ext},
+\code{chapter2.ext}, ...
 using heuristics for ordering (intro, part 1/2, numeric chapter numbers, appendix, etc.).
 }
