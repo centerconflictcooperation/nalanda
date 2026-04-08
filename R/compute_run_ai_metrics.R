@@ -83,7 +83,7 @@ compute_run_ai_metrics <- function(x, per_group = NULL) {
   include_cost_col <- "cost" %in% names(x)
 
   # Build one row per simulation unit.
-  unit_key <- interaction(x[id_cols], drop = TRUE, lex.order = TRUE)
+  unit_key <- interaction_key(x, id_cols)
   unit_indices <- split(seq_len(nrow(x)), unit_key)
   rows <- vector("list", length(unit_indices))
   row_i <- 0L

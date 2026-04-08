@@ -20,6 +20,9 @@ extract_pdf_text_with_llm(
   temperature = 1,
   seed = 42,
   output_path = NULL,
+  timeout_s = getOption("ellmer_timeout_s", 120),
+  max_tries = getOption("ellmer_max_tries", 5),
+  retry_wait = 3,
   overwrite = FALSE
 )
 }
@@ -52,6 +55,15 @@ either an exact \code{.txt} file path or a directory path. For a character
 vector or nested list of PDFs, supply a directory-like path without a file
 extension; nalanda will write one \code{.txt} per PDF incrementally,
 preserving partial progress if a later file fails.}
+
+\item{timeout_s}{Numeric scalar request timeout in seconds. Applied via
+\code{options(ellmer_timeout_s = ...)} for the duration of the call.}
+
+\item{max_tries}{Integer scalar total number of request attempts. Applied via
+\code{options(ellmer_max_tries = ...)} for the duration of the call.}
+
+\item{retry_wait}{Numeric scalar seconds to wait between manual retries after
+a failed single-file attempt.}
 
 \item{overwrite}{Logical scalar. If \code{TRUE}, replace existing output files at
 \code{output_path}. Defaults to \code{FALSE}.}

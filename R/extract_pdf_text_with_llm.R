@@ -30,6 +30,12 @@
 #'   vector or nested list of PDFs, supply a directory-like path without a file
 #'   extension; nalanda will write one `.txt` per PDF incrementally,
 #'   preserving partial progress if a later file fails.
+#' @param timeout_s Numeric scalar request timeout in seconds. Applied via
+#'   `options(ellmer_timeout_s = ...)` for the duration of the call.
+#' @param max_tries Integer scalar total number of request attempts. Applied via
+#'   `options(ellmer_max_tries = ...)` for the duration of the call.
+#' @param retry_wait Numeric scalar seconds to wait between manual retries after
+#'   a failed single-file attempt.
 #' @param overwrite Logical scalar. If `TRUE`, replace existing output files at
 #'   `output_path`. Defaults to `FALSE`.
 #'
@@ -58,7 +64,44 @@ extract_pdf_text_with_llm <- function(
   temperature = 1,
   seed = 42,
   output_path = NULL,
+  timeout_s = getOption("ellmer_timeout_s", 120),
+  max_tries = getOption("ellmer_max_tries", 5),
+  retry_wait = 3,
   overwrite = FALSE
+) {
+  extract_pdf_text_with_llm_impl(
+    pdf_path = pdf_path,
+    prompt = prompt,
+    model = model,
+    integration = integration,
+    virtual_key = virtual_key,
+    base_url = base_url,
+    temperature = temperature,
+    seed = seed,
+    output_path = output_path,
+    timeout_s = timeout_s,
+    max_tries = max_tries,
+    retry_wait = retry_wait,
+    overwrite = overwrite
+  )
+}
+
+extract_pdf_text_with_llm_impl <- function(
+  pdf_path,
+  prompt,
+  model,
+  integration,
+  virtual_key,
+  base_url,
+  temperature,
+  seed,
+  output_path,
+  timeout_s,
+  max_tries,
+  retry_wait,
+  overwrite,
+  .progress = NULL,
+  .label_prefix = NULL
 ) {
   if (is.list(pdf_path)) {
     if (!is.null(output_path)) {
@@ -67,6 +110,12 @@ extract_pdf_text_with_llm <- function(
 
     out <- vector("list", length(pdf_path))
     node_names <- names(pdf_path)
+    total_items <- count_pdf_leaves(pdf_path)
+    pb <- progress::progress_bar$new(
+      format = "  extracting [:bar] :percent eta: :eta :what",
+      total = total_items,
+      clear = FALSE
+    )
 
     for (i in seq_along(pdf_path)) {
       x <- pdf_path[[i]]
@@ -83,8 +132,13 @@ extract_pdf_text_with_llm <- function(
           output_path
         }
       }
+      label <- if (!is.null(node_names) && nzchar(node_names[[i]])) {
+        node_names[[i]]
+      } else {
+        paste0("group_", i)
+      }
 
-      out[[i]] <- extract_pdf_text_with_llm(
+      out[[i]] <- extract_pdf_text_with_llm_impl(
         pdf_path = x,
         prompt = prompt,
         model = model,
@@ -94,6 +148,11 @@ extract_pdf_text_with_llm <- function(
         temperature = temperature,
         seed = seed,
         output_path = child_output_path,
+        timeout_s = timeout_s,
+        max_tries = max_tries,
+        retry_wait = retry_wait,
+        .progress = pb,
+        .label_prefix = label,
         overwrite = overwrite
       )
     }
@@ -112,9 +171,15 @@ extract_pdf_text_with_llm <- function(
     }
 
     out <- character(length(pdf_path))
+    pb <- progress::progress_bar$new(
+      format = "  extracting [:bar] :percent eta: :eta :what",
+      total = length(pdf_path),
+      clear = FALSE
+    )
     for (i in seq_along(pdf_path)) {
       path <- pdf_path[[i]]
-      out[[i]] <- extract_pdf_text_with_llm(
+      label <- format_pdf_progress_label(path, prefix = paste0(i, "/", length(pdf_path)))
+      out[[i]] <- extract_pdf_text_with_llm_impl(
         pdf_path = path,
         prompt = prompt,
         model = model,
@@ -124,6 +189,11 @@ extract_pdf_text_with_llm <- function(
         temperature = temperature,
         seed = seed,
         output_path = output_path,
+        timeout_s = timeout_s,
+        max_tries = max_tries,
+        retry_wait = retry_wait,
+        .progress = pb,
+        .label_prefix = label,
         overwrite = overwrite
       )
     }
@@ -145,6 +215,22 @@ extract_pdf_text_with_llm <- function(
     (!is.character(output_path) || length(output_path) != 1 || !nzchar(output_path))) {
     stop("`output_path` must be NULL or a single non-empty string.")
   }
+  if (!is.numeric(timeout_s) || length(timeout_s) != 1 || is.na(timeout_s) || timeout_s <= 0) {
+    stop("`timeout_s` must be a single positive number.")
+  }
+  if (!is.numeric(max_tries) || length(max_tries) != 1 || is.na(max_tries) || max_tries < 1) {
+    stop("`max_tries` must be a single number >= 1.")
+  }
+  max_tries <- as.integer(max_tries)
+  if (!is.numeric(retry_wait) || length(retry_wait) != 1 || is.na(retry_wait) || retry_wait < 0) {
+    stop("`retry_wait` must be a single number >= 0.")
+  }
+
+  old_opts <- options(
+    ellmer_timeout_s = timeout_s,
+    ellmer_max_tries = max_tries
+  )
+  on.exit(options(old_opts), add = TRUE)
 
   route <- resolve_model_route(
     integration = integration,
@@ -174,18 +260,39 @@ extract_pdf_text_with_llm <- function(
     seed = seed
   )
 
-  prompts <- list(list(
+  prompt_contents <- list(
     prompt,
     ellmer::content_pdf_file(pdf_path[[1]])
-  ))
+  )
 
-  text <- ellmer::parallel_chat_text(
-    chat = chat,
-    prompts = prompts,
-    max_active = 1,
-    rpm = 60,
-    on_error = "stop"
-  )[[1]]
+  if (!is.null(.progress)) {
+    current_label <- format_pdf_progress_label(pdf_path[[1]], prefix = .label_prefix)
+    cat(sprintf("Working on %s\n", current_label))
+  }
+
+  text <- NULL
+  last_error <- NULL
+  for (attempt in seq_len(max_tries)) {
+    text <- tryCatch(
+      do.call(chat$chat, prompt_contents),
+      error = function(e) {
+        last_error <<- e
+        NULL
+      }
+    )
+
+    if (!is.null(text)) {
+      break
+    }
+
+    if (attempt < max_tries && retry_wait > 0) {
+      Sys.sleep(retry_wait)
+    }
+  }
+
+  if (is.null(text)) {
+    stop(last_error)
+  }
 
   if (!is.character(text) || length(text) != 1 || is.na(text)) {
     stop("The model did not return a single text response.")
@@ -205,7 +312,34 @@ extract_pdf_text_with_llm <- function(
     readr::write_lines(text, output_path)
   }
 
+  if (!is.null(.progress)) {
+    saved_suffix <- if (!is.null(output_path)) {
+      paste0(" saved ", basename(output_path))
+    } else {
+      ""
+    }
+    .progress$tick(tokens = list(
+      what = paste0(format_pdf_progress_label(pdf_path[[1]], prefix = .label_prefix), saved_suffix)
+    ))
+  }
+
   text
+}
+
+count_pdf_leaves <- function(x) {
+  if (!is.list(x)) {
+    return(length(x))
+  }
+  sum(vapply(x, count_pdf_leaves, integer(1)))
+}
+
+format_pdf_progress_label <- function(pdf_path, prefix = NULL) {
+  stem <- tools::file_path_sans_ext(basename(pdf_path))
+  if (!is.null(prefix) && nzchar(prefix)) {
+    paste0(prefix, ": ", stem)
+  } else {
+    stem
+  }
 }
 
 strip_pdf_preface_boilerplate <- function(text) {

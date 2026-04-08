@@ -199,6 +199,60 @@ test_that("compute_run_ai_metrics binds list inputs before computing metrics", {
   )
 })
 
+test_that("compute_run_ai_metrics keeps books distinct for list inputs", {
+  make_book_turns <- function(book) {
+    tibble::tibble(
+      book = book,
+      chapter = c("chapter_1", "chapter_1"),
+      sim = c(1, 1),
+      identity = c("Democrat", "Democrat"),
+      turn_type = c("baseline", "post"),
+      target_group = c(NA_character_, NA_character_),
+      rating = c(40, 45)
+    )
+  }
+
+  x <- list(
+    make_book_turns("Book A"),
+    make_book_turns("Book B")
+  )
+
+  out <- compute_run_ai_metrics(x)
+
+  expect_equal(length(unique(out$book)), 2)
+  expect_setequal(unique(out$book), c("Book A", "Book B"))
+  expect_equal(nrow(out), 2)
+})
+
+test_that("compute_run_ai_metrics preserves rows when optional ids contain NA", {
+  make_book_turns <- function(book, prompt) {
+    tibble::tibble(
+      model = "test-model",
+      book = book,
+      party = "Democrat",
+      baseline_prompt = prompt,
+      post_prompt = NA_character_,
+      chapter = c("chapter_1", "chapter_1"),
+      sim = c(1, 1),
+      identity = c("Democrat", "Democrat"),
+      turn_type = c("baseline", "post"),
+      target_group = c(NA_character_, NA_character_),
+      rating = c(40, 45)
+    )
+  }
+
+  x <- list(
+    make_book_turns("Book A", NA_character_),
+    make_book_turns("Book B", "prompt")
+  )
+
+  out <- compute_run_ai_metrics(x)
+
+  expect_equal(length(unique(out$book)), 2)
+  expect_setequal(unique(out$book), c("Book A", "Book B"))
+  expect_equal(nrow(out), 2)
+})
+
 test_that("normalize_model_name strips integration prefixes", {
   expect_equal(
     nalanda:::normalize_model_name("@gemini-8c2498/gemini-2.5-flash-lite"),

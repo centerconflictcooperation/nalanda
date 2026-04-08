@@ -300,7 +300,7 @@ compute_run_ai_metrics_one_turn <- function(x, per_group = NULL) {
   optional_id <- c("model", "book", "party", "prompt")
   id_cols <- c(id_cols, intersect(optional_id, names(x)))
 
-  unit_key <- interaction(x[id_cols], drop = TRUE, lex.order = TRUE)
+  unit_key <- interaction_key(x, id_cols)
   unit_indices <- split(seq_len(nrow(x)), unit_key)
   rows <- vector("list", length(unit_indices))
 

@@ -40,3 +40,26 @@ test_that("strip_pdf_preface_boilerplate removes repeated Gemini-style prefaces"
     "Actual chapter text."
   )
 })
+
+test_that("extract_pdf_text_with_llm validates timeout and retry arguments", {
+  tmp_pdf <- tempfile(fileext = ".pdf")
+  file.create(tmp_pdf)
+
+  expect_error(
+    extract_pdf_text_with_llm(tmp_pdf, timeout_s = 0),
+    "`timeout_s` must be a single positive number.",
+    fixed = TRUE
+  )
+
+  expect_error(
+    extract_pdf_text_with_llm(tmp_pdf, max_tries = 0),
+    "`max_tries` must be a single number >= 1.",
+    fixed = TRUE
+  )
+
+  expect_error(
+    extract_pdf_text_with_llm(tmp_pdf, retry_wait = -1),
+    "`retry_wait` must be a single number >= 0.",
+    fixed = TRUE
+  )
+})

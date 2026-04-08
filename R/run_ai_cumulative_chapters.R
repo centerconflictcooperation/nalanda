@@ -356,7 +356,7 @@ compute_run_ai_metrics_cumulative <- function(x, per_group = NULL) {
   include_token_col <- "input_tokens" %in% names(x)
   include_cost_col <- "cost" %in% names(x)
 
-  convo_key <- interaction(x[convo_cols], drop = TRUE, lex.order = TRUE)
+  convo_key <- interaction_key(x, convo_cols)
   convo_indices <- split(seq_len(nrow(x)), convo_key)
   rows <- list()
   row_i <- 0L
