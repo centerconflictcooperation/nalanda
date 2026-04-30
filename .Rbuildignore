@@ -12,3 +12,5 @@
 .vscode
 ^data-raw$
 ^papers$
+^\.positai$
+^\.claude$
