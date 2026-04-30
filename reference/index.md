@@ -2,6 +2,9 @@
 
 ## All functions
 
+- [`aggregate_simulations()`](https://centerconflictcooperation.github.io/nalanda/reference/aggregate_simulations.md)
+  : Aggregate simulation runs
+
 - [`combine_book_files()`](https://centerconflictcooperation.github.io/nalanda/reference/combine_book_files.md)
   : Combine chapter text files into one numbered file per book
 
@@ -42,6 +45,15 @@
   Build a concrete prompt for
   [`simulate_treatment()`](https://centerconflictcooperation.github.io/nalanda/reference/simulate_treatment.md)
 
+- [`model_agreement()`](https://centerconflictcooperation.github.io/nalanda/reference/model_agreement.md)
+  : Compute inter-model agreement
+
+- [`model_pairwise_cor()`](https://centerconflictcooperation.github.io/nalanda/reference/model_pairwise_cor.md)
+  : Pairwise model correlations
+
+- [`model_rank_consistency()`](https://centerconflictcooperation.github.io/nalanda/reference/model_rank_consistency.md)
+  : Compare model-derived rankings
+
 - [`nalanda()`](https://centerconflictcooperation.github.io/nalanda/reference/nalanda.md)
   : A Random Historical Fact About Nalanda University
 
@@ -59,6 +71,9 @@
 
 - [`plot_forest_books()`](https://centerconflictcooperation.github.io/nalanda/reference/plot_forest_books.md)
   : Create a forest plot of book-level polarization reduction effects
+
+- [`plot_model_agreement()`](https://centerconflictcooperation.github.io/nalanda/reference/plot_model_agreement.md)
+  : Plot inter-model agreement
 
 - [`prepare_forest_books()`](https://centerconflictcooperation.github.io/nalanda/reference/prepare_forest_books.md)
   : Prepare book-level data for forest plotting

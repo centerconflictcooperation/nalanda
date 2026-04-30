@@ -25,6 +25,7 @@ As in other `nalanda` workflows, it is easiest to set the model routing
 once at the start of the script.
 
 ``` r
+
 library(nalanda)
 
 options(
@@ -40,6 +41,7 @@ the prompt with `{intervention_text}`. This is useful when your script
 generates many treatment variants programmatically.
 
 ``` r
+
 intervention_text <- "Imagine you come across a short community message about 
 climate action. It explains that small everyday choices can add up when many 
 people participate, and it encourages residents to back clean-energy policies, 
@@ -67,6 +69,7 @@ a single concrete prompt from the same elements you will pass to
 [`simulate_treatment()`](https://centerconflictcooperation.github.io/nalanda/reference/simulate_treatment.md).
 
 ``` r
+
 groups <- c("American", "Brazilian")
 context_text <- "You are simulating an adult who identifies as {identity}."
 
@@ -102,6 +105,7 @@ workflow.
 ## 4. Run the post-only simulation
 
 ``` r
+
 res <- simulate_treatment(
   intervention_text = intervention_text,
   groups = groups,
@@ -134,12 +138,12 @@ per turn.
 Each row is one simulated response for one identity and one simulation
 draw.
 
-| treatment      | sim | identity  | turn_index | turn_type | climate_belief | policy_support |
-|:---------------|----:|:----------|-----------:|:----------|---------------:|---------------:|
-| intervention_1 |   1 | American  |          1 | turn_1    |             84 |             71 |
-| intervention_1 |   2 | American  |          1 | turn_1    |             82 |             69 |
-| intervention_1 |   1 | Brazilian |          1 | turn_1    |             76 |             62 |
-| intervention_1 |   2 | Brazilian |          1 | turn_1    |             74 |             60 |
+| treatment | sim | identity | turn_index | turn_type | climate_belief | policy_support |
+|:---|---:|:---|---:|:---|---:|---:|
+| intervention_1 | 1 | American | 1 | turn_1 | 84 | 71 |
+| intervention_1 | 2 | American | 1 | turn_1 | 82 | 69 |
+| intervention_1 | 1 | Brazilian | 1 | turn_1 | 76 | 62 |
+| intervention_1 | 2 | Brazilian | 1 | turn_1 | 74 | 60 |
 
 ## 6. Summarize by identity
 
@@ -148,6 +152,7 @@ Use
 to compute mean scores by identity.
 
 ``` r
+
 summary_by_identity <- summarize_treatment_results(
   res,
   by_identity = TRUE
@@ -156,10 +161,10 @@ summary_by_identity <- summarize_treatment_results(
 summary_by_identity
 ```
 
-| ch             | id        | turn   |   n | m_climate_belief | sd_climate_belief | m_policy_support | sd_policy_support | idx |
-|:---------------|:----------|:-------|----:|-----------------:|------------------:|-----------------:|------------------:|----:|
-| intervention_1 | American  | turn_1 |   2 |               83 |               1.4 |               70 |               1.4 |   1 |
-| intervention_1 | Brazilian | turn_1 |   2 |               75 |               1.4 |               61 |               1.4 |   1 |
+| ch | id | turn | n | m_climate_belief | sd_climate_belief | m_policy_support | sd_policy_support | idx |
+|:---|:---|:---|---:|---:|---:|---:|---:|---:|
+| intervention_1 | American | turn_1 | 2 | 83 | 1.4 | 70 | 1.4 | 1 |
+| intervention_1 | Brazilian | turn_1 | 2 | 75 | 1.4 | 61 | 1.4 | 1 |
 
 ## 7. Compare another group to Americans
 
@@ -167,6 +172,7 @@ If `American` is your reference group, a simple downstream comparison
 is:
 
 ``` r
+
 library(dplyr)
 library(tidyr)
 

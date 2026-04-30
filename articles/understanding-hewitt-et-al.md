@@ -147,6 +147,7 @@ lessons from Hewitt et al.
 This is the most native current workflow in `nalanda`.
 
 ``` r
+
 library(nalanda)
 
 res <- run_ai_on_chapters(
@@ -172,6 +173,7 @@ If you want something closer to the paper’s single-prompt logic, use the
 one-turn interface.
 
 ``` r
+
 res_one_turn <- run_ai_on_chapters_one_turn(
   book_texts = my_book_texts,
   groups = c("Democrat", "Republican"),
@@ -207,6 +209,7 @@ One practical workflow is:
 Conceptually:
 
 ``` r
+
 chapter_metrics$condition <- c("control", "treatment", "treatment")
 
 # then analyze in your preferred downstream workflow
@@ -263,6 +266,7 @@ and document it clearly.
 For example:
 
 ``` r
+
 results$adjusted_effect <- results$raw_effect * 0.56
 results$calibration_source <- "Hewitt et al. 2024 primary survey archive"
 ```
@@ -364,8 +368,9 @@ The main practical lessons are:
 ## References
 
 Hewitt, Luke, Ashwini Ashokkumar, Isaias Ghezae, and Robb Willer. 2024a.
-“Predicting Results of Social Science Experiments Using Large Language
-Models,” August.
+*Predicting Results of Social Science Experiments Using Large Language
+Models*. August.
 
-———. 2024b. “Supplementary Information for ‘Predicting Results of Social
-Science Experiments Using Large Language Models’,” August.
+Hewitt, Luke, Ashwini Ashokkumar, Isaias Ghezae, and Robb Willer. 2024b.
+*Supplementary Information for “Predicting Results of Social Science
+Experiments Using Large Language Models”*. August.

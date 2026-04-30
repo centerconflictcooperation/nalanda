@@ -130,6 +130,7 @@ Authentication uses `PORTKEY_API_KEY` via
 [`ellmer::chat_portkey()`](https://ellmer.tidyverse.org/reference/chat_portkey.html).
 Set it persistently in `.Renviron`:
 
+
     usethis::edit_r_environ()
     # Add a line like:
     # PORTKEY_API_KEY=your_api_key_here

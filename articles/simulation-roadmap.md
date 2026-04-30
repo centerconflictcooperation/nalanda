@@ -94,14 +94,14 @@ Impact scores are on a 1 to 10 scale, where 10 means the step is
 especially important for scientific usefulness and for alignment with
 the published papers.
 
-| Step | Description                                                                                                                                                                                | Difficulty     | Impact |
-|:-----|:-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|:---------------|:------:|
-| 1    | Build a paper-faithful prompt layer, including reusable prompt bank objects and prompt constructors for survey experiments and book-based designs.                                         | Low to medium  |   10   |
-| 2    | Add a condition-based simulation wrapper that runs control and treatment conditions, stores condition labels and simulation metadata, and returns outputs ready for downstream comparison. | Medium to high |   10   |
-| 3    | Add a descriptive summary and calibration layer for package-native metrics, while leaving formal inferential contrasts to downstream tools.                                                | Medium         |   8    |
-| 4    | Add demographic profile infrastructure, including profile samplers and weighted profile sets, so users can simulate subgroup-specific or population-matched runs.                          | Medium         |   7    |
-| 5    | Add ensemble controls that formalize how many prompt variants are used, how they are sampled, and how outputs are pooled.                                                                  | Low to medium  |   8    |
-| 6    | Extend the framework to cumulative chapter designs, where earlier chapters can remain in memory or be summarized forward into later prompts.                                               | High           |   8    |
+| Step | Description | Difficulty | Impact |
+|:---|:---|:---|:--:|
+| 1 | Build a paper-faithful prompt layer, including reusable prompt bank objects and prompt constructors for survey experiments and book-based designs. | Low to medium | 10 |
+| 2 | Add a condition-based simulation wrapper that runs control and treatment conditions, stores condition labels and simulation metadata, and returns outputs ready for downstream comparison. | Medium to high | 10 |
+| 3 | Add a descriptive summary and calibration layer for package-native metrics, while leaving formal inferential contrasts to downstream tools. | Medium | 8 |
+| 4 | Add demographic profile infrastructure, including profile samplers and weighted profile sets, so users can simulate subgroup-specific or population-matched runs. | Medium | 7 |
+| 5 | Add ensemble controls that formalize how many prompt variants are used, how they are sampled, and how outputs are pooled. | Low to medium | 8 |
+| 6 | Extend the framework to cumulative chapter designs, where earlier chapters can remain in memory or be summarized forward into later prompts. | High | 8 |
 
 I would still group these into three practical phases:
 
@@ -304,6 +304,7 @@ At minimum, a `prompt_bank` should contain:
 In practice, one useful design would be:
 
 ``` r
+
 prompt_bank <- list(
   intro_variants = c(
     "You will be asked to predict how people respond to various messages.",
@@ -347,6 +348,7 @@ At minimum, this object should capture:
 Conceptually:
 
 ``` r
+
 ensemble_size <- list(
   n = 8L,
   method = "sample",
@@ -384,6 +386,7 @@ At minimum, each profile should be able to store:
 Conceptually:
 
 ``` r
+
 demographic_profiles <- tibble::tibble(
   profile_id = c("p1", "p2"),
   gender = c("Female", "Male"),
@@ -432,8 +435,9 @@ cumulative exposure are likely to require more validation work.
 ## References
 
 Hewitt, Luke, Ashwini Ashokkumar, Isaias Ghezae, and Robb Willer. 2024a.
-“Predicting Results of Social Science Experiments Using Large Language
-Models,” August.
+*Predicting Results of Social Science Experiments Using Large Language
+Models*. August.
 
-———. 2024b. “Supplementary Information for ‘Predicting Results of Social
-Science Experiments Using Large Language Models’,” August.
+Hewitt, Luke, Ashwini Ashokkumar, Isaias Ghezae, and Robb Willer. 2024b.
+*Supplementary Information for “Predicting Results of Social Science
+Experiments Using Large Language Models”*. August.

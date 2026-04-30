@@ -32,6 +32,7 @@ You can install the development version of nalanda from
 [GitHub](https://github.com/) with:
 
 ``` r
+
 install.packages(
   'nalanda', repos = c(
     'https://centerconflictcooperation.r-universe.dev', 
@@ -53,6 +54,7 @@ Run this setup once before either workflow (the example below is for the
 NYU Portkey integration):
 
 ``` r
+
 library(nalanda)
 
 options(
@@ -64,6 +66,7 @@ options(
 ### Minimal prompt-first example with `simulate_treatment()`
 
 ``` r
+
 res <- simulate_treatment(
   intervention_text = "A short community message encourages people from different backgrounds to cooperate on a shared local goal.",
   groups = c("American", "Brazilian"),
@@ -101,6 +104,7 @@ For chapter-based pre/post simulations, the main workflow is:
 3.  plot or summarize the processed results
 
 ``` r
+
 raw_turns <- run_ai_on_chapters(
   book_texts = "A short chapter about people from different groups cooperating.",
   groups = c("Democrat", "Republican"),
@@ -115,6 +119,7 @@ chapter_results <- compute_run_ai_metrics(raw_turns)
 ```
 
 ``` r
+
 library(nalanda)
 
 img_paths <- list(
@@ -140,6 +145,7 @@ Use the processed chapter-level results directly with the time-series
 plotting helper:
 
 ``` r
+
 plot_chapters_over_time(
   chapters = chapter_results,
   dv = "delta_gap",
@@ -184,6 +190,7 @@ The package also includes a small helper to explore historical facts
 about Nalanda University:
 
 ``` r
+
 library(nalanda)
 
 # Get a random fact about Nalanda University
@@ -198,6 +205,9 @@ Projects](https://mindandlife-europe.org/2024-eva-recipients-projects/)
 # Package index
 
 ## All functions
+
+- [`aggregate_simulations()`](https://centerconflictcooperation.github.io/nalanda/reference/aggregate_simulations.md)
+  : Aggregate simulation runs
 
 - [`combine_book_files()`](https://centerconflictcooperation.github.io/nalanda/reference/combine_book_files.md)
   : Combine chapter text files into one numbered file per book
@@ -239,6 +249,15 @@ Projects](https://mindandlife-europe.org/2024-eva-recipients-projects/)
   Build a concrete prompt for
   [`simulate_treatment()`](https://centerconflictcooperation.github.io/nalanda/reference/simulate_treatment.md)
 
+- [`model_agreement()`](https://centerconflictcooperation.github.io/nalanda/reference/model_agreement.md)
+  : Compute inter-model agreement
+
+- [`model_pairwise_cor()`](https://centerconflictcooperation.github.io/nalanda/reference/model_pairwise_cor.md)
+  : Pairwise model correlations
+
+- [`model_rank_consistency()`](https://centerconflictcooperation.github.io/nalanda/reference/model_rank_consistency.md)
+  : Compare model-derived rankings
+
 - [`nalanda()`](https://centerconflictcooperation.github.io/nalanda/reference/nalanda.md)
   : A Random Historical Fact About Nalanda University
 
@@ -256,6 +275,9 @@ Projects](https://mindandlife-europe.org/2024-eva-recipients-projects/)
 
 - [`plot_forest_books()`](https://centerconflictcooperation.github.io/nalanda/reference/plot_forest_books.md)
   : Create a forest plot of book-level polarization reduction effects
+
+- [`plot_model_agreement()`](https://centerconflictcooperation.github.io/nalanda/reference/plot_model_agreement.md)
+  : Plot inter-model agreement
 
 - [`prepare_forest_books()`](https://centerconflictcooperation.github.io/nalanda/reference/prepare_forest_books.md)
   : Prepare book-level data for forest plotting

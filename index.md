@@ -32,6 +32,7 @@ You can install the development version of nalanda from
 [GitHub](https://github.com/) with:
 
 ``` r
+
 install.packages(
   'nalanda', repos = c(
     'https://centerconflictcooperation.r-universe.dev', 
@@ -53,6 +54,7 @@ Run this setup once before either workflow (the example below is for the
 NYU Portkey integration):
 
 ``` r
+
 library(nalanda)
 
 options(
@@ -64,6 +66,7 @@ options(
 ### Minimal prompt-first example with `simulate_treatment()`
 
 ``` r
+
 res <- simulate_treatment(
   intervention_text = "A short community message encourages people from different backgrounds to cooperate on a shared local goal.",
   groups = c("American", "Brazilian"),
@@ -101,6 +104,7 @@ For chapter-based pre/post simulations, the main workflow is:
 3.  plot or summarize the processed results
 
 ``` r
+
 raw_turns <- run_ai_on_chapters(
   book_texts = "A short chapter about people from different groups cooperating.",
   groups = c("Democrat", "Republican"),
@@ -115,6 +119,7 @@ chapter_results <- compute_run_ai_metrics(raw_turns)
 ```
 
 ``` r
+
 library(nalanda)
 
 img_paths <- list(
@@ -140,6 +145,7 @@ Use the processed chapter-level results directly with the time-series
 plotting helper:
 
 ``` r
+
 plot_chapters_over_time(
   chapters = chapter_results,
   dv = "delta_gap",
@@ -184,6 +190,7 @@ The package also includes a small helper to explore historical facts
 about Nalanda University:
 
 ``` r
+
 library(nalanda)
 
 # Get a random fact about Nalanda University

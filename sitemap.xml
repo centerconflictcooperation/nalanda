@@ -16,6 +16,7 @@
 <url><loc>https://centerconflictcooperation.github.io/nalanda/index.html</loc></url>
 <url><loc>https://centerconflictcooperation.github.io/nalanda/news/index.html</loc></url>
 <url><loc>https://centerconflictcooperation.github.io/nalanda/reference/add_point_images.html</loc></url>
+<url><loc>https://centerconflictcooperation.github.io/nalanda/reference/aggregate_simulations.html</loc></url>
 <url><loc>https://centerconflictcooperation.github.io/nalanda/reference/combine_book_files.html</loc></url>
 <url><loc>https://centerconflictcooperation.github.io/nalanda/reference/compute_run_ai_metrics.html</loc></url>
 <url><loc>https://centerconflictcooperation.github.io/nalanda/reference/compute_run_ai_metrics_cumulative.html</loc></url>
@@ -29,6 +30,9 @@
 <url><loc>https://centerconflictcooperation.github.io/nalanda/reference/make_baseline_prompt.html</loc></url>
 <url><loc>https://centerconflictcooperation.github.io/nalanda/reference/make_post_prompt.html</loc></url>
 <url><loc>https://centerconflictcooperation.github.io/nalanda/reference/make_treatment_prompt.html</loc></url>
+<url><loc>https://centerconflictcooperation.github.io/nalanda/reference/model_agreement.html</loc></url>
+<url><loc>https://centerconflictcooperation.github.io/nalanda/reference/model_pairwise_cor.html</loc></url>
+<url><loc>https://centerconflictcooperation.github.io/nalanda/reference/model_rank_consistency.html</loc></url>
 <url><loc>https://centerconflictcooperation.github.io/nalanda/reference/nalanda.html</loc></url>
 <url><loc>https://centerconflictcooperation.github.io/nalanda/reference/parse_chapter_numbers.html</loc></url>
 <url><loc>https://centerconflictcooperation.github.io/nalanda/reference/plot_chapter_scores_faceted.html</loc></url>
@@ -36,6 +40,7 @@
 <url><loc>https://centerconflictcooperation.github.io/nalanda/reference/plot_chapters_over_time.html</loc></url>
 <url><loc>https://centerconflictcooperation.github.io/nalanda/reference/plot_chapters_over_time_one_turn.html</loc></url>
 <url><loc>https://centerconflictcooperation.github.io/nalanda/reference/plot_forest_books.html</loc></url>
+<url><loc>https://centerconflictcooperation.github.io/nalanda/reference/plot_model_agreement.html</loc></url>
 <url><loc>https://centerconflictcooperation.github.io/nalanda/reference/prepare_forest_books.html</loc></url>
 <url><loc>https://centerconflictcooperation.github.io/nalanda/reference/rank_weighted.html</loc></url>
 <url><loc>https://centerconflictcooperation.github.io/nalanda/reference/read_book_texts.html</loc></url>

@@ -22,6 +22,7 @@ As in the other live `nalanda` workflows, it is easiest to set model
 routing once at the top of your script.
 
 ``` r
+
 library(nalanda)
 
 options(
@@ -36,6 +37,7 @@ options(
 ```
 
 ``` r
+
 ellmer::models_portkey(
   base_url = "https://ai-gateway.apps.cloud.rt.nyu.edu/v1/"
 )
@@ -48,6 +50,7 @@ The paper works row-wise over tweets or headlines.
 uses the same pattern: one row per text.
 
 ``` r
+
 texts <- tibble::tibble(
   id = 1:4,
   language = c("English", "English", "Hindi", "Simplified Chinese"),
@@ -83,6 +86,7 @@ same kind of prompt with
 [`make_annotation_prompt()`](https://centerconflictcooperation.github.io/nalanda/reference/make_annotation_prompt.md).
 
 ``` r
+
 sentiment_prompt <- make_annotation_prompt(
   question = "Is the sentiment of this {language} text positive, neutral, or negative?",
   labels = c("positive", "neutral", "negative")
@@ -107,6 +111,7 @@ The result schema is defined with `ellmer` just like in the other
 `nalanda` workflows.
 
 ``` r
+
 res <- run_text_analysis(
   data = texts,
   id_col = "id",
@@ -133,12 +138,12 @@ The important differences from the older chapter-based functions are:
 
 Each row of the result corresponds to one text and one simulation run.
 
-|  id | language           | sim | human_sentiment | gpt | text                                       |
-|----:|:-------------------|----:|----------------:|----:|:-------------------------------------------|
-|   1 | English            |   1 |               1 |   1 | I love this new community project.         |
-|   2 | English            |   1 |               2 |   2 | This policy announcement is fine, I guess. |
-|   3 | Hindi              |   1 |               1 |   1 | यह खबर बहुत अच्छी है।                         |
-|   4 | Simplified Chinese |   1 |               3 |   3 | 我不喜欢他们处理这个问题的方式。           |
+| id | language | sim | human_sentiment | gpt | text |
+|---:|:---|---:|---:|---:|:---|
+| 1 | English | 1 | 1 | 1 | I love this new community project. |
+| 2 | English | 1 | 2 | 2 | This policy announcement is fine, I guess. |
+| 3 | Hindi | 1 | 1 | 1 | यह खबर बहुत अच्छी है। |
+| 4 | Simplified Chinese | 1 | 3 | 3 | 我不喜欢他们处理这个问题的方式。 |
 
 This is the same basic structure as the screenshot workflow, but the
 parsing is already handled for you because the response is extracted as
@@ -152,6 +157,7 @@ as accuracy, macro F1, and Spearman correlations.
 provides a simple package-native version of that step.
 
 ``` r
+
 scores <- evaluate_text_analysis(
   res,
   truth_col = "human_sentiment",
@@ -172,6 +178,7 @@ scores
 For Likert-style tasks, switch the metric set to something like:
 
 ``` r
+
 evaluate_text_analysis(
   res,
   truth_col = "human_rating",
@@ -186,6 +193,7 @@ The paper also evaluates headline sentiment and emotions on 1 to 7
 scales. That prompt style is also supported.
 
 ``` r
+
 likert_prompt <- make_annotation_prompt(
   question = "How negative or positive is this headline on a 1 to 7 scale?",
   scale = c(1, 7),
@@ -204,6 +212,7 @@ The live call looks the same, except the response field now represents a
 Likert rating instead of a class code.
 
 ``` r
+
 headline_res <- run_text_analysis(
   data = headlines,
   id_col = "headline_id",
@@ -223,6 +232,7 @@ The paper also checks whether repeated runs produce similar outputs. To
 do that, increase `n_simulations`.
 
 ``` r
+
 res_repeated <- run_text_analysis(
   data = texts,
   id_col = "id",

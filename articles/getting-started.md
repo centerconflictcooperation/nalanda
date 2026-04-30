@@ -10,6 +10,7 @@ This vignette provides a minimal, reliable path to get started:
 Install and load:
 
 ``` r
+
 install.packages("ellmer")
 library(ellmer)
 ```
@@ -17,6 +18,7 @@ library(ellmer)
 Set your key in `.Renviron` (recommended):
 
 ``` r
+
 usethis::edit_r_environ()
 # Add:
 # PORTKEY_API_KEY=your_real_key_here
@@ -30,6 +32,7 @@ Restart R after editing `.Renviron`.
 Run a small smoke test directly with `ellmer`:
 
 ``` r
+
 library(ellmer)
 
 integration = "vertexai" # gateway route slug from ellmer::models_portkey()
@@ -58,6 +61,7 @@ first or use the fully-qualified model string that already works in
 [`chat_portkey()`](https://ellmer.tidyverse.org/reference/chat_portkey.html).
 
 ``` r
+
 ellmer::models_portkey(
   base_url = "https://ai-gateway.apps.cloud.rt.nyu.edu/v1/"
 )
@@ -74,6 +78,7 @@ We also set package options at the beginning of a script so we do not
 need to repeat the same arguments in each call.
 
 ``` r
+
 library(nalanda)
 
 options(
@@ -105,6 +110,7 @@ res
 ```
 
 ``` r
+
 # Inspect a real example output in a scrollable interactive table
 library(DT)
 
