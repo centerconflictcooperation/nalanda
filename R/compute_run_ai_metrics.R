@@ -109,21 +109,17 @@ compute_run_ai_metrics <- function(x, per_group = NULL) {
     if (isTRUE(per_group)) {
       identity_label <- as.character(row$identity)
 
-      row$pre_ingroup <- mean(
-        as.numeric(pre$rating[as.character(pre$target_group) == identity_label]),
-        na.rm = TRUE
+      row$pre_ingroup <- mean_or_na(
+        pre$rating[as.character(pre$target_group) == identity_label]
       )
-      row$post_ingroup <- mean(
-        as.numeric(post$rating[as.character(post$target_group) == identity_label]),
-        na.rm = TRUE
+      row$post_ingroup <- mean_or_na(
+        post$rating[as.character(post$target_group) == identity_label]
       )
-      row$pre_outgroup <- mean(
-        as.numeric(pre$rating[as.character(pre$target_group) != identity_label]),
-        na.rm = TRUE
+      row$pre_outgroup <- mean_or_na(
+        pre$rating[as.character(pre$target_group) != identity_label]
       )
-      row$post_outgroup <- mean(
-        as.numeric(post$rating[as.character(post$target_group) != identity_label]),
-        na.rm = TRUE
+      row$post_outgroup <- mean_or_na(
+        post$rating[as.character(post$target_group) != identity_label]
       )
 
       row$pre_gap <- row$pre_ingroup - row$pre_outgroup
@@ -132,8 +128,8 @@ compute_run_ai_metrics <- function(x, per_group = NULL) {
       row$delta_outgroup <- row$post_outgroup - row$pre_outgroup
       row$delta_gap <- row$delta_outgroup - row$delta_ingroup
     } else {
-      row$pre_rating <- mean(as.numeric(pre$rating), na.rm = TRUE)
-      row$post_rating <- mean(as.numeric(post$rating), na.rm = TRUE)
+      row$pre_rating <- mean_or_na(pre$rating)
+      row$post_rating <- mean_or_na(post$rating)
       row$pre_ingroup <- NA_real_
       row$post_ingroup <- NA_real_
       row$pre_outgroup <- row$pre_rating
@@ -163,4 +159,13 @@ compute_run_ai_metrics <- function(x, per_group = NULL) {
   attr(out, "n_simulations") <- n_simulations
   attr(out, "chapter_excerpts") <- chapter_excerpts
   out
+}
+
+mean_or_na <- function(x) {
+  x <- as.numeric(x)
+  if (!any(!is.na(x))) {
+    return(NA_real_)
+  }
+
+  mean(x, na.rm = TRUE)
 }

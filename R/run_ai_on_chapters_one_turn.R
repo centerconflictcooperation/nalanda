@@ -116,13 +116,6 @@ execute_one_turn_pipeline <- function(
   all_row_i <- 0L
 
   for (k in seq_len(n_simulations)) {
-    chat <- new_portkey_chat(
-      model = model,
-      base_url = base_url,
-      temperature = temperature,
-      seed = seed + k - 1L
-    )
-
     prompt_jobs <- vector("list", nrow(chapter_jobs) * length(groups))
     prompts <- character(length(prompt_jobs))
     prompt_i <- 0L
@@ -133,6 +126,57 @@ execute_one_turn_pipeline <- function(
       for (id_idx in seq_along(groups)) {
         identity_label <- groups[[id_idx]]
         identity_context <- context_text[[id_idx]]
+
+        if (is_missing_chapter_text(chapter_job$chapter_text[[1]])) {
+          progress_tick(
+            book = chapter_job$book[[1]],
+            chapter = chapter_job$chapter[[1]],
+            identity = identity_label,
+            sim = k
+          )
+
+          base_fields <- make_result_base_fields(
+            book = chapter_job$book[[1]],
+            chapter = chapter_job$chapter[[1]],
+            sim = k,
+            identity = identity_label,
+            party = NA_character_,
+            extra = list(
+              turn_index = 1L,
+              turn_type = "single",
+              prompt = NA_character_
+            )
+          )
+
+          if (per_group) {
+            for (g_idx in seq_along(groups)) {
+              row <- c(
+                base_fields,
+                list(
+                  target_group = groups[[g_idx]],
+                  rating = NA_real_
+                )
+              )
+
+              all_row_i <- all_row_i + 1L
+              all_rows[[all_row_i]] <- row
+            }
+          } else {
+            row <- c(
+              base_fields,
+              list(
+                target_group = NA_character_,
+                rating = NA_real_
+              )
+            )
+
+            all_row_i <- all_row_i + 1L
+            all_rows[[all_row_i]] <- row
+          }
+
+          next
+        }
+
         full_prompt <- make_one_turn_prompt(
           chapter_text = chapter_job$chapter_text[[1]],
           identity_context = identity_context,
@@ -163,16 +207,29 @@ execute_one_turn_pipeline <- function(
       }
     }
 
-    responses <- ellmer::parallel_chat_structured(
-      chat = chat,
-      prompts = prompts,
-      type = type_response,
-      convert = TRUE,
-      max_active = max_active,
-      rpm = rpm,
-      on_error = "stop"
-    )
-    response_list <- normalize_parallel_chat_structured_output(responses)
+    prompts <- prompts[seq_len(prompt_i)]
+    prompt_jobs <- prompt_jobs[seq_len(prompt_i)]
+
+    if (length(prompts) > 0) {
+      chat <- new_portkey_chat(
+        model = model,
+        base_url = base_url,
+        temperature = temperature,
+        seed = seed + k - 1L
+      )
+      responses <- ellmer::parallel_chat_structured(
+        chat = chat,
+        prompts = prompts,
+        type = type_response,
+        convert = TRUE,
+        max_active = max_active,
+        rpm = rpm,
+        on_error = "stop"
+      )
+      response_list <- normalize_parallel_chat_structured_output(responses)
+    } else {
+      response_list <- list()
+    }
 
     if (length(response_list) != length(prompt_jobs)) {
       stop(
@@ -313,17 +370,15 @@ compute_run_ai_metrics_one_turn <- function(x, per_group = NULL) {
     if (isTRUE(per_group)) {
       identity_label <- as.character(row$identity)
 
-      row$ingroup_rating <- mean(
-        as.numeric(xi$rating[as.character(xi$target_group) == identity_label]),
-        na.rm = TRUE
+      row$ingroup_rating <- mean_or_na(
+        xi$rating[as.character(xi$target_group) == identity_label]
       )
-      row$outgroup_rating <- mean(
-        as.numeric(xi$rating[as.character(xi$target_group) != identity_label]),
-        na.rm = TRUE
+      row$outgroup_rating <- mean_or_na(
+        xi$rating[as.character(xi$target_group) != identity_label]
       )
       row$gap <- row$ingroup_rating - row$outgroup_rating
     } else {
-      row$overall_rating <- mean(as.numeric(xi$rating), na.rm = TRUE)
+      row$overall_rating <- mean_or_na(xi$rating)
       row$ingroup_rating <- NA_real_
       row$outgroup_rating <- row$overall_rating
       row$gap <- NA_real_

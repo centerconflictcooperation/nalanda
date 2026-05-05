@@ -323,6 +323,106 @@ test_that("run_ai_on_chapters errors clearly on empty book folders", {
   )
 })
 
+test_that("run_ai_on_chapters skips missing chapter text without model calls", {
+  calls <- 0L
+  testthat::local_mocked_bindings(
+    new_portkey_chat = function(...) {
+      calls <<- calls + 1L
+      list(
+        chat_structured = function(prompt, type) {
+          if (grepl("finished reading", prompt, fixed = TRUE)) {
+            return(list(rating = 45))
+          }
+          list(party = "Democrat", rating = 40)
+        }
+      )
+    },
+    .package = "nalanda"
+  )
+
+  book_texts <- list(
+    "Book A" = list(
+      "chapter_1.txt" = "Ordinary chapter text.",
+      "chapter_2.txt" = NA_character_
+    )
+  )
+
+  expect_message(
+    out <- run_ai_on_chapters(
+      book_texts = book_texts,
+      groups = c("Democrat", "Republican"),
+      context_text = "You are simulating a {identity}.",
+      question_text = "How warmly do you feel towards your outgroup?"
+    ),
+    "Skipping 1 chapter\\(s\\) with missing `chapter_text`: Book A - chapter_2.txt"
+  )
+
+  out_tbl <- out[["Book A"]]
+  skipped <- out_tbl[out_tbl$chapter == "chapter_2.txt", ]
+
+  expect_equal(calls, 2L)
+  expect_equal(nrow(out_tbl), 8)
+  expect_true(all(is.na(skipped$rating)))
+  expect_true(all(is.na(skipped$baseline_prompt)))
+  expect_true(all(is.na(skipped$post_prompt)))
+
+  metrics <- compute_run_ai_metrics(out)
+  skipped_metrics <- metrics[metrics$chapter == "chapter_2.txt", ]
+
+  expect_true(all(is.na(skipped_metrics$pre_outgroup)))
+  expect_true(all(is.na(skipped_metrics$post_outgroup)))
+  expect_true(all(is.na(skipped_metrics$delta_outgroup)))
+})
+
+test_that("run_ai_on_chapters_one_turn skips missing chapter text before batching", {
+  calls <- 0L
+  testthat::local_mocked_bindings(
+    new_portkey_chat = function(...) {
+      list()
+    },
+    .package = "nalanda"
+  )
+  testthat::local_mocked_bindings(
+    parallel_chat_structured = function(chat, prompts, type, ...) {
+      calls <<- calls + length(prompts)
+      lapply(prompts, function(prompt) {
+        list(party = "Democrat", rating = 42)
+      })
+    },
+    .package = "ellmer"
+  )
+
+  book_texts <- list(
+    "Book A" = list(
+      "chapter_1.txt" = "Ordinary chapter text.",
+      "chapter_2.txt" = NA_character_
+    )
+  )
+
+  expect_message(
+    out <- run_ai_on_chapters_one_turn(
+      book_texts = book_texts,
+      groups = c("Democrat", "Republican"),
+      context_text = "You are simulating a {identity}.",
+      question_text = "How warmly do you feel towards your outgroup?"
+    ),
+    "Skipping 1 chapter\\(s\\) with missing `chapter_text`: Book A - chapter_2.txt"
+  )
+
+  out_tbl <- out[["Book A"]]
+  skipped <- out_tbl[out_tbl$chapter == "chapter_2.txt", ]
+
+  expect_equal(calls, 2L)
+  expect_equal(nrow(out_tbl), 4)
+  expect_true(all(is.na(skipped$rating)))
+  expect_true(all(is.na(skipped$prompt)))
+
+  metrics <- compute_run_ai_metrics_one_turn(out)
+  skipped_metrics <- metrics[metrics$chapter == "chapter_2.txt", ]
+
+  expect_true(all(is.na(skipped_metrics$outgroup_rating)))
+})
+
 test_that("validate_chapter_order accepts epilogue-style chapter labels", {
   expect_equal(
     nalanda:::validate_chapter_order("WFK_9_Epilog.txt"),

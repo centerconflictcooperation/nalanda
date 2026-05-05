@@ -179,6 +179,74 @@ execute_two_turn_pipeline <- function(
           sim = k
         )
 
+        if (is_missing_chapter_text(chapter_job$chapter_text[[1]])) {
+          base_fields <- make_result_base_fields(
+            book = chapter_job$book[[1]],
+            chapter = chapter_job$chapter[[1]],
+            sim = k,
+            identity = identity_label,
+            party = NA_character_,
+            extra = list(
+              baseline_prompt = NA_character_,
+              post_prompt = NA_character_
+            )
+          )
+
+          if (per_group) {
+            for (g_idx in seq_along(groups)) {
+              row_pre <- c(
+                base_fields,
+                list(
+                  turn_index = 1L,
+                  turn_type = "baseline",
+                  target_group = groups[[g_idx]],
+                  rating = NA_real_
+                )
+              )
+              row_post <- c(
+                base_fields,
+                list(
+                  turn_index = 2L,
+                  turn_type = "post",
+                  target_group = groups[[g_idx]],
+                  rating = NA_real_
+                )
+              )
+
+              all_row_i <- all_row_i + 1L
+              all_rows[[all_row_i]] <- row_pre
+              all_row_i <- all_row_i + 1L
+              all_rows[[all_row_i]] <- row_post
+            }
+          } else {
+            row_pre <- c(
+              base_fields,
+              list(
+                turn_index = 1L,
+                turn_type = "baseline",
+                target_group = NA_character_,
+                rating = NA_real_
+              )
+            )
+            row_post <- c(
+              base_fields,
+              list(
+                turn_index = 2L,
+                turn_type = "post",
+                target_group = NA_character_,
+                rating = NA_real_
+              )
+            )
+
+            all_row_i <- all_row_i + 1L
+            all_rows[[all_row_i]] <- row_pre
+            all_row_i <- all_row_i + 1L
+            all_rows[[all_row_i]] <- row_post
+          }
+
+          next
+        }
+
         chat <- new_portkey_chat(
           model = model,
           base_url = base_url,

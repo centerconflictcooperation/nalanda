@@ -83,6 +83,7 @@ run_simulation_pipeline <- function(
       call. = FALSE
     )
   }
+  inform_missing_chapter_jobs(chapter_jobs)
   if (is.null(total_steps)) {
     total_steps <- nrow(chapter_jobs) * n_simulations * length(groups)
   }
@@ -424,6 +425,38 @@ format_progress_label <- function(
   } else {
     paste0(chapter_label, " [", identity, "] (sim ", sim, model_suffix, ")")
   }
+}
+
+is_missing_chapter_text <- function(chapter_text) {
+  length(chapter_text) != 1L || is.na(chapter_text)
+}
+
+inform_missing_chapter_jobs <- function(chapter_jobs) {
+  missing <- vapply(
+    chapter_jobs$chapter_text,
+    is_missing_chapter_text,
+    logical(1)
+  )
+  if (!any(missing)) {
+    return(invisible(NULL))
+  }
+
+  labels <- paste0(chapter_jobs$chapter[missing])
+  has_book <- !is.na(chapter_jobs$book[missing]) & nzchar(chapter_jobs$book[missing])
+  labels[has_book] <- paste0(
+    chapter_jobs$book[missing][has_book],
+    " - ",
+    labels[has_book]
+  )
+
+  message(
+    "Skipping ",
+    sum(missing),
+    " chapter(s) with missing `chapter_text`: ",
+    paste(labels, collapse = ", ")
+  )
+
+  invisible(NULL)
 }
 
 make_result_base_fields <- function(book, chapter, sim, identity, party, extra = list()) {
