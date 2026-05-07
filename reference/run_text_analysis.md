@@ -13,6 +13,7 @@ run_text_analysis(
   text_col = "text",
   prompt,
   response_type,
+  output_mode = c("structured", "text"),
   id_col = NULL,
   n_simulations = 1,
   temperature = 0,
@@ -46,6 +47,16 @@ run_text_analysis(
 
   An `ellmer` structured type specification, for example
   `ellmer::type_object(score = ellmer::type_number())`.
+
+- output_mode:
+
+  Character. `"structured"` (default) uses the backend's
+  structured-output support. `"text"` is a compatibility mode for models
+  that do not support structured outputs (for example some Anthropic
+  models): nalanda appends strict JSON-only instructions to the prompt,
+  calls the model as free text, then parses the JSON back into the same
+  fields. Text mode is best-effort and stores the original model reply
+  in `raw_response`.
 
 - id_col:
 
@@ -90,12 +101,14 @@ run_text_analysis(
 - max_active:
 
   Integer. Maximum number of concurrent requests passed to
-  [`ellmer::parallel_chat_structured()`](https://ellmer.tidyverse.org/reference/parallel_chat.html).
+  [`ellmer::parallel_chat_structured()`](https://ellmer.tidyverse.org/reference/parallel_chat.html)
+  in structured mode. Text mode runs plain chat requests sequentially.
 
 - rpm:
 
   Integer. Requests-per-minute cap passed to
-  [`ellmer::parallel_chat_structured()`](https://ellmer.tidyverse.org/reference/parallel_chat.html).
+  [`ellmer::parallel_chat_structured()`](https://ellmer.tidyverse.org/reference/parallel_chat.html)
+  in structured mode. Text mode runs plain chat requests sequentially.
 
 ## Value
 

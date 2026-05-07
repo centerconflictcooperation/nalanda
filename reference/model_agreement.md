@@ -108,6 +108,11 @@ Always aggregate simulation runs first via
 [`aggregate_simulations()`](https://centerconflictcooperation.github.io/nalanda/reference/aggregate_simulations.md).
 Failing to do so inflates *n* and distorts agreement estimates.
 
+Units with missing scores for one or more models are excluded from ICC
+and Kendall's W because agreement metrics require the same units to be
+scored by all raters. The reported `n_units` is the number of complete
+units used in the calculation.
+
 ## Examples
 
 ``` r

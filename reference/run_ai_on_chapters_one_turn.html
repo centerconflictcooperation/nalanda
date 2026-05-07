@@ -61,6 +61,7 @@ prompts are executed in parallel with <code><a href="https://ellmer.tidyverse.or
 <span>  <span class="va">groups</span>,</span>
 <span>  <span class="va">context_text</span>,</span>
 <span>  <span class="va">question_text</span>,</span>
+<span>  output_mode <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"structured"</span>, <span class="st">"text"</span><span class="op">)</span>,</span>
 <span>  n_simulations <span class="op">=</span> <span class="fl">1</span>,</span>
 <span>  temperature <span class="op">=</span> <span class="fl">0</span>,</span>
 <span>  seed <span class="op">=</span> <span class="fl">42</span>,</span>
@@ -100,6 +101,16 @@ element is the full context for the corresponding group identity.</p></li>
 <dd><p>Character scalar. A question template containing the
 placeholder <code>{group}</code>, which will be replaced with each group label in
 per-group mode.</p></dd>
+
+
+<dt id="arg-output-mode">output_mode<a class="anchor" aria-label="anchor" href="#arg-output-mode"></a></dt>
+<dd><p>Character. <code>"structured"</code> (default) uses the backend's
+structured-output support. <code>"text"</code> is a compatibility mode for models
+that do not support structured outputs (for example some Anthropic models):
+nalanda appends strict JSON-only instructions to the prompt, calls the
+model as free text, then parses the JSON back into the same fields used by
+the rest of the pipeline. Text mode is best-effort and stores the original
+model reply in <code>raw_response</code>.</p></dd>
 
 
 <dt id="arg-n-simulations">n_simulations<a class="anchor" aria-label="anchor" href="#arg-n-simulations"></a></dt>
@@ -149,12 +160,14 @@ stored prompt preview shown in results.</p></dd>
 
 <dt id="arg-max-active">max_active<a class="anchor" aria-label="anchor" href="#arg-max-active"></a></dt>
 <dd><p>Integer. Maximum number of concurrent requests passed to
-<code><a href="https://ellmer.tidyverse.org/reference/parallel_chat.html" class="external-link">ellmer::parallel_chat_structured()</a></code>.</p></dd>
+<code><a href="https://ellmer.tidyverse.org/reference/parallel_chat.html" class="external-link">ellmer::parallel_chat_structured()</a></code> in structured mode. Text mode runs
+plain chat requests sequentially.</p></dd>
 
 
 <dt id="arg-rpm">rpm<a class="anchor" aria-label="anchor" href="#arg-rpm"></a></dt>
 <dd><p>Integer. Requests-per-minute cap passed to
-<code><a href="https://ellmer.tidyverse.org/reference/parallel_chat.html" class="external-link">ellmer::parallel_chat_structured()</a></code>.</p></dd>
+<code><a href="https://ellmer.tidyverse.org/reference/parallel_chat.html" class="external-link">ellmer::parallel_chat_structured()</a></code> in structured mode. Text mode runs
+plain chat requests sequentially.</p></dd>
 
 </dl></div>
     <div class="section level2">

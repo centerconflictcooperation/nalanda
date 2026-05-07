@@ -156,6 +156,10 @@ supplementary rank-agreement check.</p>
 
 <p>Always aggregate simulation runs first via <code><a href="aggregate_simulations.html">aggregate_simulations()</a></code>.
 Failing to do so inflates <em>n</em> and distorts agreement estimates.</p>
+<p>Units with missing scores for one or more models are excluded from ICC and
+Kendall's W because agreement metrics require the same units to be scored by
+all raters. The reported <code>n_units</code> is the number of complete units used in
+the calculation.</p>
 </div>
 
     </div>

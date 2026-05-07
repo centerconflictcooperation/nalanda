@@ -53,7 +53,7 @@ correlation results.</p>
 
     <div class="section level2">
     <h2 id="ref-usage">Usage<a class="anchor" aria-label="anchor" href="#ref-usage"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">plot_model_agreement</span><span class="op">(</span><span class="va">data</span>, type <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"metrics"</span>, <span class="st">"heatmap"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">plot_model_agreement</span><span class="op">(</span><span class="va">data</span>, type <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"metrics"</span>, <span class="st">"heatmap"</span><span class="op">)</span>, method <span class="op">=</span> <span class="cn">NULL</span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div class="section level2">
@@ -69,6 +69,13 @@ correlation results.</p>
 <dd><p>Character. <code>"metrics"</code> for a dot plot of agreement statistics;
 <code>"heatmap"</code> for a pairwise correlation tile plot.</p></dd>
 
+
+<dt id="arg-method">method<a class="anchor" aria-label="anchor" href="#arg-method"></a></dt>
+<dd><p>Character. Correlation method to plot when <code>type = "heatmap"</code>:
+<code>"spearman"</code> for rank correlations or <code>"pearson"</code> for linear correlations
+on the continuous scores. If <code>NULL</code> (default), Spearman is used when
+available, otherwise Pearson is used.</p></dd>
+
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
@@ -82,6 +89,8 @@ correlation results.</p>
 <span class="r-in"><span>  type <span class="op">=</span> <span class="st">"metrics"</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu">plot_model_agreement</span><span class="op">(</span><span class="fu"><a href="model_pairwise_cor.html">model_pairwise_cor</a></span><span class="op">(</span><span class="va">agg</span>, outcome <span class="op">=</span> <span class="st">"mean_rating"</span><span class="op">)</span>,</span></span>
 <span class="r-in"><span>  type <span class="op">=</span> <span class="st">"heatmap"</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu">plot_model_agreement</span><span class="op">(</span><span class="fu"><a href="model_pairwise_cor.html">model_pairwise_cor</a></span><span class="op">(</span><span class="va">agg</span>, outcome <span class="op">=</span> <span class="st">"mean_rating"</span><span class="op">)</span>,</span></span>
+<span class="r-in"><span>  type <span class="op">=</span> <span class="st">"heatmap"</span>, method <span class="op">=</span> <span class="st">"pearson"</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="op">}</span> <span class="co"># }</span></span></span>
 </code></pre></div>
     </div>

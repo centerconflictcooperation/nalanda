@@ -47,11 +47,11 @@ head(metrics)
 #>   chapter     sim identity   book    party pre_ingroup post_ingroup pre_outgroup
 #>   <chr>     <int> <chr>      <chr>   <chr>       <dbl>        <dbl>        <dbl>
 #> 1 chapter_1     1 Democrat   Bridge… Demo…          78           79           46
-#> 2 chapter_1     1 Democrat   Common… Demo…          77           78           50
-#> 3 chapter_1     1 Republican Bridge… Repu…          82           84           51
-#> 4 chapter_1     1 Republican Common… Repu…          81           83           48
-#> 5 chapter_1     2 Democrat   Bridge… Demo…          79           80           47
-#> 6 chapter_1     2 Democrat   Common… Demo…          78           79           51
+#> 2 chapter_1     1 Republican Bridge… Repu…          82           84           51
+#> 3 chapter_1     2 Democrat   Bridge… Demo…          79           80           47
+#> 4 chapter_1     2 Republican Bridge… Repu…          83           85           52
+#> 5 chapter_2     1 Democrat   Bridge… Demo…          78           79           48
+#> 6 chapter_2     1 Republican Bridge… Repu…          82           84           53
 #> # ℹ 8 more variables: post_outgroup <dbl>, pre_gap <dbl>, post_gap <dbl>,
 #> #   delta_ingroup <dbl>, delta_outgroup <dbl>, delta_gap <dbl>,
 #> #   baseline_prompt <chr>, post_prompt <chr>

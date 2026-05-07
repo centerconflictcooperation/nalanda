@@ -26,6 +26,9 @@
 - [`fix_text_file()`](https://centerconflictcooperation.github.io/nalanda/reference/fix_text_file.md)
   : Fix text file encoding and normalize punctuation/whitespace
 
+- [`interpolate_spotify_audiobook_duration()`](https://centerconflictcooperation.github.io/nalanda/reference/interpolate_spotify_audiobook_duration.md)
+  : Interpolate Spotify audiobook duration from text size
+
 - [`list_book_chapters()`](https://centerconflictcooperation.github.io/nalanda/reference/list_book_chapters.md)
   : List book chapter files inside a books directory
 
@@ -48,6 +51,9 @@
 - [`model_agreement()`](https://centerconflictcooperation.github.io/nalanda/reference/model_agreement.md)
   : Compute inter-model agreement
 
+- [`model_agreement_sensitivity()`](https://centerconflictcooperation.github.io/nalanda/reference/model_agreement_sensitivity.md)
+  : Summarize model agreement across analysis levels
+
 - [`model_pairwise_cor()`](https://centerconflictcooperation.github.io/nalanda/reference/model_pairwise_cor.md)
   : Pairwise model correlations
 
@@ -56,6 +62,9 @@
 
 - [`nalanda()`](https://centerconflictcooperation.github.io/nalanda/reference/nalanda.md)
   : A Random Historical Fact About Nalanda University
+
+- [`pairwise_for_level()`](https://centerconflictcooperation.github.io/nalanda/reference/pairwise_for_level.md)
+  : Pairwise model correlations at a chosen analysis level
 
 - [`plot_chapter_scores_faceted()`](https://centerconflictcooperation.github.io/nalanda/reference/plot_chapter_scores_faceted.md)
   : Faceted plot of chapter scores
@@ -74,6 +83,15 @@
 
 - [`plot_model_agreement()`](https://centerconflictcooperation.github.io/nalanda/reference/plot_model_agreement.md)
   : Plot inter-model agreement
+
+- [`plot_top_unit_heatmap()`](https://centerconflictcooperation.github.io/nalanda/reference/plot_top_unit_heatmap.md)
+  : Plot model-by-unit rank heatmap
+
+- [`plot_top_unit_pairs()`](https://centerconflictcooperation.github.io/nalanda/reference/plot_top_unit_pairs.md)
+  : Plot paired subgroup ranks for top units
+
+- [`plot_top_units()`](https://centerconflictcooperation.github.io/nalanda/reference/plot_top_units.md)
+  : Plot units that rank consistently high across models
 
 - [`prepare_forest_books()`](https://centerconflictcooperation.github.io/nalanda/reference/prepare_forest_books.md)
   : Prepare book-level data for forest plotting
@@ -114,8 +132,14 @@
 - [`summarize_identity_match_rates()`](https://centerconflictcooperation.github.io/nalanda/reference/summarize_identity_match_rates.md)
   : Summarize identity match rates by model
 
+- [`summarize_model_correlations()`](https://centerconflictcooperation.github.io/nalanda/reference/summarize_model_correlations.md)
+  : Summarize pairwise model correlations
+
 - [`summarize_simulation_stability()`](https://centerconflictcooperation.github.io/nalanda/reference/summarize_simulation_stability.md)
   : Summarize simulation stability across chapters
+
+- [`summarize_top_units()`](https://centerconflictcooperation.github.io/nalanda/reference/summarize_top_units.md)
+  : Summarize units that rank consistently high across models
 
 - [`summarize_treatment_results()`](https://centerconflictcooperation.github.io/nalanda/reference/summarize_treatment_results.md)
   : Summarize generic treatment results

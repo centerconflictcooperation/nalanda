@@ -23,6 +23,7 @@ run_ai_on_chapters(
   groups,
   context_text,
   question_text,
+  output_mode = c("structured", "text"),
   n_simulations = 1,
   temperature = 0,
   seed = 42,
@@ -64,6 +65,16 @@ run_ai_on_chapters(
   Character scalar. A question template containing the placeholder
   `{group}`, which will be replaced with each group label. Example:
   `"On a scale from 0 to 100, how warmly do you feel towards {group}s?"`
+
+- output_mode:
+
+  Character. `"structured"` (default) uses the backend's
+  structured-output support. `"text"` is a compatibility mode for models
+  that do not support structured outputs (for example some Anthropic
+  models): nalanda appends strict JSON-only instructions to the prompt,
+  calls the model as free text, then parses the JSON back into the same
+  fields used by the rest of the pipeline. Text mode is best-effort and
+  stores the original model reply in `raw_response`.
 
 - n_simulations:
 

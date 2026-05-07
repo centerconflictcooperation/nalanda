@@ -13,6 +13,7 @@ simulate_treatment(
   intervention_text = "",
   prompt,
   response_type,
+  output_mode = c("structured", "text"),
   groups = NULL,
   context_text = NULL,
   n_simulations = 1,
@@ -46,6 +47,16 @@ simulate_treatment(
 
   An `ellmer` structured type specification applied to all turns (for
   example `ellmer::type_object(score = ellmer::type_number())`).
+
+- output_mode:
+
+  Character. `"structured"` (default) uses the backend's
+  structured-output support. `"text"` is a compatibility mode for models
+  that do not support structured outputs (for example some Anthropic
+  models): nalanda appends strict JSON-only instructions to the prompt,
+  calls the model as free text, then parses the JSON back into the same
+  tabular fields. Text mode is best-effort and stores the original model
+  reply in `raw_response`.
 
 - groups:
 

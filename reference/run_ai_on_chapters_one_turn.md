@@ -13,6 +13,7 @@ run_ai_on_chapters_one_turn(
   groups,
   context_text,
   question_text,
+  output_mode = c("structured", "text"),
   n_simulations = 1,
   temperature = 0,
   seed = 42,
@@ -54,6 +55,16 @@ run_ai_on_chapters_one_turn(
   Character scalar. A question template containing the placeholder
   `{group}`, which will be replaced with each group label in per-group
   mode.
+
+- output_mode:
+
+  Character. `"structured"` (default) uses the backend's
+  structured-output support. `"text"` is a compatibility mode for models
+  that do not support structured outputs (for example some Anthropic
+  models): nalanda appends strict JSON-only instructions to the prompt,
+  calls the model as free text, then parses the JSON back into the same
+  fields used by the rest of the pipeline. Text mode is best-effort and
+  stores the original model reply in `raw_response`.
 
 - n_simulations:
 
@@ -103,12 +114,14 @@ run_ai_on_chapters_one_turn(
 - max_active:
 
   Integer. Maximum number of concurrent requests passed to
-  [`ellmer::parallel_chat_structured()`](https://ellmer.tidyverse.org/reference/parallel_chat.html).
+  [`ellmer::parallel_chat_structured()`](https://ellmer.tidyverse.org/reference/parallel_chat.html)
+  in structured mode. Text mode runs plain chat requests sequentially.
 
 - rpm:
 
   Integer. Requests-per-minute cap passed to
-  [`ellmer::parallel_chat_structured()`](https://ellmer.tidyverse.org/reference/parallel_chat.html).
+  [`ellmer::parallel_chat_structured()`](https://ellmer.tidyverse.org/reference/parallel_chat.html)
+  in structured mode. Text mode runs plain chat requests sequentially.
 
 ## Value
 

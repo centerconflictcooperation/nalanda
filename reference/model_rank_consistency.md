@@ -63,6 +63,10 @@ context. If the data still contain lower-level rows (for example,
 chapters) and you want book-level ranks, aggregate those rows to the
 book level before calling this function.
 
+Units with missing scores for one or more models are excluded from the
+concordance calculation. The reported `n_items` is the number of
+complete items used.
+
 ## Examples
 
 ``` r

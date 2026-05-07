@@ -64,6 +64,7 @@ turn per chapter, preserving context across the full book.</p>
 <span>  <span class="va">groups</span>,</span>
 <span>  <span class="va">context_text</span>,</span>
 <span>  <span class="va">question_text</span>,</span>
+<span>  output_mode <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"structured"</span>, <span class="st">"text"</span><span class="op">)</span>,</span>
 <span>  n_simulations <span class="op">=</span> <span class="fl">1</span>,</span>
 <span>  temperature <span class="op">=</span> <span class="fl">0</span>,</span>
 <span>  seed <span class="op">=</span> <span class="fl">42</span>,</span>
@@ -96,6 +97,16 @@ turn per chapter, preserving context across the full book.</p>
 <dt id="arg-question-text">question_text<a class="anchor" aria-label="anchor" href="#arg-question-text"></a></dt>
 <dd><p>Character scalar. A question template containing the
 placeholder <code>{group}</code>, which will be replaced with each group label.</p></dd>
+
+
+<dt id="arg-output-mode">output_mode<a class="anchor" aria-label="anchor" href="#arg-output-mode"></a></dt>
+<dd><p>Character. <code>"structured"</code> (default) uses the backend's
+structured-output support. <code>"text"</code> is a compatibility mode for models
+that do not support structured outputs (for example some Anthropic models):
+nalanda appends strict JSON-only instructions to the prompt, calls the
+model as free text, then parses the JSON back into the same fields used by
+the rest of the pipeline. Text mode is best-effort and stores the original
+model reply in <code>raw_response</code>.</p></dd>
 
 
 <dt id="arg-n-simulations">n_simulations<a class="anchor" aria-label="anchor" href="#arg-n-simulations"></a></dt>
