@@ -162,6 +162,15 @@ summarize_simulation_stability <- function(
   )
   out$all_stable <- out$n_units_any_variation == 0
 
+  no_testable <- out$n_testable_units == 0
+  if (any(no_testable)) {
+    warning(
+      "Some stability proportions are NA because no assessed units had ",
+      "`sim > 1`; repeated simulations are needed to estimate variation.",
+      call. = FALSE
+    )
+  }
+
   out <- out |>
     dplyr::select(
       dplyr::all_of(by_present),

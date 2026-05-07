@@ -224,6 +224,34 @@ test_that("compute_run_ai_metrics keeps books distinct for list inputs", {
   expect_equal(nrow(out), 2)
 })
 
+test_that("compute_run_ai_metrics orders by book before chapter", {
+  make_turns <- function(book, chapter) {
+    tibble::tibble(
+      book = book,
+      chapter = c(chapter, chapter),
+      sim = c(1, 1),
+      identity = c("Democrat", "Democrat"),
+      turn_type = c("baseline", "post"),
+      target_group = c(NA_character_, NA_character_),
+      rating = c(40, 45)
+    )
+  }
+
+  x <- dplyr::bind_rows(
+    make_turns("Book B", "chapter_10"),
+    make_turns("Book A", "chapter_2"),
+    make_turns("Book A", "chapter_1")
+  )
+  x$book <- factor(x$book, levels = c("Book B", "Book A"))
+  x$model <- c(NA_character_, NA_character_, "test-model", NA_character_, NA_character_, NA_character_)
+
+  out <- compute_run_ai_metrics(x)
+
+  expect_equal(unique(out$model), "test-model")
+  expect_equal(as.character(out$book), c("Book A", "Book A", "Book B"))
+  expect_equal(out$chapter, c("chapter_1", "chapter_2", "chapter_10"))
+})
+
 test_that("compute_run_ai_metrics preserves rows when optional ids contain NA", {
   make_book_turns <- function(book, prompt) {
     tibble::tibble(
@@ -363,12 +391,14 @@ test_that("run_ai_on_chapters skips missing chapter text without model calls", {
   expect_equal(calls, 2L)
   expect_equal(nrow(out_tbl), 8)
   expect_true(all(is.na(skipped$rating)))
+  expect_equal(unique(skipped$party), c("Democrat", "Republican"))
   expect_true(all(is.na(skipped$baseline_prompt)))
   expect_true(all(is.na(skipped$post_prompt)))
 
   metrics <- compute_run_ai_metrics(out)
   skipped_metrics <- metrics[metrics$chapter == "chapter_2.txt", ]
 
+  expect_equal(skipped_metrics$party, c("Democrat", "Republican"))
   expect_true(all(is.na(skipped_metrics$pre_outgroup)))
   expect_true(all(is.na(skipped_metrics$post_outgroup)))
   expect_true(all(is.na(skipped_metrics$delta_outgroup)))
@@ -415,11 +445,13 @@ test_that("run_ai_on_chapters_one_turn skips missing chapter text before batchin
   expect_equal(calls, 2L)
   expect_equal(nrow(out_tbl), 4)
   expect_true(all(is.na(skipped$rating)))
+  expect_equal(skipped$party, c("Democrat", "Republican"))
   expect_true(all(is.na(skipped$prompt)))
 
   metrics <- compute_run_ai_metrics_one_turn(out)
   skipped_metrics <- metrics[metrics$chapter == "chapter_2.txt", ]
 
+  expect_equal(skipped_metrics$party, c("Democrat", "Republican"))
   expect_true(all(is.na(skipped_metrics$outgroup_rating)))
 })
 
@@ -818,6 +850,74 @@ test_that("simulate_treatment binds multiple models into one raw table", {
   expect_equal(attr(out, "models"), c("gemini-2.5-pro", "gemini-3.1-pro-preview"))
 })
 
+test_that("simulate_treatment can parse soft structured text output", {
+  seen_prompt <- NULL
+  testthat::local_mocked_bindings(
+    new_portkey_chat = function(model, base_url, temperature, seed) {
+      list(
+        chat = function(full_prompt) {
+          seen_prompt <<- full_prompt
+          '{"score": "7"}'
+        }
+      )
+    },
+    .package = "nalanda"
+  )
+
+  out <- simulate_treatment(
+    intervention_text = "A short passage.",
+    prompt = "Rate the passage from 1 to 10.",
+    response_type = ellmer::type_object(score = ellmer::type_number()),
+    output_mode = "text"
+  )
+
+  expect_equal(out$score, 7)
+  expect_equal(out$raw_response, '{"score": "7"}')
+  expect_match(seen_prompt, "Response format requirement", fixed = TRUE)
+  expect_match(seen_prompt, '"score": <value>', fixed = TRUE)
+})
+
+test_that("run_ai_on_chapters can parse text-mode JSON into rating rows", {
+  testthat::local_mocked_bindings(
+    new_portkey_chat = function(model, base_url, temperature, seed) {
+      list(
+        chat = function(prompt) {
+          if (grepl('"party": <value>', prompt, fixed = TRUE)) {
+            return('{"party": "Democrat", "rating_democrat": 80, "rating_republican": 20}')
+          }
+          '{"rating_democrat": 75, "rating_republican": 25}'
+        }
+      )
+    },
+    .package = "nalanda"
+  )
+
+  out <- run_ai_on_chapters(
+    book_texts = "Chapter text.",
+    groups = c("Democrat", "Republican"),
+    context_text = "You are simulating a {identity}.",
+    question_text = "How warmly do you feel towards {group}s?",
+    output_mode = "text"
+  )
+
+  expect_equal(nrow(out), 8)
+  expect_true(all(c("baseline_raw_response", "post_raw_response") %in% names(out)))
+  democrat_baseline <- out[
+    out$identity == "Democrat" &
+      out$turn_type == "baseline" &
+      out$target_group == "Democrat",
+  ]
+  democrat_post <- out[
+    out$identity == "Democrat" &
+      out$turn_type == "post" &
+      out$target_group == "Republican",
+  ]
+
+  expect_equal(democrat_baseline$rating, 80)
+  expect_equal(democrat_post$rating, 25)
+  expect_equal(unique(out$party), "Democrat")
+})
+
 test_that("summarize_identity_match_rates computes one row per model and identity", {
   x <- tibble::tibble(
     model = c(
@@ -969,6 +1069,63 @@ test_that("compute_run_ai_metrics_cumulative compares each chapter to baseline",
   expect_equal(attr(out, "model"), "test-model")
 })
 
+test_that("run_ai_cumulative_chapters skips missing chapter text while preserving party", {
+  calls <- 0L
+  testthat::local_mocked_bindings(
+    new_portkey_chat = function(...) {
+      list(
+        chat_structured = function(prompt, type) {
+          calls <<- calls + 1L
+          party <- if (grepl("IDENTITY:Democrat", prompt, fixed = TRUE)) {
+            "Democrat"
+          } else {
+            "Republican"
+          }
+          list(
+            party = party,
+            rating_democrat = 60,
+            rating_republican = 40
+          )
+        }
+      )
+    },
+    .package = "nalanda"
+  )
+
+  book_texts <- list(
+    "Book A" = list(
+      "chapter_1.txt" = "Ordinary chapter text.",
+      "chapter_2.txt" = NA_character_
+    )
+  )
+
+  expect_message(
+    out <- run_ai_cumulative_chapters(
+      book_texts = book_texts,
+      groups = c("Democrat", "Republican"),
+      context_text = "IDENTITY:{identity}.",
+      question_text = "How warmly do you feel towards {group}s?"
+    ),
+    "Skipping 1 chapter\\(s\\) with missing `chapter_text`: Book A - chapter_2.txt"
+  )
+
+  out_tbl <- out[["Book A"]]
+  skipped <- out_tbl[out_tbl$chapter == "chapter_2.txt", ]
+
+  expect_equal(calls, 4L)
+  expect_equal(nrow(skipped), 4)
+  expect_true(all(is.na(skipped$rating)))
+  expect_equal(unique(skipped$party), c("Democrat", "Republican"))
+  expect_true(all(is.na(skipped$post_prompt)))
+
+  metrics <- compute_run_ai_metrics_cumulative(out)
+  skipped_metrics <- metrics[metrics$chapter == "chapter_2.txt", ]
+
+  expect_equal(skipped_metrics$party, c("Democrat", "Republican"))
+  expect_true(all(is.na(skipped_metrics$post_outgroup)))
+  expect_true(all(is.na(skipped_metrics$delta_outgroup)))
+})
+
 test_that("run_ai_cumulative_chapters rejects non-nested input", {
   expect_error(
     run_ai_cumulative_chapters(
@@ -1101,6 +1258,28 @@ test_that("summarize_simulation_stability can derive summaries from raw metrics"
   expect_equal(out$prop_units_any_pre_variation, c(0, 0))
   expect_equal(out$prop_units_any_post_variation, c(1, 0))
   expect_equal(out$all_stable, c(FALSE, TRUE))
+})
+
+test_that("summarize_simulation_stability warns when no units are testable", {
+  x <- tibble::tibble(
+    book = c("Book A", "Book A"),
+    chapter = c("chapter_1", "chapter_1"),
+    party = c("Democrat", "Republican"),
+    sim = c(1, 1),
+    sd_pre_ingroup = c(NA_real_, NA_real_),
+    sd_post_ingroup = c(NA_real_, NA_real_),
+    sd_pre_outgroup = c(NA_real_, NA_real_),
+    sd_post_outgroup = c(NA_real_, NA_real_)
+  )
+
+  expect_warning(
+    out <- summarize_simulation_stability(x),
+    "no assessed units had `sim > 1`"
+  )
+
+  expect_equal(out$prop_units_any_pre_variation, c(NA_real_, NA_real_))
+  expect_equal(out$prop_units_any_post_variation, c(NA_real_, NA_real_))
+  expect_equal(out$all_stable, c(TRUE, TRUE))
 })
 
 test_that("plot_forest_books can prepare internally from summary data", {
@@ -1246,6 +1425,47 @@ test_that("plot_forest_books allows compact CI text styling", {
       ci_label_lineheight = 0.8,
       show_overall = FALSE
     )
+  )
+})
+
+test_that("grouped forest plot with header prints", {
+  grouped <- tibble::tibble(
+    book = c("Book A", "Book A", "Book B", "Book B"),
+    party = c("Democrat", "Republican", "Democrat", "Republican"),
+    sim = c(10, 10, 12, 12),
+    mean_delta_gap = c(8, 12, 10, 14),
+    sd_delta_gap = c(1, 1, 1, 1)
+  )
+
+  p <- plot_forest_books(
+    grouped,
+    label_cols = "book",
+    dv = "delta_gap",
+    header = c("Book tested", "Effect [95% CI]"),
+    ci_label_fontsize = 8,
+    ci_label_lineheight = 0.8
+  )
+
+  expect_no_error(print(p))
+})
+
+test_that("plot_forest_books reports all-missing estimates clearly", {
+  grouped <- tibble::tibble(
+    book = c("Book A", "Book A"),
+    party = c("Democrat", "Republican"),
+    sim = c(10, 10),
+    mean_delta_gap = c(NA_real_, NA_real_),
+    sd_delta_gap = c(NA_real_, NA_real_)
+  )
+
+  expect_error(
+    plot_forest_books(
+      grouped,
+      label_cols = "book",
+      dv = "delta_gap",
+      header = c("Book tested", "Effect [95% CI]")
+    ),
+    "No finite estimates are available"
   )
 })
 

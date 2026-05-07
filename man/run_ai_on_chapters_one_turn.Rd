@@ -9,6 +9,7 @@ run_ai_on_chapters_one_turn(
   groups,
   context_text,
   question_text,
+  output_mode = c("structured", "text"),
   n_simulations = 1,
   temperature = 0,
   seed = 42,
@@ -40,6 +41,14 @@ element is the full context for the corresponding group identity.
 placeholder \code{{group}}, which will be replaced with each group label in
 per-group mode.}
 
+\item{output_mode}{Character. \code{"structured"} (default) uses the backend's
+structured-output support. \code{"text"} is a compatibility mode for models
+that do not support structured outputs (for example some Anthropic models):
+nalanda appends strict JSON-only instructions to the prompt, calls the
+model as free text, then parses the JSON back into the same fields used by
+the rest of the pipeline. Text mode is best-effort and stores the original
+model reply in \code{raw_response}.}
+
 \item{n_simulations}{Integer. Number of repeated simulations per chapter per
 identity.}
 
@@ -70,10 +79,12 @@ supplying function arguments.}
 stored prompt preview shown in results.}
 
 \item{max_active}{Integer. Maximum number of concurrent requests passed to
-\code{\link[ellmer:parallel_chat_structured]{ellmer::parallel_chat_structured()}}.}
+\code{\link[ellmer:parallel_chat_structured]{ellmer::parallel_chat_structured()}} in structured mode. Text mode runs
+plain chat requests sequentially.}
 
 \item{rpm}{Integer. Requests-per-minute cap passed to
-\code{\link[ellmer:parallel_chat_structured]{ellmer::parallel_chat_structured()}}.}
+\code{\link[ellmer:parallel_chat_structured]{ellmer::parallel_chat_structured()}} in structured mode. Text mode runs
+plain chat requests sequentially.}
 }
 \value{
 A tibble of raw single-turn ratings, or a named list of tibbles (one

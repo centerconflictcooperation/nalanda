@@ -9,6 +9,7 @@ run_ai_cumulative_chapters(
   groups,
   context_text,
   question_text,
+  output_mode = c("structured", "text"),
   n_simulations = 1,
   temperature = 0,
   seed = 42,
@@ -30,6 +31,14 @@ run_ai_cumulative_chapters(
 
 \item{question_text}{Character scalar. A question template containing the
 placeholder \code{{group}}, which will be replaced with each group label.}
+
+\item{output_mode}{Character. \code{"structured"} (default) uses the backend's
+structured-output support. \code{"text"} is a compatibility mode for models
+that do not support structured outputs (for example some Anthropic models):
+nalanda appends strict JSON-only instructions to the prompt, calls the
+model as free text, then parses the JSON back into the same fields used by
+the rest of the pipeline. Text mode is best-effort and stores the original
+model reply in \code{raw_response}.}
 
 \item{n_simulations}{Integer. Number of repeated simulations per book per
 identity.}

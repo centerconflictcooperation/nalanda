@@ -77,6 +77,11 @@ supplementary rank-agreement check.
 
 Always aggregate simulation runs first via \code{\link[=aggregate_simulations]{aggregate_simulations()}}.
 Failing to do so inflates \emph{n} and distorts agreement estimates.
+
+Units with missing scores for one or more models are excluded from ICC and
+Kendall's W because agreement metrics require the same units to be scored by
+all raters. The reported \code{n_units} is the number of complete units used in
+the calculation.
 }
 }
 \examples{

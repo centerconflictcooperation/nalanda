@@ -20,8 +20,10 @@ Imports:
     rlang,
     stringr,
     tibble,
-    tidyr,
-    forestplot
+    forestplot,
+    jsonlite,
+    methods,
+    tidyr
 Suggests: 
     DT,
     ggimage,

@@ -129,10 +129,17 @@ plot_forest_books <- function(
     ci_multiline = ci_multiline,
     ci_show_party = ci_show_party
   )
+  input <- .drop_empty_forestplot_rows(input)
 
   if (show_overall) {
-    line_pos <- mean(as.numeric(input$mean), na.rm = TRUE)
-    attr(line_pos, "gp") <- grid::gpar(col = "darkgray", lwd = 2, lty = 2)
+    finite_means <- as.numeric(input$mean)
+    finite_means <- finite_means[is.finite(finite_means)]
+    if (length(finite_means) > 0) {
+      line_pos <- mean(finite_means)
+      attr(line_pos, "gp") <- grid::gpar(col = "darkgray", lwd = 2, lty = 2)
+    } else {
+      show_overall <- FALSE
+    }
   }
 
   tick_spec <- .compute_forest_xticks(
@@ -229,6 +236,56 @@ plot_forest_books <- function(
   }
 
   p
+}
+
+.drop_empty_forestplot_rows <- function(input) {
+  values <- c(
+    as.numeric(input$mean),
+    as.numeric(input$lower),
+    as.numeric(input$upper)
+  )
+  if (!any(is.finite(values))) {
+    stop(
+      "No finite estimates are available for the forest plot. ",
+      "Check that the selected `dv` has non-missing mean and CI values.",
+      call. = FALSE
+    )
+  }
+
+  if (is.matrix(input$mean)) {
+    keep <- apply(
+      cbind(input$mean, input$lower, input$upper),
+      1,
+      function(x) any(is.finite(as.numeric(x)))
+    )
+  } else {
+    keep <- is.finite(input$mean) |
+      is.finite(input$lower) |
+      is.finite(input$upper)
+  }
+
+  if (!all(keep)) {
+    input$label_mat <- input$label_mat[keep, , drop = FALSE]
+    if (is.matrix(input$mean)) {
+      input$mean <- input$mean[keep, , drop = FALSE]
+      input$lower <- input$lower[keep, , drop = FALSE]
+      input$upper <- input$upper[keep, , drop = FALSE]
+    } else {
+      input$mean <- input$mean[keep]
+      input$lower <- input$lower[keep]
+      input$upper <- input$upper[keep]
+    }
+  }
+
+  if (nrow(input$label_mat) == 0) {
+    stop(
+      "No rows with finite estimates are available for the forest plot. ",
+      "Check that the selected `dv` has non-missing mean and CI values.",
+      call. = FALSE
+    )
+  }
+
+  input
 }
 
 .compute_forest_xticks <- function(

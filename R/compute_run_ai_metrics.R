@@ -50,6 +50,7 @@ compute_run_ai_metrics <- function(x, per_group = NULL) {
   }
   model <- normalize_model_name(model)
   models <- normalize_model_metadata(models)
+  x <- fill_missing_model_column(x, model = model, models = models)
 
   required_cols <- c("chapter", "sim", "identity", "turn_type", "rating")
   missing_cols <- setdiff(required_cols, names(x))
@@ -150,6 +151,7 @@ compute_run_ai_metrics <- function(x, per_group = NULL) {
   if (length(present_long) > 0) {
     out <- out[, c(setdiff(names(out), present_long), present_long)]
   }
+  out <- arrange_metric_output(out)
 
   attr(out, "model") <- model
   if (length(models) > 1) {
@@ -168,4 +170,102 @@ mean_or_na <- function(x) {
   }
 
   mean(x, na.rm = TRUE)
+}
+
+fill_missing_model_column <- function(x, model = NULL, models = NULL) {
+  if (!("model" %in% names(x))) {
+    return(x)
+  }
+
+  model_values <- as.character(x$model)
+  fill_value <- valid_model_label(model)
+
+  if (is.null(fill_value) && length(models) == 1) {
+    fill_value <- valid_model_label(models)
+  }
+
+  if (is.null(fill_value)) {
+    observed <- unique(model_values[!is.na(model_values) & nzchar(model_values)])
+    if (length(observed) == 1) {
+      fill_value <- valid_model_label(observed)
+    }
+  }
+
+  if (is.null(fill_value)) {
+    return(x)
+  }
+
+  missing_model <- is.na(model_values) | !nzchar(model_values)
+  model_values[missing_model] <- fill_value
+  x$model <- model_values
+  x
+}
+
+valid_model_label <- function(model) {
+  if (is.null(model)) {
+    return(NULL)
+  }
+
+  model <- as.character(model)[1]
+  if (is.na(model) || !nzchar(model)) {
+    return(NULL)
+  }
+
+  model
+}
+
+arrange_metric_output <- function(out) {
+  out <- tibble::as_tibble(out)
+  if (nrow(out) == 0) {
+    return(out)
+  }
+
+  if ("chapter_index" %in% names(out)) {
+    out$.chapter_order <- suppressWarnings(as.integer(out$chapter_index))
+  } else if ("chapter" %in% names(out)) {
+    out$.chapter_order <- parse_chapter_numbers(out$chapter)
+  } else {
+    out$.chapter_order <- NA_integer_
+  }
+
+  out$.chapter_label_order <- if ("chapter" %in% names(out)) {
+    as.character(out$chapter)
+  } else {
+    NA_character_
+  }
+  out$.model_order <- if ("model" %in% names(out)) {
+    as.character(out$model)
+  } else {
+    NA_character_
+  }
+  out$.book_order <- if ("book" %in% names(out)) {
+    as.character(out$book)
+  } else {
+    NA_character_
+  }
+  out$.identity_order <- if ("identity" %in% names(out)) {
+    as.character(out$identity)
+  } else {
+    NA_character_
+  }
+  out$.party_order <- if ("party" %in% names(out)) {
+    as.character(out$party)
+  } else {
+    NA_character_
+  }
+
+  out |>
+    dplyr::arrange(
+      .data$.model_order,
+      .data$.book_order,
+      .data$.chapter_order,
+      .data$.chapter_label_order,
+      dplyr::across(dplyr::any_of("sim")),
+      .data$.identity_order,
+      .data$.party_order
+    ) |>
+    dplyr::select(-dplyr::all_of(c(
+      ".chapter_order", ".chapter_label_order", ".model_order", ".book_order",
+      ".identity_order", ".party_order"
+    )))
 }

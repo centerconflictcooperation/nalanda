@@ -200,7 +200,12 @@ new_progress_tracker <- function(
     state$current_chapter_done <- state$current_chapter_done + 1L
 
     book_total <- as.integer(book_stage_counts[[book_id]]) * units_per_stage
-    chapter_total <- as.integer(chapter_stage_counts[[chapter_id]]) * units_per_stage
+    chapter_count <- if (chapter_id %in% names(chapter_stage_counts)) {
+      as.integer(chapter_stage_counts[[chapter_id]])
+    } else {
+      1L
+    }
+    chapter_total <- chapter_count * units_per_stage
 
     pb$tick(tokens = list(
       what = format_progress_label(
@@ -389,6 +394,215 @@ build_turn_types <- function(per_group, groups, include_party_first = TRUE) {
     first = build_single_rating_type(include_party = include_party_first),
     second = build_single_rating_type(include_party = FALSE)
   )
+}
+
+normalize_output_mode <- function(output_mode) {
+  match.arg(output_mode, c("structured", "text"))
+}
+
+build_response_fields <- function(per_group, groups, include_party = TRUE) {
+  fields <- character()
+  if (isTRUE(include_party)) {
+    fields <- c(fields, "party")
+  }
+
+  if (isTRUE(per_group)) {
+    group_keys <- group_keys_from_groups(groups)
+    fields <- c(fields, paste0("rating_", group_keys))
+  } else {
+    fields <- c(fields, "rating")
+  }
+
+  fields
+}
+
+infer_response_type_fields <- function(response_type) {
+  if (is.null(response_type)) {
+    return(NULL)
+  }
+  if (methods::is(response_type, "TypeObject") ||
+    methods::is(response_type, "ellmer::TypeObject") ||
+    (isS4(response_type) && "properties" %in% methods::slotNames(response_type))) {
+    properties <- tryCatch(
+      methods::slot(response_type, "properties"),
+      error = function(e) NULL
+    )
+    property_names <- names(properties)
+    if (!is.null(property_names) && length(property_names) > 0) {
+      return(property_names[nzchar(property_names)])
+    }
+  }
+  if (is.list(response_type)) {
+    for (slot in c("fields", "properties", "schema")) {
+      if (!is.null(response_type[[slot]]) && is.list(response_type[[slot]])) {
+        slot_names <- names(response_type[[slot]])
+        if (!is.null(slot_names) && length(slot_names) > 0) {
+          return(slot_names[nzchar(slot_names)])
+        }
+      }
+    }
+
+    field_names <- names(response_type)
+    if (!is.null(field_names) && length(field_names) > 0) {
+      metadata_names <- c(
+        "type", "description", "required", "additionalProperties",
+        "class", "name", "schema"
+      )
+      field_names <- setdiff(field_names[nzchar(field_names)], metadata_names)
+      if (length(field_names) > 0) {
+        return(field_names)
+      }
+    }
+  }
+
+  NULL
+}
+
+chat_model_response <- function(chat, prompt, type, output_mode, fields = NULL) {
+  output_mode <- normalize_output_mode(output_mode)
+
+  if (identical(output_mode, "structured")) {
+    return(chat$chat_structured(prompt, type = type))
+  }
+
+  prompt_with_format <- append_soft_structured_instructions(prompt, fields)
+  raw_response <- chat$chat(prompt_with_format)
+  parse_soft_structured_response(raw_response, fields = fields)
+}
+
+append_soft_structured_instructions <- function(prompt, fields = NULL) {
+  if (!is.null(fields) && length(fields) > 0) {
+    field_json <- paste0(
+      "{",
+      paste(
+        vapply(fields, function(field) {
+          paste0('"', field, '": <value>')
+        }, character(1)),
+        collapse = ", "
+      ),
+      "}"
+    )
+    format_instruction <- paste0(
+      "Return only valid JSON with exactly this object shape:\n",
+      field_json,
+      "\nUse numbers for rating fields. Do not include markdown, prose, or code fences."
+    )
+  } else {
+    format_instruction <- paste(
+      "Return only valid JSON.",
+      "Do not include markdown, prose, or code fences."
+    )
+  }
+
+  paste(
+    prompt,
+    "",
+    "Response format requirement:",
+    format_instruction,
+    sep = "\n"
+  )
+}
+
+parse_soft_structured_response <- function(raw_response, fields = NULL) {
+  raw_text <- normalize_chat_text(raw_response)
+  parsed <- tryCatch(
+    parse_json_object_response(raw_text),
+    error = function(e) {
+      if (!is.null(fields) && length(fields) == 1) {
+        return(parse_single_field_response(raw_text, fields[[1]]))
+      }
+      stop(e)
+    }
+  )
+
+  parsed <- as.list(parsed)
+  if (!is.null(fields) && length(fields) > 0) {
+    missing_fields <- setdiff(fields, names(parsed))
+    if (length(missing_fields) > 0) {
+      stop(
+        "Text output could not be parsed into the expected fields: ",
+        paste(missing_fields, collapse = ", "),
+        ". Raw response: ",
+        raw_text,
+        call. = FALSE
+      )
+    }
+    parsed <- parsed[fields]
+  }
+
+  parsed <- lapply(parsed, coerce_soft_structured_value)
+  parsed$raw_response <- raw_text
+  parsed
+}
+
+normalize_chat_text <- function(raw_response) {
+  if (is.character(raw_response)) {
+    return(paste(raw_response, collapse = "\n"))
+  }
+  if (is.list(raw_response) && !is.null(raw_response$text)) {
+    return(as.character(raw_response$text))
+  }
+  if (is.list(raw_response) && !is.null(raw_response$content)) {
+    return(as.character(raw_response$content))
+  }
+  as.character(raw_response)
+}
+
+parse_json_object_response <- function(raw_text) {
+  json_text <- trimws(raw_text)
+  json_text <- sub("^```(?:json)?\\s*", "", json_text, ignore.case = TRUE)
+  json_text <- sub("\\s*```$", "", json_text)
+
+  start <- regexpr("\\{", json_text)[[1]]
+  end_matches <- gregexpr("\\}", json_text)[[1]]
+  end_matches <- end_matches[end_matches > 0]
+  if (start < 0 || length(end_matches) == 0 || max(end_matches) < start) {
+    stop("No JSON object found in text response.", call. = FALSE)
+  }
+
+  json_text <- substr(json_text, start, max(end_matches))
+  parsed <- jsonlite::fromJSON(json_text, simplifyVector = FALSE)
+  if (!is.list(parsed) || is.null(names(parsed))) {
+    stop("Text response JSON must be an object.", call. = FALSE)
+  }
+  parsed
+}
+
+parse_single_field_response <- function(raw_text, field) {
+  text <- trimws(raw_text)
+  numeric_match <- regexpr("[-+]?[0-9]*\\.?[0-9]+", text, perl = TRUE)
+  value <- if (numeric_match[[1]] > 0) {
+    as.numeric(regmatches(text, numeric_match))
+  } else {
+    text
+  }
+  stats::setNames(list(value), field)
+}
+
+coerce_soft_structured_value <- function(value) {
+  if (is.character(value) && length(value) == 1) {
+    text <- trimws(value)
+    if (grepl("^[-+]?[0-9]*\\.?[0-9]+$", text)) {
+      return(as.numeric(text))
+    }
+  }
+  value
+}
+
+soft_raw_response_field <- function(response, name, output_mode) {
+  if (!identical(output_mode, "text")) {
+    return(list())
+  }
+  stats::setNames(list(response_raw_response(response)), name)
+}
+
+response_raw_response <- function(response) {
+  raw_response <- if (is.list(response) && !is.null(response$raw_response)) {
+    response$raw_response
+  } else {
+    NA_character_
+  }
+  raw_response
 }
 
 format_progress_label <- function(

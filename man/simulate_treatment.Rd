@@ -8,6 +8,7 @@ simulate_treatment(
   intervention_text = "",
   prompt,
   response_type,
+  output_mode = c("structured", "text"),
   groups = NULL,
   context_text = NULL,
   n_simulations = 1,
@@ -32,6 +33,14 @@ turn. Prompt templates may include \code{{intervention_text}}, \code{{identity}}
 
 \item{response_type}{An \code{ellmer} structured type specification applied to all
 turns (for example \code{ellmer::type_object(score = ellmer::type_number())}).}
+
+\item{output_mode}{Character. \code{"structured"} (default) uses the backend's
+structured-output support. \code{"text"} is a compatibility mode for models
+that do not support structured outputs (for example some Anthropic models):
+nalanda appends strict JSON-only instructions to the prompt, calls the
+model as free text, then parses the JSON back into the same tabular fields.
+Text mode is best-effort and stores the original model reply in
+\code{raw_response}.}
 
 \item{groups}{Optional character vector of group labels. If supplied, the
 full prompt sequence is rerun for each group identity.}

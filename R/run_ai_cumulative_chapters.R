@@ -12,6 +12,13 @@
 #'   `{identity}` or a character vector of length `length(groups)`.
 #' @param question_text Character scalar. A question template containing the
 #'   placeholder `{group}`, which will be replaced with each group label.
+#' @param output_mode Character. `"structured"` (default) uses the backend's
+#'   structured-output support. `"text"` is a compatibility mode for models
+#'   that do not support structured outputs (for example some Anthropic models):
+#'   nalanda appends strict JSON-only instructions to the prompt, calls the
+#'   model as free text, then parses the JSON back into the same fields used by
+#'   the rest of the pipeline. Text mode is best-effort and stores the original
+#'   model reply in `raw_response`.
 #' @param n_simulations Integer. Number of repeated simulations per book per
 #'   identity.
 #' @param temperature Numeric. Sampling temperature passed to the chat backend.
@@ -55,6 +62,7 @@ run_ai_cumulative_chapters <- function(
   groups,
   context_text,
   question_text,
+  output_mode = c("structured", "text"),
   n_simulations = 1,
   temperature = 0,
   seed = 42,
@@ -64,6 +72,8 @@ run_ai_cumulative_chapters <- function(
   base_url = getOption("nalanda.base_url"),
   excerpt_chars = 200
 ) {
+  output_mode <- normalize_output_mode(output_mode)
+
   if (!is.list(book_texts) || is.character(book_texts)) {
     stop("`book_texts` must be a nested list of books and chapters.")
   }
@@ -98,6 +108,7 @@ run_ai_cumulative_chapters <- function(
     base_url = base_url,
     excerpt_chars = excerpt_chars,
     executor = execute_cumulative_chapter_pipeline,
+    output_mode = output_mode,
     total_steps = total_steps
   )
 
@@ -117,7 +128,8 @@ execute_cumulative_chapter_pipeline <- function(
   base_url,
   excerpt_chars,
   pb,
-  progress_tick
+  progress_tick,
+  output_mode
 ) {
   group_keys <- group_keys_from_groups(groups)
   turn_types <- build_turn_types(
@@ -162,9 +174,16 @@ execute_cumulative_chapter_pipeline <- function(
           groups,
           identity_label
         )
-        baseline_response <- chat$chat_structured(
-          baseline_prompt,
-          type = type_baseline
+        baseline_response <- chat_model_response(
+          chat = chat,
+          prompt = baseline_prompt,
+          type = type_baseline,
+          output_mode = output_mode,
+          fields = build_response_fields(
+            per_group = per_group,
+            groups = groups,
+            include_party = TRUE
+          )
         )
 
         baseline_fields <- make_result_base_fields(
@@ -173,10 +192,22 @@ execute_cumulative_chapter_pipeline <- function(
           sim = k,
           identity = identity_label,
           party = baseline_response$party,
-          extra = list(
-            baseline_prompt = baseline_prompt,
-            post_prompt = NA_character_,
-            chapter_index = 0L
+          extra = c(
+            list(
+              baseline_prompt = baseline_prompt,
+              post_prompt = NA_character_,
+              chapter_index = 0L
+            ),
+            soft_raw_response_field(
+              baseline_response,
+              "baseline_raw_response",
+              output_mode
+            ),
+            if (identical(output_mode, "text")) {
+              list(post_raw_response = NA_character_)
+            } else {
+              list()
+            }
           )
         )
         baseline_rows <- build_cumulative_turn_rows(
@@ -202,6 +233,61 @@ execute_cumulative_chapter_pipeline <- function(
             sim = k
           )
 
+          if (is_missing_chapter_text(chapter_job$chapter_text[[1]])) {
+            post_fields <- make_result_base_fields(
+              book = book_name,
+              chapter = chapter_job$chapter[[1]],
+              sim = k,
+              identity = identity_label,
+              party = baseline_response$party,
+              extra = c(
+                list(
+                  baseline_prompt = baseline_prompt,
+                  post_prompt = NA_character_,
+                  chapter_index = chapter_pos
+                ),
+                if (identical(output_mode, "text")) {
+                  list(
+                    baseline_raw_response = response_raw_response(baseline_response),
+                    post_raw_response = NA_character_
+                  )
+                } else {
+                  list()
+                }
+              )
+            )
+
+            if (isTRUE(per_group)) {
+              for (g_idx in seq_along(groups)) {
+                row <- c(
+                  post_fields,
+                  list(
+                    turn_index = chapter_pos + 1L,
+                    turn_type = "post",
+                    target_group = groups[[g_idx]],
+                    rating = NA_real_
+                  )
+                )
+                all_row_i <- all_row_i + 1L
+                all_rows[[all_row_i]] <- row
+              }
+            } else {
+              row <- c(
+                post_fields,
+                list(
+                  turn_index = chapter_pos + 1L,
+                  turn_type = "post",
+                  target_group = NA_character_,
+                  rating = NA_real_
+                )
+              )
+              all_row_i <- all_row_i + 1L
+              all_rows[[all_row_i]] <- row
+            }
+
+            next
+          }
+
           full_post_prompt <- make_post_prompt(
             chapter_job$chapter_text[[1]],
             question_text,
@@ -215,9 +301,16 @@ execute_cumulative_chapter_pipeline <- function(
             identity_label = identity_label,
             excerpt_chars = excerpt_chars
           )
-          post_response <- chat$chat_structured(
-            full_post_prompt,
-            type = type_post
+          post_response <- chat_model_response(
+            chat = chat,
+            prompt = full_post_prompt,
+            type = type_post,
+            output_mode = output_mode,
+            fields = build_response_fields(
+              per_group = per_group,
+              groups = groups,
+              include_party = FALSE
+            )
           )
 
           post_fields <- make_result_base_fields(
@@ -226,10 +319,22 @@ execute_cumulative_chapter_pipeline <- function(
             sim = k,
             identity = identity_label,
             party = baseline_response$party,
-            extra = list(
-              baseline_prompt = baseline_prompt,
-              post_prompt = post_prompt,
-              chapter_index = chapter_pos
+            extra = c(
+              list(
+                baseline_prompt = baseline_prompt,
+                post_prompt = post_prompt,
+                chapter_index = chapter_pos
+              ),
+              soft_raw_response_field(
+                baseline_response,
+                "baseline_raw_response",
+                output_mode
+              ),
+              soft_raw_response_field(
+                post_response,
+                "post_raw_response",
+                output_mode
+              )
             )
           )
           post_rows <- build_cumulative_turn_rows(
@@ -330,6 +435,7 @@ compute_run_ai_metrics_cumulative <- function(x, per_group = NULL) {
   }
   model <- normalize_model_name(model)
   models <- normalize_model_metadata(models)
+  x <- fill_missing_model_column(x, model = model, models = models)
 
   required_cols <- c("book", "chapter", "chapter_index", "sim", "identity", "turn_type", "rating")
   missing_cols <- setdiff(required_cols, names(x))
@@ -430,6 +536,7 @@ compute_run_ai_metrics_cumulative <- function(x, per_group = NULL) {
   if (length(long_cols) > 0) {
     out <- out[, c(setdiff(names(out), long_cols), long_cols)]
   }
+  out <- arrange_metric_output(out)
 
   attr(out, "model") <- model
   if (length(models) > 1) {

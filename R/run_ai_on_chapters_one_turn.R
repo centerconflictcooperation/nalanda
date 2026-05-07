@@ -18,6 +18,13 @@
 #' @param question_text Character scalar. A question template containing the
 #'   placeholder `{group}`, which will be replaced with each group label in
 #'   per-group mode.
+#' @param output_mode Character. `"structured"` (default) uses the backend's
+#'   structured-output support. `"text"` is a compatibility mode for models
+#'   that do not support structured outputs (for example some Anthropic models):
+#'   nalanda appends strict JSON-only instructions to the prompt, calls the
+#'   model as free text, then parses the JSON back into the same fields used by
+#'   the rest of the pipeline. Text mode is best-effort and stores the original
+#'   model reply in `raw_response`.
 #' @param n_simulations Integer. Number of repeated simulations per chapter per
 #'   identity.
 #' @param temperature Numeric. Sampling temperature passed to the chat backend.
@@ -40,9 +47,11 @@
 #' @param excerpt_chars Integer. Number of chapter characters to retain in the
 #'   stored prompt preview shown in results.
 #' @param max_active Integer. Maximum number of concurrent requests passed to
-#'   [ellmer::parallel_chat_structured()].
+#'   [ellmer::parallel_chat_structured()] in structured mode. Text mode runs
+#'   plain chat requests sequentially.
 #' @param rpm Integer. Requests-per-minute cap passed to
-#'   [ellmer::parallel_chat_structured()].
+#'   [ellmer::parallel_chat_structured()] in structured mode. Text mode runs
+#'   plain chat requests sequentially.
 #'
 #' @return A tibble of raw single-turn ratings, or a named list of tibbles (one
 #'   per book). Each row is one rating observation and includes `chapter`,
@@ -56,6 +65,7 @@ run_ai_on_chapters_one_turn <- function(
   groups,
   context_text,
   question_text,
+  output_mode = c("structured", "text"),
   n_simulations = 1,
   temperature = 0,
   seed = 42,
@@ -67,6 +77,8 @@ run_ai_on_chapters_one_turn <- function(
   max_active = 10,
   rpm = 500
 ) {
+  output_mode <- normalize_output_mode(output_mode)
+
   run_simulation_pipeline(
     book_texts = book_texts,
     groups = groups,
@@ -83,6 +95,7 @@ run_ai_on_chapters_one_turn <- function(
     base_url = base_url,
     excerpt_chars = excerpt_chars,
     executor = execute_one_turn_pipeline,
+    output_mode = output_mode,
     max_active = max_active,
     rpm = rpm
   )
@@ -102,6 +115,7 @@ execute_one_turn_pipeline <- function(
   excerpt_chars,
   pb,
   progress_tick,
+  output_mode,
   max_active,
   rpm
 ) {
@@ -140,11 +154,18 @@ execute_one_turn_pipeline <- function(
             chapter = chapter_job$chapter[[1]],
             sim = k,
             identity = identity_label,
-            party = NA_character_,
-            extra = list(
-              turn_index = 1L,
-              turn_type = "single",
-              prompt = NA_character_
+            party = identity_label,
+            extra = c(
+              list(
+                turn_index = 1L,
+                turn_type = "single",
+                prompt = NA_character_
+              ),
+              if (identical(output_mode, "text")) {
+                list(raw_response = NA_character_)
+              } else {
+                list()
+              }
             )
           )
 
@@ -217,16 +238,36 @@ execute_one_turn_pipeline <- function(
         temperature = temperature,
         seed = seed + k - 1L
       )
-      responses <- ellmer::parallel_chat_structured(
-        chat = chat,
-        prompts = prompts,
-        type = type_response,
-        convert = TRUE,
-        max_active = max_active,
-        rpm = rpm,
-        on_error = "stop"
-      )
-      response_list <- normalize_parallel_chat_structured_output(responses)
+      if (identical(output_mode, "structured")) {
+        responses <- ellmer::parallel_chat_structured(
+          chat = chat,
+          prompts = prompts,
+          type = type_response,
+          convert = TRUE,
+          max_active = max_active,
+          rpm = rpm,
+          on_error = "stop"
+        )
+        response_list <- normalize_parallel_chat_structured_output(responses)
+      } else {
+        response_fields <- build_response_fields(
+          per_group = per_group,
+          groups = groups,
+          include_party = TRUE
+        )
+        response_list <- lapply(
+          prompts,
+          function(prompt) {
+            chat_model_response(
+              chat = chat,
+              prompt = prompt,
+              type = type_response,
+              output_mode = output_mode,
+              fields = response_fields
+            )
+          }
+        )
+      }
     } else {
       response_list <- list()
     }
@@ -257,10 +298,13 @@ execute_one_turn_pipeline <- function(
         sim = meta$sim,
         identity = meta$identity,
         party = response$party,
-        extra = list(
-          turn_index = 1L,
-          turn_type = "single",
-          prompt = meta$prompt
+        extra = c(
+          list(
+            turn_index = 1L,
+            turn_type = "single",
+            prompt = meta$prompt
+          ),
+          soft_raw_response_field(response, "raw_response", output_mode)
         )
       )
 
@@ -335,6 +379,7 @@ compute_run_ai_metrics_one_turn <- function(x, per_group = NULL) {
   }
   model <- normalize_model_name(model)
   models <- normalize_model_metadata(models)
+  x <- fill_missing_model_column(x, model = model, models = models)
 
   required_cols <- c("chapter", "sim", "identity", "rating")
   missing_cols <- setdiff(required_cols, names(x))
@@ -403,6 +448,7 @@ compute_run_ai_metrics_one_turn <- function(x, per_group = NULL) {
   if (length(long_cols) > 0) {
     out <- out[, c(setdiff(names(out), long_cols), long_cols)]
   }
+  out <- arrange_metric_output(out)
 
   attr(out, "model") <- model
   if (length(models) > 1) {

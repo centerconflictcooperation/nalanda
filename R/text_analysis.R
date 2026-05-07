@@ -97,6 +97,13 @@ make_annotation_prompt <- function(
 #'   in `data` using `{column_name}` placeholders.
 #' @param response_type An `ellmer` structured type specification, for example
 #'   `ellmer::type_object(score = ellmer::type_number())`.
+#' @param output_mode Character. `"structured"` (default) uses the backend's
+#'   structured-output support. `"text"` is a compatibility mode for models
+#'   that do not support structured outputs (for example some Anthropic models):
+#'   nalanda appends strict JSON-only instructions to the prompt, calls the
+#'   model as free text, then parses the JSON back into the same fields.
+#'   Text mode is best-effort and stores the original model reply in
+#'   `raw_response`.
 #' @param id_col Optional column name identifying each text row. When omitted, a
 #'   sequential `text_id` is created.
 #' @param n_simulations Integer. Number of repeated runs per row.
@@ -111,9 +118,11 @@ make_annotation_prompt <- function(
 #' @param excerpt_chars Integer. Number of text characters to retain in stored
 #'   prompt previews.
 #' @param max_active Integer. Maximum number of concurrent requests passed to
-#'   `ellmer::parallel_chat_structured()`.
+#'   `ellmer::parallel_chat_structured()` in structured mode. Text mode runs
+#'   plain chat requests sequentially.
 #' @param rpm Integer. Requests-per-minute cap passed to
-#'   `ellmer::parallel_chat_structured()`.
+#'   `ellmer::parallel_chat_structured()` in structured mode. Text mode runs
+#'   plain chat requests sequentially.
 #'
 #' @return A tibble containing the original row metadata, simulation index,
 #'   structured response fields, and stored prompt previews.
@@ -123,6 +132,7 @@ run_text_analysis <- function(
   text_col = "text",
   prompt,
   response_type,
+  output_mode = c("structured", "text"),
   id_col = NULL,
   n_simulations = 1,
   temperature = 0,
@@ -153,6 +163,7 @@ run_text_analysis <- function(
   if (missing(response_type) || is.null(response_type)) {
     stop("Please provide `response_type`.")
   }
+  output_mode <- normalize_output_mode(output_mode)
   if (n_simulations < 1) {
     stop("`n_simulations` must be >= 1.")
   }
@@ -210,16 +221,32 @@ run_text_analysis <- function(
       prompt_preview[[i]] <- interpolate_prompt_template(prompt, preview_values)
     }
 
-    responses <- ellmer::parallel_chat_structured(
-      chat = chat,
-      prompts = prompts,
-      type = response_type,
-      convert = TRUE,
-      max_active = max_active,
-      rpm = rpm,
-      on_error = "stop"
-    )
-    response_list <- normalize_parallel_chat_structured_output(responses)
+    if (identical(output_mode, "structured")) {
+      responses <- ellmer::parallel_chat_structured(
+        chat = chat,
+        prompts = prompts,
+        type = response_type,
+        convert = TRUE,
+        max_active = max_active,
+        rpm = rpm,
+        on_error = "stop"
+      )
+      response_list <- normalize_parallel_chat_structured_output(responses)
+    } else {
+      response_fields <- infer_response_type_fields(response_type)
+      response_list <- lapply(
+        prompts,
+        function(prompt) {
+          chat_model_response(
+            chat = chat,
+            prompt = prompt,
+            type = response_type,
+            output_mode = output_mode,
+            fields = response_fields
+          )
+        }
+      )
+    }
 
     if (length(response_list) != nrow(df)) {
       stop(

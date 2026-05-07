@@ -29,6 +29,13 @@
 #'   placeholder `{group}`, which will be replaced with each group label.
 #'   Example: `"On a scale from 0 to 100, how warmly do you feel towards
 #'   {group}s?"`
+#' @param output_mode Character. `"structured"` (default) uses the backend's
+#'   structured-output support. `"text"` is a compatibility mode for models
+#'   that do not support structured outputs (for example some Anthropic models):
+#'   nalanda appends strict JSON-only instructions to the prompt, calls the
+#'   model as free text, then parses the JSON back into the same fields used by
+#'   the rest of the pipeline. Text mode is best-effort and stores the original
+#'   model reply in `raw_response`.
 #' @param n_simulations Integer. Number of repeated simulations per chapter per
 #'   identity (each simulation = 2 chat turns).
 #' @param temperature Numeric. Sampling temperature passed to the chat backend.
@@ -94,6 +101,7 @@ run_ai_on_chapters <- function(
   groups,
   context_text,
   question_text,
+  output_mode = c("structured", "text"),
   n_simulations = 1,
   temperature = 0,
   seed = 42,
@@ -103,6 +111,8 @@ run_ai_on_chapters <- function(
   base_url = getOption("nalanda.base_url"),
   excerpt_chars = 200
 ) {
+  output_mode <- normalize_output_mode(output_mode)
+
   if (is.list(book_texts)) {
     book_names <- names(book_texts)
     for (i in seq_along(book_texts)) {
@@ -131,7 +141,8 @@ run_ai_on_chapters <- function(
     virtual_key_missing = missing(virtual_key),
     base_url = base_url,
     excerpt_chars = excerpt_chars,
-    executor = execute_two_turn_pipeline
+    executor = execute_two_turn_pipeline,
+    output_mode = output_mode
   )
 
   out
@@ -150,7 +161,8 @@ execute_two_turn_pipeline <- function(
   base_url,
   excerpt_chars,
   pb,
-  progress_tick
+  progress_tick,
+  output_mode
 ) {
   group_keys <- group_keys_from_groups(groups)
   turn_types <- build_turn_types(
@@ -185,10 +197,20 @@ execute_two_turn_pipeline <- function(
             chapter = chapter_job$chapter[[1]],
             sim = k,
             identity = identity_label,
-            party = NA_character_,
-            extra = list(
-              baseline_prompt = NA_character_,
-              post_prompt = NA_character_
+            party = identity_label,
+            extra = c(
+              list(
+                baseline_prompt = NA_character_,
+                post_prompt = NA_character_
+              ),
+              if (identical(output_mode, "text")) {
+                list(
+                  baseline_raw_response = NA_character_,
+                  post_raw_response = NA_character_
+                )
+              } else {
+                list()
+              }
             )
           )
 
@@ -260,9 +282,16 @@ execute_two_turn_pipeline <- function(
           groups,
           identity_label
         )
-        baseline_response <- chat$chat_structured(
-          baseline_prompt,
-          type = type_baseline
+        baseline_response <- chat_model_response(
+          chat = chat,
+          prompt = baseline_prompt,
+          type = type_baseline,
+          output_mode = output_mode,
+          fields = build_response_fields(
+            per_group = per_group,
+            groups = groups,
+            include_party = TRUE
+          )
         )
 
         full_post_prompt <- make_post_prompt(
@@ -278,9 +307,16 @@ execute_two_turn_pipeline <- function(
           identity_label = identity_label,
           excerpt_chars = excerpt_chars
         )
-        post_response <- chat$chat_structured(
-          full_post_prompt,
-          type = type_post
+        post_response <- chat_model_response(
+          chat = chat,
+          prompt = full_post_prompt,
+          type = type_post,
+          output_mode = output_mode,
+          fields = build_response_fields(
+            per_group = per_group,
+            groups = groups,
+            include_party = FALSE
+          )
         )
 
         base_fields <- make_result_base_fields(
@@ -289,9 +325,21 @@ execute_two_turn_pipeline <- function(
           sim = k,
           identity = identity_label,
           party = baseline_response$party,
-          extra = list(
-            baseline_prompt = baseline_prompt,
-            post_prompt = post_prompt
+          extra = c(
+            list(
+              baseline_prompt = baseline_prompt,
+              post_prompt = post_prompt
+            ),
+            soft_raw_response_field(
+              baseline_response,
+              "baseline_raw_response",
+              output_mode
+            ),
+            soft_raw_response_field(
+              post_response,
+              "post_raw_response",
+              output_mode
+            )
           )
         )
 

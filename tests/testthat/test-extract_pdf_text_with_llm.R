@@ -28,6 +28,29 @@ test_that("extract_pdf_text_with_llm validates output_path for multi-file input"
   )
 })
 
+test_that("extract_pdf_text_with_llm checks existing output before model calls", {
+  tmp_pdf <- tempfile(fileext = ".pdf")
+  tmp_out <- tempfile(fileext = ".txt")
+  file.create(tmp_pdf)
+  writeLines("already here", tmp_out)
+
+  calls <- 0L
+  testthat::local_mocked_bindings(
+    new_portkey_chat = function(...) {
+      calls <<- calls + 1L
+      stop("model should not be called")
+    },
+    .package = "nalanda"
+  )
+
+  expect_error(
+    extract_pdf_text_with_llm(tmp_pdf, output_path = tmp_out),
+    "Output file already exists. Set `overwrite = TRUE` to replace it:",
+    fixed = TRUE
+  )
+  expect_equal(calls, 0L)
+})
+
 test_that("strip_pdf_preface_boilerplate removes repeated Gemini-style prefaces", {
   x <- paste0(
     "The following is the main body text from the PDF:\n\n",

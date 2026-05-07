@@ -9,6 +9,7 @@ run_text_analysis(
   text_col = "text",
   prompt,
   response_type,
+  output_mode = c("structured", "text"),
   id_col = NULL,
   n_simulations = 1,
   temperature = 0,
@@ -33,6 +34,14 @@ in \code{data} using \code{{column_name}} placeholders.}
 \item{response_type}{An \code{ellmer} structured type specification, for example
 \code{ellmer::type_object(score = ellmer::type_number())}.}
 
+\item{output_mode}{Character. \code{"structured"} (default) uses the backend's
+structured-output support. \code{"text"} is a compatibility mode for models
+that do not support structured outputs (for example some Anthropic models):
+nalanda appends strict JSON-only instructions to the prompt, calls the
+model as free text, then parses the JSON back into the same fields.
+Text mode is best-effort and stores the original model reply in
+\code{raw_response}.}
+
 \item{id_col}{Optional column name identifying each text row. When omitted, a
 sequential \code{text_id} is created.}
 
@@ -56,10 +65,12 @@ when working with the NYU gateway.}
 prompt previews.}
 
 \item{max_active}{Integer. Maximum number of concurrent requests passed to
-\code{ellmer::parallel_chat_structured()}.}
+\code{ellmer::parallel_chat_structured()} in structured mode. Text mode runs
+plain chat requests sequentially.}
 
 \item{rpm}{Integer. Requests-per-minute cap passed to
-\code{ellmer::parallel_chat_structured()}.}
+\code{ellmer::parallel_chat_structured()} in structured mode. Text mode runs
+plain chat requests sequentially.}
 }
 \value{
 A tibble containing the original row metadata, simulation index,

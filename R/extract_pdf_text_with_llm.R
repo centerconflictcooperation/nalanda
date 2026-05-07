@@ -226,6 +226,16 @@ extract_pdf_text_with_llm_impl <- function(
     stop("`retry_wait` must be a single number >= 0.")
   }
 
+  if (!is.null(output_path)) {
+    output_path <- resolve_single_output_path(output_path, pdf_path[[1]])
+    if (file.exists(output_path) && !isTRUE(overwrite)) {
+      stop(
+        "Output file already exists. Set `overwrite = TRUE` to replace it: ",
+        output_path
+      )
+    }
+  }
+
   old_opts <- options(
     ellmer_timeout_s = timeout_s,
     ellmer_max_tries = max_tries
@@ -302,13 +312,6 @@ extract_pdf_text_with_llm_impl <- function(
   text <- strip_pdf_preface_boilerplate(text)
 
   if (!is.null(output_path)) {
-    output_path <- resolve_single_output_path(output_path, pdf_path[[1]])
-    if (file.exists(output_path) && !isTRUE(overwrite)) {
-      stop(
-        "Output file already exists. Set `overwrite = TRUE` to replace it: ",
-        output_path
-      )
-    }
     readr::write_lines(text, output_path)
   }
 

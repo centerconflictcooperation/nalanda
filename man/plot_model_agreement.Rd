@@ -4,7 +4,7 @@
 \alias{plot_model_agreement}
 \title{Plot inter-model agreement}
 \usage{
-plot_model_agreement(data, type = c("metrics", "heatmap"))
+plot_model_agreement(data, type = c("metrics", "heatmap"), method = NULL)
 }
 \arguments{
 \item{data}{Output of \code{\link[=model_agreement]{model_agreement()}} (for \code{type = "metrics"}) or
@@ -12,6 +12,11 @@ plot_model_agreement(data, type = c("metrics", "heatmap"))
 
 \item{type}{Character. \code{"metrics"} for a dot plot of agreement statistics;
 \code{"heatmap"} for a pairwise correlation tile plot.}
+
+\item{method}{Character. Correlation method to plot when \code{type = "heatmap"}:
+\code{"spearman"} for rank correlations or \code{"pearson"} for linear correlations
+on the continuous scores. If \code{NULL} (default), Spearman is used when
+available, otherwise Pearson is used.}
 }
 \value{
 A ggplot2 object.
@@ -26,5 +31,7 @@ plot_model_agreement(model_agreement(agg, outcome = "mean_rating"),
   type = "metrics")
 plot_model_agreement(model_pairwise_cor(agg, outcome = "mean_rating"),
   type = "heatmap")
+plot_model_agreement(model_pairwise_cor(agg, outcome = "mean_rating"),
+  type = "heatmap", method = "pearson")
 }
 }

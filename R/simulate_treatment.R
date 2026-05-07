@@ -15,6 +15,13 @@
 #'   `{group}` placeholders.
 #' @param response_type An `ellmer` structured type specification applied to all
 #'   turns (for example `ellmer::type_object(score = ellmer::type_number())`).
+#' @param output_mode Character. `"structured"` (default) uses the backend's
+#'   structured-output support. `"text"` is a compatibility mode for models
+#'   that do not support structured outputs (for example some Anthropic models):
+#'   nalanda appends strict JSON-only instructions to the prompt, calls the
+#'   model as free text, then parses the JSON back into the same tabular fields.
+#'   Text mode is best-effort and stores the original model reply in
+#'   `raw_response`.
 #' @param groups Optional character vector of group labels. If supplied, the
 #'   full prompt sequence is rerun for each group identity.
 #' @param context_text Optional character scalar or vector. If provided, it is
@@ -81,6 +88,7 @@ simulate_treatment <- function(
   intervention_text = "",
   prompt,
   response_type,
+  output_mode = c("structured", "text"),
   groups = NULL,
   context_text = NULL,
   n_simulations = 1,
@@ -101,6 +109,7 @@ simulate_treatment <- function(
   if (missing(response_type) || is.null(response_type)) {
     stop("Please provide `response_type`.")
   }
+  output_mode <- normalize_output_mode(output_mode)
 
   out <- run_simulation_pipeline(
     book_texts = intervention_text,
@@ -121,7 +130,8 @@ simulate_treatment <- function(
     require_groups = FALSE,
     default_unit_id = "intervention_1",
     prompt = as.character(prompt),
-    response_type = response_type
+    response_type = response_type,
+    output_mode = output_mode
   )
 
   if (is.list(out) && !inherits(out, "data.frame")) {
@@ -164,7 +174,8 @@ execute_generic_treatment_pipeline <- function(
   pb,
   progress_tick,
   prompt,
-  response_type
+  response_type,
+  output_mode
 ) {
   turn_labels <- names(prompt)
   if (is.null(turn_labels) || any(!nzchar(turn_labels))) {
@@ -213,9 +224,12 @@ execute_generic_treatment_pipeline <- function(
             identity_context = identity_context,
             identity_label = identity_label
           )
-          response <- chat$chat_structured(
-            full_prompt,
-            type = response_type
+          response <- chat_model_response(
+            chat = chat,
+            prompt = full_prompt,
+            type = response_type,
+            output_mode = output_mode,
+            fields = infer_response_type_fields(response_type)
           )
 
           base_fields <- make_result_base_fields(

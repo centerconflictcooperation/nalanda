@@ -6,6 +6,8 @@
 #' @return A list with `icc`, `n_targets`, `n_raters`, and mean squares.
 #' @noRd
 .compute_icc <- function(mat) {
+  mat <- mat[stats::complete.cases(mat), , drop = FALSE]
+
   n <- nrow(mat)
   k <- ncol(mat)
 
@@ -13,13 +15,13 @@
     return(list(icc = NA_real_, n_targets = n, n_raters = k))
   }
 
-  grand_mean <- mean(mat, na.rm = TRUE)
-  row_means  <- rowMeans(mat, na.rm = TRUE)
-  col_means  <- colMeans(mat, na.rm = TRUE)
+  grand_mean <- mean(mat)
+  row_means  <- rowMeans(mat)
+  col_means  <- colMeans(mat)
 
   ss_row   <- k * sum((row_means - grand_mean)^2)
   ss_col   <- n * sum((col_means - grand_mean)^2)
-  ss_total <- sum((mat - grand_mean)^2, na.rm = TRUE)
+  ss_total <- sum((mat - grand_mean)^2)
   ss_error <- ss_total - ss_row - ss_col
 
   ms_row   <- ss_row   / (n - 1)
@@ -48,6 +50,8 @@
 #' @return A list with `w`, `chi_sq`, `df`, `p_value`, `n_items`, `n_raters`.
 #' @noRd
 .compute_kendall_w <- function(mat, rank_data = TRUE) {
+  mat <- mat[stats::complete.cases(mat), , drop = FALSE]
+
   n <- nrow(mat)
   k <- ncol(mat)
 
@@ -57,10 +61,10 @@
   }
 
   if (rank_data) {
-    mat <- apply(mat, 2, rank, na.last = "keep")
+    mat <- apply(mat, 2, rank)
   }
 
-  rank_sums     <- rowSums(mat, na.rm = TRUE)
+  rank_sums     <- rowSums(mat)
   mean_rank_sum <- mean(rank_sums)
   s_val         <- sum((rank_sums - mean_rank_sum)^2)
 
@@ -95,6 +99,12 @@
     w < 0.70 ~ "moderate",
     TRUE     ~ "strong"
   )
+}
+
+#' Summarise missing values as NA instead of NaN
+#' @noRd
+.mean_or_na <- function(x) {
+  if (all(is.na(x))) NA_real_ else mean(x, na.rm = TRUE)
 }
 
 #' Reshape long data to a rater matrix (rows = units, cols = models)
@@ -182,7 +192,7 @@ aggregate_simulations <- function(data,
 
   data |>
     dplyr::group_by(dplyr::across(dplyr::all_of(by))) |>
-    dplyr::summarize(!!mean_nm := mean(.data[[outcome]], na.rm = TRUE),
+    dplyr::summarize(!!mean_nm := .mean_or_na(.data[[outcome]]),
                      !!sd_nm   := stats::sd(.data[[outcome]], na.rm = TRUE),
                      n_sims = dplyr::n(), .groups = "drop")
 }
@@ -247,6 +257,11 @@ aggregate_simulations <- function(data,
 #'
 #' Always aggregate simulation runs first via [aggregate_simulations()].
 #' Failing to do so inflates _n_ and distorts agreement estimates.
+#'
+#' Units with missing scores for one or more models are excluded from ICC and
+#' Kendall's W because agreement metrics require the same units to be scored by
+#' all raters. The reported `n_units` is the number of complete units used in
+#' the calculation.
 #'
 #' @export
 #' @examples
@@ -315,6 +330,209 @@ model_agreement <- function(data,
     dplyr::group_by(dplyr::across(dplyr::all_of(group_by))) |>
     dplyr::group_modify(~ .compute_one(.x)) |>
     dplyr::ungroup()
+}
+
+
+# ---- Exported: model_agreement_sensitivity ----------------------------------
+
+#' Summarize model agreement across analysis levels
+#'
+#' Builds a slide-ready sensitivity table by running [model_agreement()] across
+#' several substantively useful unit definitions (for example book-level,
+#' chapter-level, and party-specific agreement). Lower-level rows are
+#' aggregated with an NA-safe mean before each agreement calculation, so skipped
+#' chapters do not turn an entire book mean into `NA`.
+#'
+#' @inheritParams model_agreement
+#' @param analyses Optional named list defining analyses to run. Each element
+#'   should be a list with `unit_by` and, optionally, `group_by`. If `NULL`, a
+#'   default set is inferred from available book, chapter, and party/group
+#'   columns.
+#' @param format Character. `"wide"` returns one row per analysis/subgroup with
+#'   ICC and Kendall's W side by side; `"long"` returns the stacked
+#'   [model_agreement()] results with analysis labels.
+#' @param digits Integer. Number of decimal places used in the formatted wide
+#'   table.
+#' @param drop_missing Logical. Whether to drop rows with missing model, unit,
+#'   or grouping identifiers before computing each analysis (default `TRUE`).
+#'
+#' @return A tibble. With `format = "wide"`, columns include `Analysis level`,
+#'   `Subgroup`, `N models`, `N units`, `ICC`, and `Kendall's W`.
+#'
+#' @export
+#' @examples
+#' \dontrun{
+#' model_agreement_sensitivity(
+#'   agg,
+#'   outcome = "mean_delta_gap",
+#'   model_col = "model"
+#' )
+#' }
+model_agreement_sensitivity <- function(data,
+                                        outcome = "mean_outcome",
+                                        model_col = "model",
+                                        analyses = NULL,
+                                        metrics = c("icc", "kendall_w"),
+                                        format = c("wide", "long"),
+                                        digits = 2,
+                                        drop_missing = TRUE) {
+  stopifnot(is.data.frame(data))
+  format <- match.arg(format)
+  metrics <- match.arg(metrics, c("icc", "kendall_w"), several.ok = TRUE)
+
+  required <- c(model_col, outcome)
+  missing_cols <- setdiff(required, names(data))
+  if (length(missing_cols) > 0) {
+    stop("Missing columns in data: ", paste(missing_cols, collapse = ", "),
+         call. = FALSE)
+  }
+
+  if (is.null(analyses)) {
+    analyses <- default_agreement_analyses(data)
+  }
+
+  if (length(analyses) == 0) {
+    stop(
+      "No analyses could be inferred. Provide `analyses` with `unit_by` columns.",
+      call. = FALSE
+    )
+  }
+
+  long <- purrr::imap_dfr(analyses, function(spec, label) {
+    if (is.null(spec$unit_by)) {
+      stop("Each `analyses` element must define `unit_by`.", call. = FALSE)
+    }
+
+    unit_by <- spec$unit_by
+    group_by <- if (is.null(spec$group_by)) NULL else spec$group_by
+    id_cols <- c(model_col, unit_by, group_by)
+
+    missing_cols <- setdiff(c(id_cols, outcome), names(data))
+    if (length(missing_cols) > 0) {
+      stop(
+        "Analysis `", label, "` refers to missing column(s): ",
+        paste(missing_cols, collapse = ", "),
+        call. = FALSE
+      )
+    }
+
+    analysis_data <- data
+    if (isTRUE(drop_missing)) {
+      analysis_data <- analysis_data |>
+        dplyr::filter(dplyr::if_all(dplyr::all_of(id_cols), ~ !is.na(.x)))
+    }
+
+    analysis_data <- analysis_data |>
+      dplyr::group_by(dplyr::across(dplyr::all_of(id_cols))) |>
+      dplyr::summarise(
+        !!outcome := .mean_or_na(.data[[outcome]]),
+        .groups = "drop"
+      )
+
+    result <- model_agreement(
+      analysis_data,
+      outcome = outcome,
+      unit_by = unit_by,
+      group_by = group_by,
+      model_col = model_col,
+      metrics = metrics
+    )
+
+    result <- result |>
+      dplyr::mutate(analysis = label, .before = 1)
+
+    if (is.null(group_by) || length(group_by) == 0) {
+      result <- result |>
+        dplyr::mutate(subgroup = "Overall", .after = "analysis")
+    } else {
+      result <- add_agreement_subgroup(result, group_by)
+    }
+
+    result |>
+      dplyr::select(
+        dplyr::all_of(c("analysis", "subgroup")),
+        dplyr::everything(),
+        -dplyr::any_of(group_by)
+      )
+  })
+
+  if (format == "long") {
+    return(long)
+  }
+
+  long |>
+    dplyr::mutate(
+      metric = dplyr::recode(
+        .data$metric,
+        icc = "ICC",
+        kendall_w = "Kendall's W"
+      ),
+      value_label = ifelse(
+        is.na(.data$value),
+        paste0("NA (", .data$interpretation, ")"),
+        paste0(round(.data$value, digits), " (", .data$interpretation, ")")
+      )
+    ) |>
+    dplyr::select(
+      "analysis", "subgroup", "n_models", "n_units", "metric", "value_label"
+    ) |>
+    tidyr::pivot_wider(names_from = "metric", values_from = "value_label") |>
+    dplyr::rename(
+      `Analysis level` = "analysis",
+      Subgroup = "subgroup",
+      `N models` = "n_models",
+      `N units` = "n_units"
+    )
+}
+
+default_agreement_analyses <- function(data) {
+  book_col <- first_present(names(data), c("book", "book_id"))
+  chapter_col <- first_present(names(data), c("chapter", "chapter_id"))
+  party_col <- first_present(names(data), c("party", "group"))
+
+  analyses <- list()
+
+  if (!is.null(book_col) && !is.null(chapter_col) && !is.null(party_col)) {
+    analyses[["Book + chapter + party"]] <- list(
+      unit_by = c(book_col, chapter_col, party_col)
+    )
+    analyses[["Book + chapter"]] <- list(
+      unit_by = c(book_col, chapter_col),
+      group_by = party_col
+    )
+  }
+
+  if (!is.null(book_col) && !is.null(party_col)) {
+    analyses[["Book + party"]] <- list(unit_by = c(book_col, party_col))
+    analyses[["Book"]] <- list(unit_by = book_col, group_by = party_col)
+  } else if (!is.null(book_col)) {
+    analyses[["Book"]] <- list(unit_by = book_col)
+  }
+
+  analyses
+}
+
+first_present <- function(x, candidates) {
+  present <- candidates[candidates %in% x]
+  if (length(present) == 0) NULL else present[[1]]
+}
+
+add_agreement_subgroup <- function(result, group_by) {
+  if (length(group_by) == 1) {
+    return(result |>
+      dplyr::mutate(subgroup = as.character(.data[[group_by]]), .after = "analysis"))
+  }
+
+  subgroup <- apply(
+    as.data.frame(result[, group_by, drop = FALSE]),
+    1,
+    function(row) {
+      paste(paste(group_by, row, sep = "="), collapse = "; ")
+    }
+  )
+
+  result |>
+    dplyr::mutate(subgroup = subgroup, .after = "analysis")
 }
 
 
@@ -394,6 +612,333 @@ model_pairwise_cor <- function(data,
 }
 
 
+# ---- Exported: pairwise_for_level -------------------------------------------
+
+#' Pairwise model correlations at a chosen analysis level
+#'
+#' Aggregates lower-level rows to the requested unit level, then calls
+#' [model_pairwise_cor()]. This is a convenience wrapper for cases where data
+#' still contain chapter, party, or simulation-detail rows but the researcher
+#' wants correlations at a broader level, such as book-level correlations.
+#'
+#' @inheritParams model_pairwise_cor
+#' @param drop_missing Logical. Whether to drop rows with missing model, unit,
+#'   or grouping identifiers before aggregating (default `TRUE`).
+#'
+#' @return Output of [model_pairwise_cor()] for the requested level.
+#'
+#' @export
+#' @examples
+#' \dontrun{
+#' # Book-level pairwise correlations from chapter-party-level aggregated data
+#' pw_book <- pairwise_for_level(
+#'   agg,
+#'   outcome = "mean_delta_gap",
+#'   unit_by = "book",
+#'   model_col = "model",
+#'   methods = "pearson"
+#' )
+#'
+#' summarize_model_correlations(pw_book, method = "pearson")
+#' }
+pairwise_for_level <- function(data,
+                               outcome = "mean_outcome",
+                               unit_by = c("book_id", "chapter_id", "group"),
+                               group_by = NULL,
+                               model_col = "model",
+                               methods = c("pearson", "spearman"),
+                               drop_missing = TRUE) {
+  stopifnot(is.data.frame(data))
+  methods <- match.arg(methods, c("pearson", "spearman"), several.ok = TRUE)
+
+  required <- c(model_col, outcome, unit_by, group_by)
+  missing_cols <- setdiff(required, names(data))
+  if (length(missing_cols) > 0) {
+    stop("Missing columns in data: ", paste(missing_cols, collapse = ", "),
+         call. = FALSE)
+  }
+
+  id_cols <- unique(c(model_col, unit_by, group_by))
+  data_level <- data
+  if (isTRUE(drop_missing)) {
+    data_level <- data_level |>
+      dplyr::filter(dplyr::if_all(dplyr::all_of(id_cols), ~ !is.na(.x)))
+  }
+
+  data_level <- data_level |>
+    dplyr::group_by(dplyr::across(dplyr::all_of(id_cols))) |>
+    dplyr::summarise(
+      !!outcome := .mean_or_na(.data[[outcome]]),
+      .groups = "drop"
+    )
+
+  model_pairwise_cor(
+    data_level,
+    outcome = outcome,
+    unit_by = unit_by,
+    group_by = group_by,
+    model_col = model_col,
+    methods = methods
+  )
+}
+
+
+# ---- Exported: summarize_model_correlations ---------------------------------
+
+#' Summarize pairwise model correlations
+#'
+#' Condenses the output of [model_pairwise_cor()] into one row per correlation
+#' method and subgroup. The summary includes the average pairwise correlation
+#' and the "most aligned" model, defined as the model with the highest average
+#' correlation with all other models. This is useful for adding a small
+#' headline annotation to correlation-matrix slides.
+#'
+#' @param data Output of [model_pairwise_cor()].
+#' @param method Optional character. If supplied, keep only one correlation
+#'   method, e.g. `"pearson"` or `"spearman"`.
+#' @param digits Integer. Number of decimal places used in the display `label`.
+#'
+#' @return A tibble with any subgroup columns from `data`, plus `method`,
+#'   `mean_correlation`, `median_correlation`, `min_correlation`,
+#'   `max_correlation`, `n_pairs`, `most_aligned_model`,
+#'   `most_aligned_correlation`, and `label`.
+#'
+#' @export
+#' @examples
+#' \dontrun{
+#' pw <- model_pairwise_cor(agg, outcome = "mean_rating",
+#'   unit_by = c("book_id", "chapter_id", "group"))
+#' summarize_model_correlations(pw, method = "pearson")
+#' }
+summarize_model_correlations <- function(data, method = NULL, digits = 2) {
+  stopifnot(is.data.frame(data))
+
+  required <- c("model_a", "model_b", "method", "correlation", "n_units")
+  missing_cols <- setdiff(required, names(data))
+  if (length(missing_cols) > 0) {
+    stop(
+      "`data` must be output from `model_pairwise_cor()`. Missing columns: ",
+      paste(missing_cols, collapse = ", "),
+      call. = FALSE
+    )
+  }
+
+  if (!is.null(method)) {
+    method <- match.arg(method, c("pearson", "spearman"))
+    if (!(method %in% data$method)) {
+      stop(
+        "`method = \"", method, "\"` is not available in `data`. ",
+        "Compute it first with `model_pairwise_cor(..., methods = \"",
+        method, "\")`.",
+        call. = FALSE
+      )
+    }
+    method_filter <- method
+    data <- dplyr::filter(data, .data$method == method_filter)
+  }
+
+  group_cols <- setdiff(names(data), required)
+  grouping_cols <- c(group_cols, "method")
+
+  data |>
+    dplyr::group_by(dplyr::across(dplyr::all_of(grouping_cols))) |>
+    dplyr::group_modify(~ summarize_model_correlation_group(.x, digits = digits)) |>
+    dplyr::ungroup()
+}
+
+summarize_model_correlation_group <- function(data, digits = 2) {
+  pair_values <- as.numeric(data$correlation)
+  model_scores <- dplyr::bind_rows(
+    tibble::tibble(model = data$model_a, correlation = pair_values),
+    tibble::tibble(model = data$model_b, correlation = pair_values)
+  ) |>
+    dplyr::group_by(.data$model) |>
+    dplyr::summarise(
+      mean_correlation = .mean_or_na(.data$correlation),
+      n_pairs = sum(!is.na(.data$correlation)),
+      .groups = "drop"
+    ) |>
+    dplyr::arrange(dplyr::desc(.data$mean_correlation), .data$model)
+
+  best <- model_scores[1, , drop = FALSE]
+
+  mean_r <- .mean_or_na(pair_values)
+  median_r <- if (all(is.na(pair_values))) {
+    NA_real_
+  } else {
+    stats::median(pair_values, na.rm = TRUE)
+  }
+  min_r <- if (all(is.na(pair_values))) NA_real_ else min(pair_values, na.rm = TRUE)
+  max_r <- if (all(is.na(pair_values))) NA_real_ else max(pair_values, na.rm = TRUE)
+
+  tibble::tibble(
+    mean_correlation = mean_r,
+    median_correlation = median_r,
+    min_correlation = min_r,
+    max_correlation = max_r,
+    n_pairs = sum(!is.na(pair_values)),
+    most_aligned_model = best$model,
+    most_aligned_correlation = best$mean_correlation,
+    label = paste0(
+      "Mean pairwise r = ", format_round_or_na(mean_r, digits),
+      "\nMost aligned: ", best$model,
+      " (mean r = ", format_round_or_na(best$mean_correlation, digits), ")"
+    )
+  )
+}
+
+format_round_or_na <- function(x, digits = 2) {
+  if (length(x) == 0 || is.na(x)) {
+    return("NA")
+  }
+
+  format(round(x, digits), nsmall = digits, trim = TRUE)
+}
+
+
+# ---- Exported: summarize_top_units ------------------------------------------
+
+#' Summarize units that rank consistently high across models
+#'
+#' Aggregates lower-level rows to a chosen unit level, ranks units within each
+#' model, and summarizes which units most consistently appear near the top
+#' across models. This is useful for questions such as "Which books
+#' consistently have the strongest effects across models?"
+#'
+#' @inheritParams model_agreement
+#' @param item_by Character vector identifying the items to rank, e.g. `"book"`
+#'   or `"book_id"`.
+#' @param rank_within Optional character vector defining separate ranking
+#'   contexts, e.g. `"party"` to rank books separately within party.
+#' @param top_n Integer. Number of top-ranked items to count for each model.
+#' @param higher_is_better Logical. If `TRUE` (default), larger outcome values
+#'   receive better ranks. If `FALSE`, smaller values receive better ranks.
+#' @param include_ranks Logical. If `TRUE`, return a list with both the summary
+#'   table and the model-level ranks. If `FALSE` (default), return only the
+#'   summary table.
+#' @param drop_missing Logical. Whether to drop rows with missing model, item,
+#'   or ranking-context identifiers before aggregating (default `TRUE`).
+#'
+#' @return A tibble, or a list with `summary` and `ranks` when
+#'   `include_ranks = TRUE`.
+#'
+#'   The summary table contains:
+#'   \describe{
+#'     \item{`rank_within` columns}{Optional grouping columns used to define
+#'       separate ranking contexts, such as party.}
+#'     \item{`item_by` columns}{The ranked item identifiers, such as book.}
+#'     \item{`mean_score`}{Mean outcome score for the item across models.}
+#'     \item{`mean_rank`}{Average rank of the item across models. Lower values
+#'       indicate more consistently high-ranked items when
+#'       `higher_is_better = TRUE`.}
+#'     \item{`median_rank`}{Median rank of the item across models.}
+#'     \item{`top_n_models`}{Number of models that ranked the item within the
+#'       top `top_n` items in its ranking context. For example, if
+#'       `top_n = 3` and `top_n_models = 4`, then 4 models placed that item in
+#'       their top 3.}
+#'     \item{`n_models`}{Number of models with non-missing ranks for the item.}
+#'     \item{`top_n`}{The top-N threshold used to compute `top_n_models`.}
+#'     \item{`top_n_label`}{Compact display label combining `top_n_models` and
+#'       `n_models`, such as `"4/5"`.}
+#'   }
+#'
+#'   When `include_ranks = TRUE`, the `ranks` table contains one row per
+#'   model-by-item combination, including `score`, `rank`, and `top_n`.
+#'
+#' @export
+#' @examples
+#' \dontrun{
+#' summarize_top_units(
+#'   agg,
+#'   outcome = "mean_delta_gap",
+#'   item_by = "book",
+#'   rank_within = "party",
+#'   model_col = "model",
+#'   top_n = 3
+#' )
+#' }
+summarize_top_units <- function(data,
+                                outcome = "mean_outcome",
+                                item_by = "book_id",
+                                rank_within = NULL,
+                                model_col = "model",
+                                top_n = 3,
+                                higher_is_better = TRUE,
+                                include_ranks = FALSE,
+                                drop_missing = TRUE) {
+  stopifnot(is.data.frame(data))
+  if (!is.numeric(top_n) || length(top_n) != 1 || is.na(top_n) || top_n < 1) {
+    stop("`top_n` must be a positive number.", call. = FALSE)
+  }
+  top_n <- as.integer(top_n)
+
+  required <- c(model_col, outcome, item_by, rank_within)
+  missing_cols <- setdiff(required, names(data))
+  if (length(missing_cols) > 0) {
+    stop("Missing columns in data: ", paste(missing_cols, collapse = ", "),
+         call. = FALSE)
+  }
+
+  id_cols <- unique(c(model_col, item_by, rank_within))
+  data_level <- data
+  if (isTRUE(drop_missing)) {
+    data_level <- data_level |>
+      dplyr::filter(dplyr::if_all(dplyr::all_of(id_cols), ~ !is.na(.x)))
+  }
+
+  data_level <- data_level |>
+    dplyr::group_by(dplyr::across(dplyr::all_of(id_cols))) |>
+    dplyr::summarise(
+      score = .mean_or_na(.data[[outcome]]),
+      .groups = "drop"
+    )
+
+  rank_groups <- c(rank_within, model_col)
+  ranked <- data_level |>
+    dplyr::group_by(dplyr::across(dplyr::all_of(rank_groups))) |>
+    dplyr::mutate(
+      rank = if (isTRUE(higher_is_better)) {
+        rank(-.data$score, ties.method = "average", na.last = "keep")
+      } else {
+        rank(.data$score, ties.method = "average", na.last = "keep")
+      },
+      top_n = .data$rank <= top_n
+    ) |>
+    dplyr::ungroup()
+
+  summary_groups <- c(rank_within, item_by)
+  summary <- ranked |>
+    dplyr::group_by(dplyr::across(dplyr::all_of(summary_groups))) |>
+    dplyr::summarise(
+      mean_score = .mean_or_na(.data$score),
+      mean_rank = .mean_or_na(.data$rank),
+      median_rank = if (all(is.na(.data$rank))) {
+        NA_real_
+      } else {
+        stats::median(.data$rank, na.rm = TRUE)
+      },
+      top_n_models = sum(.data$top_n, na.rm = TRUE),
+      n_models = sum(!is.na(.data$rank)),
+      .groups = "drop"
+    ) |>
+    dplyr::mutate(
+      top_n = top_n,
+      top_n_label = paste0(.data$top_n_models, "/", .data$n_models)
+    ) |>
+    dplyr::arrange(
+      dplyr::across(dplyr::all_of(rank_within)),
+      .data$mean_rank,
+      dplyr::desc(.data$mean_score)
+    )
+
+  if (isTRUE(include_ranks)) {
+    return(list(summary = summary, ranks = ranked))
+  }
+
+  summary
+}
+
+
 # ---- Exported: model_rank_consistency ---------------------------------------
 
 #' Compare model-derived rankings
@@ -408,6 +953,10 @@ model_pairwise_cor <- function(data,
 #' If the data still contain lower-level rows (for example, chapters) and you
 #' want book-level ranks, aggregate those rows to the book level before calling
 #' this function.
+#'
+#' Units with missing scores for one or more models are excluded from the
+#' concordance calculation. The reported `n_items` is the number of complete
+#' items used.
 #'
 #' @inheritParams model_agreement
 #' @param rank_within Optional character vector of columns that define separate
@@ -500,6 +1049,10 @@ model_rank_consistency <- function(data,
 #'   [model_pairwise_cor()] (for `type = "heatmap"`).
 #' @param type Character. `"metrics"` for a dot plot of agreement statistics;
 #'   `"heatmap"` for a pairwise correlation tile plot.
+#' @param method Character. Correlation method to plot when `type = "heatmap"`:
+#'   `"spearman"` for rank correlations or `"pearson"` for linear correlations
+#'   on the continuous scores. If `NULL` (default), Spearman is used when
+#'   available, otherwise Pearson is used.
 #'
 #' @return A ggplot2 object.
 #'
@@ -510,10 +1063,23 @@ model_rank_consistency <- function(data,
 #'   type = "metrics")
 #' plot_model_agreement(model_pairwise_cor(agg, outcome = "mean_rating"),
 #'   type = "heatmap")
+#' plot_model_agreement(model_pairwise_cor(agg, outcome = "mean_rating"),
+#'   type = "heatmap", method = "pearson")
 #' }
-plot_model_agreement <- function(data, type = c("metrics", "heatmap")) {
+plot_model_agreement <- function(data, type = c("metrics", "heatmap"), method = NULL) {
   type <- match.arg(type)
-  if (type == "metrics") .plot_agreement_metrics(data) else .plot_agreement_heatmap(data)
+  if (!is.null(method)) {
+    method <- match.arg(method, c("spearman", "pearson"))
+  }
+
+  if (type == "metrics") {
+    if (!is.null(method)) {
+      warning("`method` is ignored when `type = \"metrics\"`.", call. = FALSE)
+    }
+    .plot_agreement_metrics(data)
+  } else {
+    .plot_agreement_heatmap(data, method = method)
+  }
 }
 
 #' @noRd
@@ -539,15 +1105,28 @@ plot_model_agreement <- function(data, type = c("metrics", "heatmap")) {
 }
 
 #' @noRd
-.plot_agreement_heatmap <- function(data) {
+.plot_agreement_heatmap <- function(data, method = NULL) {
   known <- c("model_a", "model_b", "method", "correlation", "n_units")
 
-  if ("spearman" %in% data[["method"]]) {
+  available_methods <- unique(data[["method"]])
+  if (is.null(method)) {
+    method <- if ("spearman" %in% available_methods) "spearman" else "pearson"
+  }
+
+  if (!(method %in% available_methods)) {
+    stop(
+      "`method = \"", method, "\"` is not available in `data`. ",
+      "Compute it first with `model_pairwise_cor(..., methods = \"", method, "\")`.",
+      call. = FALSE
+    )
+  }
+
+  if (identical(method, "spearman")) {
     plot_data <- dplyr::filter(data, .data[["method"]] == "spearman")
-    subtitle  <- "Spearman rank correlation"
+    subtitle <- "Spearman rank correlation"
   } else {
     plot_data <- dplyr::filter(data, .data[["method"]] == "pearson")
-    subtitle  <- "Pearson correlation"
+    subtitle <- "Pearson correlation of continuous scores"
   }
 
   group_cols <- setdiff(names(data), known)
