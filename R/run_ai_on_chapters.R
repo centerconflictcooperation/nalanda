@@ -61,6 +61,18 @@
 #' @param base_url Character. Base URL for API calls.
 #' @param excerpt_chars Integer. Number of chapter characters to retain in the
 #'   stored post-prompt preview shown in results.
+#' @param checkpoint_dir Optional directory. If supplied, each completed
+#'   book/chapter/identity/simulation unit is saved as its own `.Rds` file as
+#'   soon as it finishes. If the same call is rerun with the same
+#'   `checkpoint_dir`, `checkpoint_prefix`, model, books, groups, and
+#'   simulations, completed units are loaded from disk and skipped.
+#' @param checkpoint_prefix Character scalar used at the start of checkpoint
+#'   filenames when `checkpoint_dir` is supplied.
+#' @param save_dir Optional directory. If supplied, each book is saved as one
+#'   `.Rds` file as soon as all of its chapters, identities, and simulations
+#'   finish.
+#' @param save_prefix Character scalar used in book-level filenames when
+#'   `save_dir` is supplied. Files are named `{save_prefix}_{book}.Rds`.
 #'
 #' @details
 #' Authentication uses `PORTKEY_API_KEY` via `ellmer::chat_portkey()`. Set it
@@ -109,20 +121,46 @@ run_ai_on_chapters <- function(
   integration = getOption("nalanda.integration"),
   virtual_key = getOption("nalanda.virtual_key"),
   base_url = getOption("nalanda.base_url"),
-  excerpt_chars = 200
+  excerpt_chars = 200,
+  checkpoint_dir = NULL,
+  checkpoint_prefix = "run_ai_on_chapters",
+  save_dir = NULL,
+  save_prefix = "results"
 ) {
   output_mode <- normalize_output_mode(output_mode)
 
-  if (is.list(book_texts)) {
+  if (is_flat_text_list(book_texts) && is.null(flat_text_list_book_name(book_texts))) {
+    stop(
+      "`book_texts` looks like one book's flat chapter list, such as ",
+      "`book_texts$hownottoage`. `run_ai_on_chapters()` needs a nested ",
+      "book -> chapters list so it can preserve the book name. For a ",
+      "chapter-level run, use `book_texts[\"hownottoage\"]` or ",
+      "`list(hownottoage = book_texts$hownottoage)`. For a whole-book run, ",
+      "combine chapters first and pass `full_books[\"hownottoage\"]`. ",
+      "If `book_texts` came from `read_book_texts()`, re-read it with the ",
+      "current nalanda version so `$` selections keep the book name.",
+      call. = FALSE
+    )
+  }
+
+  if (is_flat_text_list(book_texts) && !is.null(flat_text_list_book_name(book_texts))) {
+    validate_chapter_order(
+      chapter = names(unlist(book_texts, use.names = TRUE)),
+      book = flat_text_list_book_name(book_texts),
+      arg_name = "`book_texts` chapter names"
+    )
+  } else if (is.list(book_texts)) {
     book_names <- names(book_texts)
     for (i in seq_along(book_texts)) {
       book <- if (is.null(book_names)) paste0("book_", i) else book_names[[i]]
       chapter_texts <- unlist(book_texts[[i]], use.names = TRUE)
-      validate_chapter_order(
-        chapter = names(chapter_texts),
-        book = book,
-        arg_name = "`book_texts` chapter names"
-      )
+      if (length(chapter_texts) != 1) {
+        validate_chapter_order(
+          chapter = names(chapter_texts),
+          book = book,
+          arg_name = "`book_texts` chapter names"
+        )
+      }
     }
   }
 
@@ -142,6 +180,10 @@ run_ai_on_chapters <- function(
     base_url = base_url,
     excerpt_chars = excerpt_chars,
     executor = execute_two_turn_pipeline,
+    checkpoint_dir = checkpoint_dir,
+    checkpoint_prefix = checkpoint_prefix,
+    save_dir = save_dir,
+    save_prefix = save_prefix,
     output_mode = output_mode
   )
 
@@ -160,6 +202,12 @@ execute_two_turn_pipeline <- function(
   model,
   base_url,
   excerpt_chars,
+  model_label,
+  checkpoint_dir,
+  checkpoint_prefix,
+  save_dir,
+  save_prefix,
+  n_models,
   pb,
   progress_tick,
   output_mode
@@ -175,21 +223,53 @@ execute_two_turn_pipeline <- function(
 
   all_rows <- list()
   all_row_i <- 0L
+  book_start <- 1L
+  checkpoint_index <- load_checkpoint_index(
+    checkpoint_dir = checkpoint_dir,
+    checkpoint_prefix = checkpoint_prefix,
+    model_label = model_label
+  )
 
   for (chapter_i in seq_len(nrow(chapter_jobs))) {
     chapter_job <- chapter_jobs[chapter_i, , drop = FALSE]
+    if (chapter_i == 1L || !identical(
+      progress_scope_id(chapter_job$book[[1]]),
+      progress_scope_id(chapter_jobs$book[[chapter_i - 1L]])
+    )) {
+      book_start <- all_row_i + 1L
+    }
 
     for (id_idx in seq_along(groups)) {
       identity_label <- groups[[id_idx]]
       identity_context <- context_text[[id_idx]]
 
       for (k in seq_len(n_simulations)) {
+        unit_start <- all_row_i + 1L
         progress_tick(
           book = chapter_job$book[[1]],
           chapter = chapter_job$chapter[[1]],
           identity = identity_label,
           sim = k
         )
+
+        checkpoint_rows <- checkpoint_index_get(
+          index = checkpoint_index,
+          book = chapter_job$book[[1]],
+          chapter = chapter_job$chapter[[1]],
+          identity = identity_label,
+          sim = k,
+          model_label = model_label
+        )
+        if (!is.null(checkpoint_rows)) {
+          appended <- append_checkpoint_rows(
+            all_rows = all_rows,
+            all_row_i = all_row_i,
+            rows = checkpoint_rows
+          )
+          all_rows <- appended$rows
+          all_row_i <- appended$row_i
+          next
+        }
 
         if (is_missing_chapter_text(chapter_job$chapter_text[[1]])) {
           base_fields <- make_result_base_fields(
@@ -265,6 +345,18 @@ execute_two_turn_pipeline <- function(
             all_row_i <- all_row_i + 1L
             all_rows[[all_row_i]] <- row_post
           }
+
+          write_simulation_checkpoint(
+            rows = all_rows[unit_start:all_row_i],
+            long_cols = c("baseline_prompt", "post_prompt"),
+            checkpoint_dir = checkpoint_dir,
+            checkpoint_prefix = checkpoint_prefix,
+            model_label = model_label,
+            book = chapter_job$book[[1]],
+            chapter = chapter_job$chapter[[1]],
+            identity = identity_label,
+            sim = k
+          )
 
           next
         }
@@ -396,7 +488,42 @@ execute_two_turn_pipeline <- function(
           all_row_i <- all_row_i + 1L
           all_rows[[all_row_i]] <- row_post
         }
+
+        write_simulation_checkpoint(
+          rows = all_rows[unit_start:all_row_i],
+          long_cols = c("baseline_prompt", "post_prompt"),
+          checkpoint_dir = checkpoint_dir,
+          checkpoint_prefix = checkpoint_prefix,
+          model_label = model_label,
+          book = chapter_job$book[[1]],
+          chapter = chapter_job$chapter[[1]],
+          identity = identity_label,
+          sim = k
+        )
       }
+    }
+
+    next_book <- if (chapter_i < nrow(chapter_jobs)) {
+      chapter_jobs$book[[chapter_i + 1L]]
+    } else {
+      NA_character_
+    }
+    if (!identical(
+      progress_scope_id(chapter_job$book[[1]]),
+      progress_scope_id(next_book)
+    )) {
+      write_book_result(
+        rows = all_rows[book_start:all_row_i],
+        long_cols = c("baseline_prompt", "post_prompt"),
+        chapter_jobs = chapter_jobs,
+        save_dir = save_dir,
+        save_prefix = save_prefix,
+        n_models = n_models,
+        model_label = model_label,
+        temperature = temperature,
+        n_simulations = n_simulations,
+        book = chapter_job$book[[1]]
+      )
     }
   }
 
@@ -466,11 +593,11 @@ make_baseline_prompt <- function(
 
 #' Build the post-intervention (Turn 2) prompt
 #'
-#' Constructs the prompt: chapter text + question(s). If the question
+#' Constructs the prompt: material text + question(s). If the question
 #' template contains `{group}`, it is expanded once per group (ingroup first).
 #' Otherwise, the question is used as-is (single-question mode).
 #'
-#' @param chapter_text Character scalar. The full chapter text.
+#' @param chapter_text Character scalar. The full material text.
 #' @param question_template Character scalar. Optionally contains `{group}`
 #'   placeholder for per-group expansion.
 #' @param groups Character vector of all group labels.
@@ -517,10 +644,10 @@ make_post_prompt <- function(
   }
 
   paste0(
-    "You have just read the chapter below.\n\n",
+    "You have just read the material below.\n\n",
     chapter_text,
     "\n\n",
-    "You have now just finished reading the book chapter. Now that this is done:\n",
+    "You have now just finished reading the material. Now that this is done:\n",
     question_block
   )
 }

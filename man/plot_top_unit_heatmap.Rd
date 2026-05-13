@@ -10,6 +10,7 @@ plot_top_unit_heatmap(
   model_col = "model",
   facet_by = NULL,
   top_n_items = NULL,
+  item_labels = NULL,
   show_values = TRUE,
   title = "Unit ranks by model"
 )
@@ -29,6 +30,11 @@ the function tries to infer \code{"book"} or \code{"book_id"}.}
 
 \item{top_n_items}{Optional integer. If supplied, keep only the best
 \code{top_n_items} per facet, based on average rank across models.}
+
+\item{item_labels}{Optional character vector for display labels. Use a named
+vector to map item IDs to labels, e.g. \code{c("1" = "Opening chapter")}. For
+chapter-like IDs that start with numbers, an unnamed vector is matched by
+chapter number.}
 
 \item{show_values}{Logical. If \code{TRUE} (default), print rank values in cells.}
 

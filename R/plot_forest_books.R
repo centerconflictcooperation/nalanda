@@ -193,6 +193,12 @@ plot_forest_books <- function(
     )
   )
 
+  ci_widths <- as.numeric(input$upper) - as.numeric(input$lower)
+  ci_widths <- ci_widths[is.finite(ci_widths)]
+  if (length(ci_widths) > 0 && !any(ci_widths > 0)) {
+    fp_args$boxsize <- 0.2
+  }
+
   if (!is.null(input$party_levels) && show_legend) {
     fp_args$legend <- input$party_levels
   }
@@ -518,6 +524,8 @@ plot_forest_books <- function(
 #' @details
 #' Standard errors are computed as `sd / sqrt(sim)`. Confidence intervals
 #' are calculated using a normal approximation (`mean +/- 1.96 * SE`).
+#' When a summary row has one observation and the standard deviation is
+#' therefore missing, the CI is collapsed to the point estimate.
 #'
 #' @examples
 #' book_summary <- summarize_chapter_scores(
@@ -555,7 +563,11 @@ prepare_forest_books <- function(
     summary_books,
     book = paste0(.data$book, " (n = ", .data$sim, ")"),
     mean = .data[[mean_col]],
-    se = .data[[sd_col]] / sqrt(.data$sim),
+    se = dplyr::if_else(
+      is.na(.data[[sd_col]]) & .data$sim <= 1,
+      0,
+      .data[[sd_col]]
+    ) / sqrt(.data$sim),
     lower = .data$mean - 1.96 * .data$se,
     upper = .data$mean + 1.96 * .data$se
   )

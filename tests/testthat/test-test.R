@@ -20,6 +20,8 @@ test_that("make_post_prompt keeps chapter text and question", {
 
   expect_match(out, "Chapter content here\\.")
   expect_match(out, "How warmly do you feel towards your outgroup\\?")
+  expect_match(out, "You have just read the material below\\.")
+  expect_false(grepl("book chapter", out, fixed = TRUE))
 })
 
 test_that("make_post_prompt_preview stores a cropped chapter preview", {
@@ -37,6 +39,7 @@ test_that("make_post_prompt_preview stores a cropped chapter preview", {
   expect_match(out, "\\[\\.\\.\\. chapter text cropped for storage \\.\\.\\.\\]")
   expect_match(out, strrep("B", 20), fixed = TRUE)
   expect_match(out, "How warmly do you feel towards your outgroup\\?")
+  expect_false(grepl("book chapter", out, fixed = TRUE))
 })
 
 test_that("make_one_turn_prompt uses generic material wording", {
@@ -106,6 +109,65 @@ test_that("summarize_chapter_scores computes chapter summaries and keeps attrs",
   expect_equal(attr(out, "model"), "test-model")
   expect_equal(attr(out, "temperature"), 0)
   expect_equal(attr(out, "n_simulations"), 2)
+})
+
+test_that("summarize_chapter_scores handles recovered full-book excerpt attrs", {
+  x <- tibble::tibble(
+    book = c("Book A", "Book A"),
+    chapter = c("full_book", "full_book"),
+    pre_ingroup = c(60, 62),
+    post_ingroup = c(64, 66),
+    pre_outgroup = c(40, 42),
+    post_outgroup = c(48, 50),
+    pre_gap = c(20, 20),
+    post_gap = c(16, 16),
+    delta_outgroup = c(8, 8),
+    delta_ingroup = c(4, 4),
+    delta_gap = c(4, 4)
+  )
+  attr(x, "chapter_excerpts") <- tibble::tibble(
+    chapter = "full_book",
+    chapter_excerpt = "whole book preview"
+  )
+
+  out <- summarize_chapter_scores(x)
+
+  expect_equal(nrow(out), 1)
+  expect_equal(out$book, "Book A")
+  expect_equal(out$chapter, "full_book")
+  expect_equal(out$chapter_excerpt, "whole book preview")
+})
+
+test_that("summarize_chapter_scores keeps recovered full books distinct", {
+  make_book <- function(book, preview) {
+    x <- tibble::tibble(
+      book = c(book, book),
+      chapter = c("full_book", "full_book"),
+      pre_ingroup = c(60, 62),
+      post_ingroup = c(64, 66),
+      pre_outgroup = c(40, 42),
+      post_outgroup = c(48, 50),
+      pre_gap = c(20, 20),
+      post_gap = c(16, 16),
+      delta_outgroup = c(8, 8),
+      delta_ingroup = c(4, 4),
+      delta_gap = c(4, 4)
+    )
+    attr(x, "chapter_excerpts") <- tibble::tibble(
+      chapter = "full_book",
+      chapter_excerpt = preview
+    )
+    x
+  }
+
+  out <- summarize_chapter_scores(list(
+    make_book("Book A", "preview a"),
+    make_book("Book B", "preview b")
+  ))
+
+  expect_equal(nrow(out), 2)
+  expect_equal(out$book, c("Book A", "Book B"))
+  expect_equal(out$chapter_excerpt, c("preview a", "preview b"))
 })
 
 test_that("summarize_chapter_scores supports book-level aggregation", {
@@ -692,6 +754,227 @@ test_that("build_chapter_jobs can use intervention-style default ids", {
   expect_equal(out$chapter, "intervention_1")
 })
 
+test_that("build_chapter_jobs preserves whole-book names", {
+  out <- nalanda:::build_chapter_jobs(
+    list("Book A" = list(full_book = "A full book."))
+  )
+
+  expect_equal(out$book, "Book A")
+  expect_equal(out$chapter, "full_book")
+  expect_equal(out$chapter_text, "A full book.")
+})
+
+test_that("run_ai_on_chapters accepts one named full-book unit per book", {
+  expect_error(
+    run_ai_on_chapters(
+      book_texts = list("Book A" = list(full_book = "A full book.")),
+      groups = c("Democrat", "Republican"),
+      context_text = "You are a {identity}.",
+      question_text = "How warmly do you feel toward {group}s?",
+      n_simulations = 0
+    ),
+    "`n_simulations` must be >= 1.",
+    fixed = TRUE
+  )
+})
+
+test_that("run_ai_on_chapters rejects flat one-book chapter lists clearly", {
+  flat_book <- list(
+    "1_preface.txt" = "Preface text.",
+    "2_introduction.txt" = "Introduction text."
+  )
+
+  expect_error(
+    run_ai_on_chapters(
+      book_texts = flat_book,
+      groups = c("Democrat", "Republican"),
+      context_text = "You are a {identity}.",
+      question_text = "How warmly do you feel toward {group}s?",
+      n_simulations = 1
+    ),
+    "book_texts\\[\"hownottoage\"\\]"
+  )
+})
+
+test_that("run_ai_on_chapters accepts read_book_texts dollar selections", {
+  one_book <- list(
+    "1_preface.txt" = "Preface text.",
+    "2_introduction.txt" = "Introduction text."
+  )
+  attr(one_book, "book") <- "hownottoage"
+
+  out <- nalanda:::build_chapter_jobs(one_book)
+
+  expect_equal(out$book, c("hownottoage", "hownottoage"))
+  expect_equal(out$chapter, c("1_preface.txt", "2_introduction.txt"))
+})
+
+test_that("run_ai_on_chapters checkpoints completed simulation units", {
+  checkpoint_dir <- file.path(tempdir(), paste0("nalanda-checkpoints-", Sys.getpid()))
+  dir.create(checkpoint_dir)
+  on.exit(unlink(checkpoint_dir, recursive = TRUE), add = TRUE)
+
+  expect_message(
+    run_ai_on_chapters(
+      book_texts = list("Book A" = list(full_book = NA_character_)),
+      groups = c("Democrat", "Republican"),
+      context_text = "You are a {identity}.",
+      question_text = "How warmly do you feel toward {group}s?",
+      n_simulations = 1,
+      checkpoint_dir = checkpoint_dir,
+      checkpoint_prefix = "FULLBOOK_results"
+    ),
+    "Skipping 1 chapter"
+  )
+
+  files <- list.files(checkpoint_dir, pattern = "\\.Rds$", full.names = TRUE)
+  expect_length(files, 2)
+
+  out <- dplyr::bind_rows(lapply(files, readRDS))
+  expect_true(all(c("model", "book", "chapter", "sim", "identity") %in% names(out)))
+  expect_equal(unique(out$book), "Book A")
+  expect_equal(unique(out$chapter), "full_book")
+  expect_equal(sort(unique(out$identity)), c("Democrat", "Republican"))
+})
+
+test_that("run_ai_on_chapters resumes completed units from checkpoint_dir", {
+  checkpoint_dir <- file.path(tempdir(), paste0("nalanda-resume-checkpoints-", Sys.getpid()))
+  dir.create(checkpoint_dir)
+  on.exit(unlink(checkpoint_dir, recursive = TRUE), add = TRUE)
+
+  nalanda:::write_simulation_checkpoint(
+    rows = list(
+      list(
+        book = "Book A",
+        chapter = "chapter_1.txt",
+        sim = 1L,
+        identity = "Democrat",
+        party = "Democrat",
+        turn_index = 1L,
+        turn_type = "baseline",
+        target_group = NA_character_,
+        rating = 99,
+        baseline_prompt = "checkpoint baseline",
+        post_prompt = "checkpoint post"
+      ),
+      list(
+        book = "Book A",
+        chapter = "chapter_1.txt",
+        sim = 1L,
+        identity = "Democrat",
+        party = "Democrat",
+        turn_index = 2L,
+        turn_type = "post",
+        target_group = NA_character_,
+        rating = 100,
+        baseline_prompt = "checkpoint baseline",
+        post_prompt = "checkpoint post"
+      )
+    ),
+    long_cols = c("baseline_prompt", "post_prompt"),
+    checkpoint_dir = checkpoint_dir,
+    checkpoint_prefix = "resume-test",
+    model_label = "gemini-2.5-flash-lite",
+    book = "Book A",
+    chapter = "chapter_1.txt",
+    identity = "Democrat",
+    sim = 1L
+  )
+
+  calls <- 0L
+  testthat::local_mocked_bindings(
+    new_portkey_chat = function(...) {
+      calls <<- calls + 1L
+      list(
+        chat_structured = function(prompt, type) {
+          if (grepl("finished reading", prompt, fixed = TRUE)) {
+            return(list(rating = 45))
+          }
+          list(party = "Republican", rating = 40)
+        }
+      )
+    },
+    .package = "nalanda"
+  )
+
+  out <- run_ai_on_chapters(
+    book_texts = list("Book A" = list("chapter_1.txt" = "Chapter text.")),
+    groups = c("Democrat", "Republican"),
+    context_text = "You are a {identity}.",
+    question_text = "How warmly do you feel toward your outgroup?",
+    n_simulations = 1,
+    checkpoint_dir = checkpoint_dir,
+    checkpoint_prefix = "resume-test"
+  )
+
+  out_tbl <- out[["Book A"]]
+  democrat <- out_tbl[out_tbl$identity == "Democrat", ]
+  republican <- out_tbl[out_tbl$identity == "Republican", ]
+
+  expect_equal(calls, 1L)
+  expect_equal(democrat$rating, c(99, 100))
+  expect_equal(democrat$baseline_prompt, c("checkpoint baseline", "checkpoint baseline"))
+  expect_equal(republican$rating, c(40, 45))
+})
+
+test_that("run_ai_on_chapters saves one completed file per book", {
+  save_dir <- file.path(tempdir(), paste0("nalanda-book-save-", Sys.getpid()))
+  dir.create(save_dir)
+  on.exit(unlink(save_dir, recursive = TRUE), add = TRUE)
+
+  expect_message(
+    run_ai_on_chapters(
+      book_texts = list("Book A" = list(full_book = NA_character_)),
+      groups = c("Democrat", "Republican"),
+      context_text = "You are a {identity}.",
+      question_text = "How warmly do you feel toward {group}s?",
+      n_simulations = 1,
+      save_dir = save_dir,
+      save_prefix = "FULLBOOK_results"
+    ),
+    "Skipping 1 chapter"
+  )
+
+  files <- list.files(save_dir, pattern = "\\.Rds$", full.names = TRUE)
+  expect_equal(basename(files), "FULLBOOK_results_Book-A.Rds")
+
+  out <- readRDS(files[[1]])
+  expect_true(inherits(out, "nalanda"))
+  expect_true(all(c("model", "book", "chapter", "sim", "identity") %in% names(out)))
+  expect_equal(unique(out$book), "Book A")
+  expect_equal(unique(out$chapter), "full_book")
+  expect_equal(attr(out, "n_simulations"), 1)
+})
+
+test_that("run_ai_on_chapters adds model suffix to multi-model book saves", {
+  save_dir <- file.path(tempdir(), paste0("nalanda-book-save-models-", Sys.getpid()))
+  dir.create(save_dir)
+  on.exit(unlink(save_dir, recursive = TRUE), add = TRUE)
+
+  expect_message(
+    run_ai_on_chapters(
+      book_texts = list("Book A" = list(full_book = NA_character_)),
+      groups = c("Democrat", "Republican"),
+      context_text = "You are a {identity}.",
+      question_text = "How warmly do you feel toward {group}s?",
+      n_simulations = 1,
+      model = c("model one", "model two"),
+      save_dir = save_dir,
+      save_prefix = "FULLBOOK_results"
+    ),
+    "Skipping 1 chapter"
+  )
+
+  files <- sort(basename(list.files(save_dir, pattern = "\\.Rds$", full.names = TRUE)))
+  expect_equal(
+    files,
+    c(
+      "FULLBOOK_results_Book-A_model-one.Rds",
+      "FULLBOOK_results_Book-A_model-two.Rds"
+    )
+  )
+})
+
 test_that("rename_treatment_output_columns renames treatment-facing columns", {
   x <- tibble::tibble(
     chapter = "intervention_1",
@@ -1069,6 +1352,29 @@ test_that("compute_run_ai_metrics_cumulative compares each chapter to baseline",
   expect_equal(attr(out, "model"), "test-model")
 })
 
+test_that("compute_run_ai_metrics delegates cumulative raw output", {
+  x <- tibble::tibble(
+    book = c("Book A", "Book A", "Book A", "Book A", "Book A", "Book A"),
+    chapter = c("baseline", "baseline", "chapter_1", "chapter_1", "chapter_2", "chapter_2"),
+    chapter_index = c(0L, 0L, 1L, 1L, 2L, 2L),
+    sim = c(1, 1, 1, 1, 1, 1),
+    identity = c("Democrat", "Democrat", "Democrat", "Democrat", "Democrat", "Democrat"),
+    party = c("Democrat", "Democrat", "Democrat", "Democrat", "Democrat", "Democrat"),
+    turn_type = c("baseline", "baseline", "post", "post", "post", "post"),
+    target_group = c("Democrat", "Republican", "Democrat", "Republican", "Democrat", "Republican"),
+    rating = c(70, 40, 68, 45, 66, 50),
+    baseline_prompt = "baseline",
+    post_prompt = c(NA, NA, "chapter 1", "chapter 1", "chapter 2", "chapter 2")
+  )
+
+  out <- compute_run_ai_metrics(x)
+
+  expect_equal(nrow(out), 2)
+  expect_equal(out$chapter, c("chapter_1", "chapter_2"))
+  expect_equal(out$pre_outgroup, c(40, 40))
+  expect_equal(out$post_outgroup, c(45, 50))
+})
+
 test_that("run_ai_cumulative_chapters skips missing chapter text while preserving party", {
   calls <- 0L
   testthat::local_mocked_bindings(
@@ -1124,6 +1430,102 @@ test_that("run_ai_cumulative_chapters skips missing chapter text while preservin
   expect_equal(skipped_metrics$party, c("Democrat", "Republican"))
   expect_true(all(is.na(skipped_metrics$post_outgroup)))
   expect_true(all(is.na(skipped_metrics$delta_outgroup)))
+})
+
+test_that("run_ai_cumulative_chapters checkpoints completed conversations", {
+  checkpoint_dir <- file.path(tempdir(), paste0("nalanda-cumulative-checkpoints-", Sys.getpid()))
+  dir.create(checkpoint_dir)
+  on.exit(unlink(checkpoint_dir, recursive = TRUE), add = TRUE)
+  testthat::local_mocked_bindings(
+    new_portkey_chat = function(...) {
+      list(
+        chat_structured = function(prompt, type) {
+          party <- if (grepl("Democrat", prompt, fixed = TRUE)) {
+            "Democrat"
+          } else {
+            "Republican"
+          }
+          list(
+            party = party,
+            rating_democrat = 60,
+            rating_republican = 40
+          )
+        }
+      )
+    },
+    .package = "nalanda"
+  )
+
+  expect_message(
+    run_ai_cumulative_chapters(
+      book_texts = list("Book A" = list("chapter_1.txt" = NA_character_)),
+      groups = c("Democrat", "Republican"),
+      context_text = "You are a {identity}.",
+      question_text = "How warmly do you feel toward {group}s?",
+      n_simulations = 1,
+      checkpoint_dir = checkpoint_dir,
+      checkpoint_prefix = "CUMULATIVE_results"
+    ),
+    "Skipping 1 chapter"
+  )
+
+  files <- list.files(checkpoint_dir, pattern = "\\.Rds$", full.names = TRUE)
+  expect_length(files, 2)
+  expect_true(all(grepl("cumulative", basename(files), fixed = TRUE)))
+
+  out <- dplyr::bind_rows(lapply(files, readRDS))
+  expect_true(all(c("model", "book", "chapter", "sim", "identity") %in% names(out)))
+  expect_equal(unique(out$book), "Book A")
+  expect_equal(sort(unique(out$chapter)), c("baseline", "chapter_1.txt"))
+  expect_equal(sort(unique(out$identity)), c("Democrat", "Republican"))
+})
+
+test_that("run_ai_cumulative_chapters saves one completed file per book", {
+  save_dir <- file.path(tempdir(), paste0("nalanda-cumulative-save-", Sys.getpid()))
+  dir.create(save_dir)
+  on.exit(unlink(save_dir, recursive = TRUE), add = TRUE)
+  testthat::local_mocked_bindings(
+    new_portkey_chat = function(...) {
+      list(
+        chat_structured = function(prompt, type) {
+          party <- if (grepl("Democrat", prompt, fixed = TRUE)) {
+            "Democrat"
+          } else {
+            "Republican"
+          }
+          list(
+            party = party,
+            rating_democrat = 60,
+            rating_republican = 40
+          )
+        }
+      )
+    },
+    .package = "nalanda"
+  )
+
+  expect_message(
+    run_ai_cumulative_chapters(
+      book_texts = list("Book A" = list("chapter_1.txt" = NA_character_)),
+      groups = c("Democrat", "Republican"),
+      context_text = "You are a {identity}.",
+      question_text = "How warmly do you feel toward {group}s?",
+      n_simulations = 1,
+      save_dir = save_dir,
+      save_prefix = "CUMULATIVE_results"
+    ),
+    "Skipping 1 chapter"
+  )
+
+  files <- list.files(save_dir, pattern = "\\.Rds$", full.names = TRUE)
+  expect_equal(basename(files), "CUMULATIVE_results_Book-A.Rds")
+
+  out <- readRDS(files[[1]])
+  expect_true(inherits(out, "nalanda"))
+  expect_true(all(c("model", "book", "chapter", "sim", "identity") %in% names(out)))
+  expect_equal(unique(out$book), "Book A")
+  expect_equal(sort(unique(out$chapter)), c("baseline", "chapter_1.txt"))
+  expect_equal(attr(out, "n_simulations"), 1)
 })
 
 test_that("run_ai_cumulative_chapters rejects non-nested input", {
@@ -1258,6 +1660,75 @@ test_that("summarize_simulation_stability can derive summaries from raw metrics"
   expect_equal(out$prop_units_any_pre_variation, c(0, 0))
   expect_equal(out$prop_units_any_post_variation, c(1, 0))
   expect_equal(out$all_stable, c(FALSE, TRUE))
+})
+
+test_that("summarize_simulation_stability handles recovered full-book raw metrics", {
+  x <- tibble::tibble(
+    book = rep("Book A", 4),
+    chapter = rep("full_book", 4),
+    sim = c(1, 2, 1, 2),
+    identity = c("Democrat", "Democrat", "Republican", "Republican"),
+    party = c("Democrat", "Democrat", "Republican", "Republican"),
+    pre_ingroup = c(60, 60, 55, 55),
+    post_ingroup = c(64, 66, 58, 58),
+    pre_outgroup = c(40, 40, 42, 42),
+    post_outgroup = c(48, 50, 46, 46),
+    pre_gap = c(20, 20, 13, 13),
+    post_gap = c(16, 16, 12, 12),
+    delta_outgroup = c(8, 10, 4, 4),
+    delta_ingroup = c(4, 6, 3, 3),
+    delta_gap = c(4, 4, 1, 1)
+  )
+  attr(x, "chapter_excerpts") <- tibble::tibble(
+    chapter = "full_book",
+    chapter_excerpt = "whole book preview"
+  )
+
+  out <- summarize_simulation_stability(x, by = c("book", "party"))
+
+  expect_equal(nrow(out), 2)
+  expect_equal(out$book, c("Book A", "Book A"))
+  expect_equal(out$party, c("Democrat", "Republican"))
+  expect_equal(out$n_units, c(1, 1))
+  expect_equal(out$prop_units_any_post_variation, c(1, 0))
+})
+
+test_that("summarize_simulation_stability handles recovered full-book lists", {
+  make_book <- function(book, post_values) {
+    x <- tibble::tibble(
+      book = rep(book, 4),
+      chapter = rep("full_book", 4),
+      sim = c(1, 2, 1, 2),
+      identity = c("Democrat", "Democrat", "Republican", "Republican"),
+      party = c("Democrat", "Democrat", "Republican", "Republican"),
+      pre_ingroup = c(60, 60, 55, 55),
+      post_ingroup = post_values,
+      pre_outgroup = c(40, 40, 42, 42),
+      post_outgroup = c(48, 50, 46, 46),
+      pre_gap = c(20, 20, 13, 13),
+      post_gap = c(16, 16, 12, 12),
+      delta_outgroup = c(8, 10, 4, 4),
+      delta_ingroup = c(4, 6, 3, 3),
+      delta_gap = c(4, 4, 1, 1)
+    )
+    attr(x, "chapter_excerpts") <- tibble::tibble(
+      chapter = "full_book",
+      chapter_excerpt = paste("preview", book)
+    )
+    x
+  }
+
+  out <- summarize_simulation_stability(
+    list(
+      make_book("Book A", c(64, 66, 58, 58)),
+      make_book("Book B", c(61, 61, 57, 59))
+    ),
+    by = c("book", "party")
+  )
+
+  expect_equal(nrow(out), 4)
+  expect_equal(out$book, c("Book A", "Book A", "Book B", "Book B"))
+  expect_equal(out$party, rep(c("Democrat", "Republican"), 2))
 })
 
 test_that("summarize_simulation_stability warns when no units are testable", {
@@ -1444,6 +1915,28 @@ test_that("grouped forest plot with header prints", {
     header = c("Book tested", "Effect [95% CI]"),
     ci_label_fontsize = 8,
     ci_label_lineheight = 0.8
+  )
+
+  expect_no_error(print(p))
+})
+
+test_that("grouped forest plot prints with one simulation per party", {
+  grouped <- tibble::tibble(
+    book = c("Book A", "Book A", "Book B", "Book B"),
+    party = c("Democrat", "Republican", "Democrat", "Republican"),
+    sim = c(1, 1, 1, 1),
+    mean_delta_gap = c(8, 12, 10, 14),
+    sd_delta_gap = c(NA_real_, NA_real_, NA_real_, NA_real_)
+  )
+
+  p <- plot_forest_books(
+    grouped,
+    label_cols = "book",
+    dv = "delta_gap",
+    header = c("Book tested", "Effect [95% CI]"),
+    ci_label_fontsize = 8,
+    ci_label_lineheight = 0.8,
+    show_overall = FALSE
   )
 
   expect_no_error(print(p))

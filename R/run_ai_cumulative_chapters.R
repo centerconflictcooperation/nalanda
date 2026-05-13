@@ -32,6 +32,17 @@
 #' @param base_url Character. Base URL for API calls.
 #' @param excerpt_chars Integer. Number of chapter characters to retain in the
 #'   stored prompt previews shown in results.
+#' @param checkpoint_dir Optional directory. If supplied, each completed
+#'   book/identity/simulation conversation is saved as its own `.Rds` file as
+#'   soon as it finishes. If the same call is rerun with the same
+#'   `checkpoint_dir`, `checkpoint_prefix`, model, books, groups, and
+#'   simulations, completed conversations are loaded from disk and skipped.
+#' @param checkpoint_prefix Character scalar used at the start of checkpoint
+#'   filenames when `checkpoint_dir` is supplied.
+#' @param save_dir Optional directory. If supplied, each book is saved as one
+#'   `.Rds` file as soon as all of its identities and simulations finish.
+#' @param save_prefix Character scalar used in book-level filenames when
+#'   `save_dir` is supplied. Files are named `{save_prefix}_{book}.Rds`.
 #'
 #' @return A tibble or named list of tibbles with cumulative turn-level rows.
 #'   The baseline turn is followed by one post turn per chapter, all within the
@@ -70,7 +81,11 @@ run_ai_cumulative_chapters <- function(
   integration = getOption("nalanda.integration"),
   virtual_key = getOption("nalanda.virtual_key"),
   base_url = getOption("nalanda.base_url"),
-  excerpt_chars = 200
+  excerpt_chars = 200,
+  checkpoint_dir = NULL,
+  checkpoint_prefix = "run_ai_cumulative_chapters",
+  save_dir = NULL,
+  save_prefix = "results"
 ) {
   output_mode <- normalize_output_mode(output_mode)
 
@@ -107,6 +122,10 @@ run_ai_cumulative_chapters <- function(
     virtual_key_missing = missing(virtual_key),
     base_url = base_url,
     excerpt_chars = excerpt_chars,
+    checkpoint_dir = checkpoint_dir,
+    checkpoint_prefix = checkpoint_prefix,
+    save_dir = save_dir,
+    save_prefix = save_prefix,
     executor = execute_cumulative_chapter_pipeline,
     output_mode = output_mode,
     total_steps = total_steps
@@ -127,6 +146,12 @@ execute_cumulative_chapter_pipeline <- function(
   model,
   base_url,
   excerpt_chars,
+  model_label,
+  checkpoint_dir,
+  checkpoint_prefix,
+  save_dir,
+  save_prefix,
+  n_models,
   pb,
   progress_tick,
   output_mode
@@ -143,17 +168,52 @@ execute_cumulative_chapter_pipeline <- function(
   books <- split(chapter_jobs, chapter_jobs$book)
   all_rows <- list()
   all_row_i <- 0L
+  checkpoint_index <- load_checkpoint_index(
+    checkpoint_dir = checkpoint_dir,
+    checkpoint_prefix = checkpoint_prefix,
+    model_label = model_label,
+    cumulative = TRUE
+  )
 
   for (book_name in names(books)) {
     book_jobs <- books[[book_name]]
     book_index <- book_jobs$book_index[[1]]
     total_books <- book_jobs$total_books[[1]]
+    book_start <- all_row_i + 1L
 
     for (id_idx in seq_along(groups)) {
       identity_label <- groups[[id_idx]]
       identity_context <- context_text[[id_idx]]
 
       for (k in seq_len(n_simulations)) {
+        unit_start <- all_row_i + 1L
+        checkpoint_rows <- checkpoint_index_get(
+          index = checkpoint_index,
+          book = book_name,
+          chapter = "cumulative",
+          identity = identity_label,
+          sim = k,
+          model_label = model_label
+        )
+        if (!is.null(checkpoint_rows)) {
+          for (chapter_label in c("baseline", book_jobs$chapter)) {
+            progress_tick(
+              book = book_name,
+              chapter = chapter_label,
+              identity = identity_label,
+              sim = k
+            )
+          }
+          appended <- append_checkpoint_rows(
+            all_rows = all_rows,
+            all_row_i = all_row_i,
+            rows = checkpoint_rows
+          )
+          all_rows <- appended$rows
+          all_row_i <- appended$row_i
+          next
+        }
+
         progress_tick(
           book = book_name,
           chapter = "baseline",
@@ -351,8 +411,33 @@ execute_cumulative_chapter_pipeline <- function(
             all_rows[[all_row_i]] <- row
           }
         }
+
+        write_simulation_checkpoint(
+          rows = all_rows[unit_start:all_row_i],
+          long_cols = c("baseline_prompt", "post_prompt"),
+          checkpoint_dir = checkpoint_dir,
+          checkpoint_prefix = checkpoint_prefix,
+          model_label = model_label,
+          book = book_name,
+          chapter = "cumulative",
+          identity = identity_label,
+          sim = k
+        )
       }
     }
+
+    write_book_result(
+      rows = all_rows[book_start:all_row_i],
+      long_cols = c("baseline_prompt", "post_prompt"),
+      chapter_jobs = chapter_jobs,
+      save_dir = save_dir,
+      save_prefix = save_prefix,
+      n_models = n_models,
+      model_label = model_label,
+      temperature = temperature,
+      n_simulations = n_simulations,
+      book = book_name
+    )
   }
 
   finalize_simulation_output(

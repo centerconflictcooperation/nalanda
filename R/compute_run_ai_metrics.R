@@ -6,7 +6,9 @@
 #' @param x A data frame or list-like object from [run_ai_on_chapters()] with
 #'   turn-level rows including `chapter`, `sim`, `identity`, `turn_type`, and
 #'   `rating`. If a list is supplied, the function will attempt to combine its
-#'   data-frame elements with [dplyr::bind_rows()] before computing metrics.
+#'   data-frame elements with [dplyr::bind_rows()] before computing metrics. If
+#'   cumulative output from [run_ai_cumulative_chapters()] is detected, this
+#'   function delegates to [compute_run_ai_metrics_cumulative()].
 #' @param per_group Optional logical. Whether the run used per-group mode
 #'   (`{group}` in question template). If `NULL` (default), mode is inferred
 #'   from `target_group`:
@@ -63,6 +65,10 @@ compute_run_ai_metrics <- function(x, per_group = NULL) {
   }
   if (!("target_group" %in% names(x))) {
     x$target_group <- NA_character_
+  }
+
+  if (is_cumulative_turn_output(x)) {
+    return(compute_run_ai_metrics_cumulative(input, per_group = per_group))
   }
 
   if (is.null(per_group)) {
@@ -212,6 +218,27 @@ valid_model_label <- function(model) {
   }
 
   model
+}
+
+is_cumulative_turn_output <- function(x) {
+  required <- c("book", "chapter_index", "turn_type")
+  if (!all(required %in% names(x))) {
+    return(FALSE)
+  }
+
+  has_baseline_unit <- any(
+    x$turn_type == "baseline" &
+      (as.character(x$chapter) == "baseline" | as.integer(x$chapter_index) == 0L),
+    na.rm = TRUE
+  )
+  has_post_chapter <- any(
+    x$turn_type == "post" &
+      !is.na(x$chapter_index) &
+      as.integer(x$chapter_index) > 0L,
+    na.rm = TRUE
+  )
+
+  has_baseline_unit && has_post_chapter
 }
 
 arrange_metric_output <- function(out) {

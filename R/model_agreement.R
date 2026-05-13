@@ -107,6 +107,48 @@
   if (all(is.na(x))) NA_real_ else mean(x, na.rm = TRUE)
 }
 
+standardize_top_unit_scores <- function(data, model_col, standardize = "none") {
+  if (identical(standardize, "none")) {
+    return(data)
+  }
+
+  data |>
+    dplyr::group_by(dplyr::across(dplyr::all_of(model_col))) |>
+    dplyr::mutate(
+      score = standardize_top_unit_vector(.data$score, standardize)
+    ) |>
+    dplyr::ungroup()
+}
+
+standardize_top_unit_vector <- function(x, standardize) {
+  if (all(is.na(x))) {
+    return(x)
+  }
+
+  if (identical(standardize, "z")) {
+    sigma <- stats::sd(x, na.rm = TRUE)
+    if (is.na(sigma) || identical(sigma, 0)) {
+      return(ifelse(is.na(x), NA_real_, 0))
+    }
+    return((x - mean(x, na.rm = TRUE)) / sigma)
+  }
+
+  if (identical(standardize, "minmax")) {
+    lo <- min(x, na.rm = TRUE)
+    hi <- max(x, na.rm = TRUE)
+    if (is.na(lo) || is.na(hi) || identical(hi, lo)) {
+      return(ifelse(is.na(x), NA_real_, 0))
+    }
+    return((x - lo) / (hi - lo))
+  }
+
+  denom <- max(abs(x), na.rm = TRUE)
+  if (is.na(denom) || identical(denom, 0)) {
+    return(ifelse(is.na(x), NA_real_, 0))
+  }
+  x / denom
+}
+
 #' Reshape long data to a rater matrix (rows = units, cols = models)
 #' @noRd
 .to_rating_matrix <- function(data, outcome, unit_by, model_col) {
@@ -813,6 +855,13 @@ format_round_or_na <- function(x, digits = 2) {
 #' @param top_n Integer. Number of top-ranked items to count for each model.
 #' @param higher_is_better Logical. If `TRUE` (default), larger outcome values
 #'   receive better ranks. If `FALSE`, smaller values receive better ranks.
+#' @param standardize Character. How to standardize item scores within each
+#'   model before computing cross-model mean scores. `"z"` (default) centers
+#'   and scales scores within model; `"none"` keeps raw scores; `"minmax"`
+#'   rescales scores within model to 0--1; `"max"` divides scores within model
+#'   by that model's maximum absolute score. Ranks are unchanged by monotonic
+#'   standardization, but `mean_score` and point sizes in [plot_top_units()] use
+#'   the standardized scores.
 #' @param include_ranks Logical. If `TRUE`, return a list with both the summary
 #'   table and the model-level ranks. If `FALSE` (default), return only the
 #'   summary table.
@@ -828,9 +877,14 @@ format_round_or_na <- function(x, digits = 2) {
 #'       separate ranking contexts, such as party.}
 #'     \item{`item_by` columns}{The ranked item identifiers, such as book.}
 #'     \item{`mean_score`}{Mean outcome score for the item across models.}
+#'     \item{`score_scale`}{The score standardization method used for
+#'       `mean_score`.}
 #'     \item{`mean_rank`}{Average rank of the item across models. Lower values
 #'       indicate more consistently high-ranked items when
 #'       `higher_is_better = TRUE`.}
+#'     \item{`overall_mean_rank`}{When `rank_within` is supplied, the item's
+#'       average rank computed without those ranking contexts. This preserves a
+#'       common item order for subgroup displays.}
 #'     \item{`median_rank`}{Median rank of the item across models.}
 #'     \item{`top_n_models`}{Number of models that ranked the item within the
 #'       top `top_n` items in its ranking context. For example, if
@@ -864,9 +918,11 @@ summarize_top_units <- function(data,
                                 model_col = "model",
                                 top_n = 3,
                                 higher_is_better = TRUE,
+                                standardize = c("z", "none", "minmax", "max"),
                                 include_ranks = FALSE,
                                 drop_missing = TRUE) {
   stopifnot(is.data.frame(data))
+  standardize <- match.arg(standardize)
   if (!is.numeric(top_n) || length(top_n) != 1 || is.na(top_n) || top_n < 1) {
     stop("`top_n` must be a positive number.", call. = FALSE)
   }
@@ -892,6 +948,43 @@ summarize_top_units <- function(data,
       score = .mean_or_na(.data[[outcome]]),
       .groups = "drop"
     )
+  data_level <- standardize_top_unit_scores(data_level, model_col, standardize)
+
+  overall_summary <- NULL
+  if (!is.null(rank_within) && length(rank_within) > 0) {
+    overall_level <- data
+    if (isTRUE(drop_missing)) {
+      overall_level <- overall_level |>
+        dplyr::filter(dplyr::if_all(dplyr::all_of(c(model_col, item_by)), ~ !is.na(.x)))
+    }
+
+    overall_ranked <- overall_level |>
+      dplyr::group_by(dplyr::across(dplyr::all_of(c(model_col, item_by)))) |>
+      dplyr::summarise(
+        score = .mean_or_na(.data[[outcome]]),
+        .groups = "drop"
+      )
+    overall_ranked <- standardize_top_unit_scores(overall_ranked, model_col, standardize) |>
+      dplyr::group_by(dplyr::across(dplyr::all_of(model_col))) |>
+      dplyr::mutate(
+        rank = if (isTRUE(higher_is_better)) {
+          rank(-.data$score, ties.method = "average", na.last = "keep")
+        } else {
+          rank(.data$score, ties.method = "average", na.last = "keep")
+        },
+        top_n = .data$rank <= top_n
+      ) |>
+      dplyr::ungroup()
+
+    overall_summary <- overall_ranked |>
+      dplyr::group_by(dplyr::across(dplyr::all_of(item_by))) |>
+      dplyr::summarise(
+        overall_mean_score = .mean_or_na(.data$score),
+        overall_mean_rank = .mean_or_na(.data$rank),
+        overall_top_n_models = sum(.data$top_n, na.rm = TRUE),
+        .groups = "drop"
+      )
+  }
 
   rank_groups <- c(rank_within, model_col)
   ranked <- data_level |>
@@ -922,14 +1015,28 @@ summarize_top_units <- function(data,
       .groups = "drop"
     ) |>
     dplyr::mutate(
+      score_scale = standardize,
       top_n = top_n,
       top_n_label = paste0(.data$top_n_models, "/", .data$n_models)
-    ) |>
-    dplyr::arrange(
-      dplyr::across(dplyr::all_of(rank_within)),
-      .data$mean_rank,
-      dplyr::desc(.data$mean_score)
     )
+
+  if (!is.null(overall_summary)) {
+    summary <- summary |>
+      dplyr::left_join(overall_summary, by = item_by) |>
+      dplyr::arrange(
+        .data$overall_mean_rank,
+        dplyr::desc(.data$overall_mean_score),
+        dplyr::across(dplyr::all_of(rank_within)),
+        dplyr::desc(.data$mean_score)
+      )
+  } else {
+    summary <- summary |>
+      dplyr::arrange(
+        dplyr::across(dplyr::all_of(rank_within)),
+        .data$mean_rank,
+        dplyr::desc(.data$mean_score)
+      )
+  }
 
   if (isTRUE(include_ranks)) {
     return(list(summary = summary, ranks = ranked))

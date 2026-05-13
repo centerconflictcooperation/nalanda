@@ -7,7 +7,7 @@
 make_post_prompt(chapter_text, question_template, groups, identity_label)
 }
 \arguments{
-\item{chapter_text}{Character scalar. The full chapter text.}
+\item{chapter_text}{Character scalar. The full material text.}
 
 \item{question_template}{Character scalar. Optionally contains \code{{group}}
 placeholder for per-group expansion.}
@@ -20,7 +20,7 @@ placeholder for per-group expansion.}
 Character scalar prompt.
 }
 \description{
-Constructs the prompt: chapter text + question(s). If the question
+Constructs the prompt: material text + question(s). If the question
 template contains \code{{group}}, it is expanded once per group (ingroup first).
 Otherwise, the question is used as-is (single-question mode).
 }

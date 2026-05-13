@@ -37,3 +37,17 @@ test_that("list_book_chapters supports a flat folder of chapter files", {
     c("jerks_Part2.pdf", "jerks_Part3.pdf", "jerks_Part10.pdf")
   )
 })
+
+test_that("read_book_texts tags books so dollar selection preserves names", {
+  root <- withr::local_tempdir()
+  dir.create(file.path(root, "hownottoage"))
+
+  writeLines("Preface text.", file.path(root, "hownottoage", "1_preface.txt"))
+  writeLines("Intro text.", file.path(root, "hownottoage", "2_introduction.txt"))
+
+  chapter_paths <- list_book_chapters(root, extension = "txt")
+  book_texts <- read_book_texts(chapter_paths)
+
+  expect_equal(attr(book_texts$hownottoage, "book"), "hownottoage")
+  expect_equal(names(book_texts$hownottoage), c("1_preface.txt", "2_introduction.txt"))
+})

@@ -131,12 +131,17 @@ summarize_chapter_scores <- function(
 
   if (aggregate_level == "chapter" && nrow(chapter_excerpts) > 0) {
     join_cols <- intersect(c("book", "chapter"), names(df))
-    excerpt_cols <- unique(c(join_cols, "chapter_excerpt"))
-    df <- dplyr::left_join(
-      df,
-      dplyr::select(chapter_excerpts, dplyr::all_of(excerpt_cols)),
-      by = join_cols
-    )
+    excerpt_join_cols <- intersect(join_cols, names(chapter_excerpts))
+    if (length(excerpt_join_cols) > 0 && "chapter_excerpt" %in% names(chapter_excerpts)) {
+      excerpt_cols <- unique(c(excerpt_join_cols, "chapter_excerpt"))
+      df <- dplyr::left_join(
+        df,
+        chapter_excerpts |>
+          dplyr::select(dplyr::all_of(excerpt_cols)) |>
+          dplyr::distinct(),
+        by = excerpt_join_cols
+      )
+    }
   }
 
   # --- Add chapter ordering for chapter-level results ---
@@ -171,7 +176,15 @@ summarize_chapter_scores <- function(
 chapter_excerpt_index <- function(x) {
   index <- attr(x, "chapter_excerpts")
   if (inherits(index, "data.frame")) {
-    return(tibble::as_tibble(index))
+    index <- tibble::as_tibble(index)
+    if (!"book" %in% names(index) && inherits(x, "data.frame") && "book" %in% names(x)) {
+      books <- unique(stats::na.omit(as.character(x$book)))
+      if (length(books) == 1) {
+        index$book <- books[[1]]
+        index <- index[, c("book", setdiff(names(index), "book"))]
+      }
+    }
+    return(index)
   }
 
   if (is.list(x) && !inherits(x, "data.frame")) {

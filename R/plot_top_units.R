@@ -11,6 +11,10 @@
 #'   `"party"`.
 #' @param top_n_items Optional integer. If supplied, keep only the best
 #'   `top_n_items` per facet, based on `mean_rank`.
+#' @param item_labels Optional character vector for display labels. Use a named
+#'   vector to map item IDs to labels, e.g. `c("1" = "Opening chapter")`. For
+#'   chapter-like IDs that start with numbers, an unnamed vector is matched by
+#'   chapter number.
 #' @param title Optional plot title.
 #' @param x_breaks Optional numeric vector of x-axis breaks. If `NULL`, integer
 #'   rank breaks are shown by default.
@@ -38,6 +42,7 @@ plot_top_units <- function(data,
                            item_col = NULL,
                            facet_by = NULL,
                            top_n_items = NULL,
+                           item_labels = NULL,
                            title = "Units most consistently ranked highest",
                            x_breaks = NULL,
                            x_limits = NULL,
@@ -54,7 +59,7 @@ plot_top_units <- function(data,
   }
 
   plot_data <- filter_top_unit_items(data, item_col, facet_by, top_n_items)
-  plot_data <- order_top_unit_items(plot_data, item_col)
+  plot_data <- order_top_unit_items(plot_data, item_col, item_labels = item_labels)
   x_scale <- top_unit_x_scale(plot_data$mean_rank, x_breaks = x_breaks, x_limits = x_limits)
   if (is.null(caption)) {
     caption <- top_unit_caption(plot_data)
@@ -77,7 +82,7 @@ plot_top_units <- function(data,
     ) +
     ggplot2::scale_size_continuous(
       range = c(2.5, 9),
-      name = "Mean evaluation\nscore",
+      name = top_unit_score_legend_title(plot_data),
       guide = ggplot2::guide_legend(
         override.aes = list(fill = "#6baed6", color = "#6baed6", alpha = 1)
       )
@@ -116,19 +121,36 @@ plot_top_units <- function(data,
 
 top_unit_caption <- function(data) {
   if (!("top_n" %in% names(data))) {
-    return("Point labels show how many models ranked the item in their top N; point size shows mean evaluation score.")
+    return("Labels = models in top N; size = mean score.")
   }
 
   top_n_values <- unique(stats::na.omit(data$top_n))
   if (length(top_n_values) != 1) {
-    return("Point labels show how many models ranked the item in their top N; point size shows mean evaluation score.")
+    return("Labels = models in top N; size = mean score.")
   }
 
   paste0(
-    "Point labels show how many models ranked the item in their top ",
+    "Labels = models in top ",
     top_n_values[[1]],
-    "; point size shows mean evaluation score."
+    "; size = mean score."
   )
+}
+
+top_unit_score_legend_title <- function(data) {
+  if (top_unit_score_is_standardized(data)) {
+    return("Mean standardized\nevaluation score")
+  }
+
+  "Mean evaluation\nscore"
+}
+
+top_unit_score_is_standardized <- function(data) {
+  if (!("score_scale" %in% names(data))) {
+    return(FALSE)
+  }
+
+  scales <- unique(stats::na.omit(data$score_scale))
+  length(scales) == 1 && !identical(scales[[1]], "none")
 }
 
 top_unit_x_scale <- function(x, x_breaks = NULL, x_limits = NULL) {
@@ -163,6 +185,10 @@ top_unit_x_scale <- function(x, x_breaks = NULL, x_limits = NULL) {
 #'   `"party"`.
 #' @param top_n_items Optional integer. If supplied, keep only the best
 #'   `top_n_items` per facet, based on average rank across models.
+#' @param item_labels Optional character vector for display labels. Use a named
+#'   vector to map item IDs to labels, e.g. `c("1" = "Opening chapter")`. For
+#'   chapter-like IDs that start with numbers, an unnamed vector is matched by
+#'   chapter number.
 #' @param show_values Logical. If `TRUE` (default), print rank values in cells.
 #' @param title Optional plot title.
 #'
@@ -185,6 +211,7 @@ plot_top_unit_heatmap <- function(data,
                                   model_col = "model",
                                   facet_by = NULL,
                                   top_n_items = NULL,
+                                  item_labels = NULL,
                                   show_values = TRUE,
                                   title = "Unit ranks by model") {
   stopifnot(is.data.frame(data))
@@ -212,7 +239,7 @@ plot_top_unit_heatmap <- function(data,
   plot_data <- data |>
     dplyr::inner_join(keep_items, by = c(facet_by, item_col)) |>
     dplyr::left_join(rank_summary, by = c(facet_by, item_col))
-  plot_data <- order_top_unit_items(plot_data, item_col)
+  plot_data <- order_top_unit_items(plot_data, item_col, item_labels = item_labels)
 
   p <- ggplot2::ggplot(
     plot_data,
@@ -266,6 +293,10 @@ plot_top_unit_heatmap <- function(data,
 #'   `"party"`.
 #' @param top_n_items Optional integer. If supplied, keep only items with the
 #'   best average `mean_rank` across subgroups.
+#' @param item_labels Optional character vector for display labels. Use a named
+#'   vector to map item IDs to labels, e.g. `c("1" = "Opening chapter")`. For
+#'   chapter-like IDs that start with numbers, an unnamed vector is matched by
+#'   chapter number.
 #' @param subgroup_order Optional character vector giving the two subgroup
 #'   levels in display order.
 #' @param title Optional plot title.
@@ -291,6 +322,7 @@ plot_top_unit_pairs <- function(data,
                                 item_col = NULL,
                                 subgroup_col = "party",
                                 top_n_items = NULL,
+                                item_labels = NULL,
                                 subgroup_order = NULL,
                                 title = "Paired subgroup ranks",
                                 x_breaks = NULL,
@@ -324,11 +356,14 @@ plot_top_unit_pairs <- function(data,
     )
   }
 
+  rank_order_col <- top_unit_order_col(data)
+
   item_summary <- data |>
     dplyr::filter(.data[[subgroup_col]] %in% subgroup_levels) |>
     dplyr::group_by(.data[[item_col]]) |>
     dplyr::summarise(
       mean_rank_overall = .mean_or_na(.data$mean_rank),
+      order_rank = .mean_or_na(.data[[rank_order_col]]),
       n_subgroups = dplyr::n_distinct(.data[[subgroup_col]][!is.na(.data$mean_rank)]),
       .groups = "drop"
     ) |>
@@ -336,11 +371,11 @@ plot_top_unit_pairs <- function(data,
 
   if (!is.null(top_n_items)) {
     item_summary <- filter_top_unit_items(
-      dplyr::rename(item_summary, mean_rank = "mean_rank_overall"),
+      dplyr::rename(item_summary, mean_rank = "order_rank"),
       item_col = item_col,
       top_n_items = top_n_items
     ) |>
-      dplyr::rename(mean_rank_overall = "mean_rank")
+      dplyr::rename(order_rank = "mean_rank")
   }
 
   plot_data <- data |>
@@ -350,12 +385,16 @@ plot_top_unit_pairs <- function(data,
     dplyr::filter(.data[[subgroup_col]] %in% subgroup_levels)
 
   item_order <- item_summary |>
-    dplyr::arrange(dplyr::desc(.data$mean_rank_overall), .data[[item_col]])
+    dplyr::arrange(dplyr::desc(.data$order_rank), .data[[item_col]])
   item_order <- item_order[[item_col]]
+  item_order_labels <- top_unit_apply_item_labels(item_order, item_labels)
 
   plot_data <- plot_data |>
     dplyr::mutate(
-      "..item_label.." = factor(.data[[item_col]], levels = item_order),
+      "..item_label.." = factor(
+        top_unit_apply_item_labels(.data[[item_col]], item_labels),
+        levels = item_order_labels
+      ),
       "..subgroup_label.." = factor(.data[[subgroup_col]], levels = subgroup_levels)
     )
 
@@ -445,17 +484,82 @@ filter_top_unit_items <- function(data, item_col, facet_by = NULL, top_n_items =
   }
 }
 
-order_top_unit_items <- function(data, item_col) {
+order_top_unit_items <- function(data, item_col, item_labels = NULL) {
+  rank_order_col <- top_unit_order_col(data)
   item_order <- data |>
     dplyr::group_by(.data[[item_col]]) |>
-    dplyr::summarise(mean_rank = .mean_or_na(.data$mean_rank), .groups = "drop") |>
-    dplyr::arrange(dplyr::desc(.data$mean_rank), .data[[item_col]])
+    dplyr::summarise(order_rank = .mean_or_na(.data[[rank_order_col]]), .groups = "drop") |>
+    dplyr::arrange(dplyr::desc(.data$order_rank), .data[[item_col]])
   item_order <- item_order[[item_col]]
+  item_order_labels <- top_unit_apply_item_labels(item_order, item_labels)
 
   data |>
     dplyr::mutate(
-      "..item_label.." := factor(.data[[item_col]], levels = item_order)
+      "..item_label.." := factor(
+        top_unit_apply_item_labels(.data[[item_col]], item_labels),
+        levels = item_order_labels
+      )
     )
+}
+
+top_unit_apply_item_labels <- function(items, item_labels = NULL) {
+  item_values <- as.character(items)
+  if (is.null(item_labels)) {
+    return(item_values)
+  }
+
+  if (!is.character(item_labels)) {
+    stop("`item_labels` must be a character vector.", call. = FALSE)
+  }
+
+  if (is.null(names(item_labels)) || all(names(item_labels) == "")) {
+    item_index <- top_unit_item_numeric_index(item_values)
+    if (all(!is.na(item_index)) && max(item_index) <= length(item_labels)) {
+      return(unname(item_labels[item_index]))
+    }
+
+    item_order <- top_unit_natural_sort(unique(item_values))
+    if (length(item_labels) != length(item_order)) {
+      stop(
+        "Unnamed `item_labels` must either cover numeric item prefixes or have ",
+        "one label per displayed item.",
+        call. = FALSE
+      )
+    }
+    names(item_labels) <- item_order
+  } else if (any(names(item_labels) == "")) {
+    stop(
+      "`item_labels` names must be all present or all absent.",
+      call. = FALSE
+    )
+  }
+
+  matched <- unname(item_labels[item_values])
+  ifelse(is.na(matched), item_values, matched)
+}
+
+top_unit_item_numeric_index <- function(items) {
+  matched <- regmatches(items, regexpr("^[0-9]+", items))
+  out <- suppressWarnings(as.integer(matched))
+  out[is.na(out) | out < 1] <- NA_integer_
+  out
+}
+
+top_unit_natural_sort <- function(items) {
+  item_index <- top_unit_item_numeric_index(items)
+  if (all(!is.na(item_index))) {
+    return(items[order(item_index, items)])
+  }
+
+  sort(items)
+}
+
+top_unit_order_col <- function(data) {
+  if ("overall_mean_rank" %in% names(data)) {
+    return("overall_mean_rank")
+  }
+
+  "mean_rank"
 }
 
 add_top_unit_facets <- function(plot, facet_by = NULL) {

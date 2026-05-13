@@ -9,6 +9,7 @@ plot_top_unit_pairs(
   item_col = NULL,
   subgroup_col = "party",
   top_n_items = NULL,
+  item_labels = NULL,
   subgroup_order = NULL,
   title = "Paired subgroup ranks",
   x_breaks = NULL,
@@ -27,6 +28,11 @@ the function tries to infer \code{"book"} or \code{"book_id"}.}
 
 \item{top_n_items}{Optional integer. If supplied, keep only items with the
 best average \code{mean_rank} across subgroups.}
+
+\item{item_labels}{Optional character vector for display labels. Use a named
+vector to map item IDs to labels, e.g. \code{c("1" = "Opening chapter")}. For
+chapter-like IDs that start with numbers, an unnamed vector is matched by
+chapter number.}
 
 \item{subgroup_order}{Optional character vector giving the two subgroup
 levels in display order.}

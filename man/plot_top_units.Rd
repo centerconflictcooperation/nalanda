@@ -9,6 +9,7 @@ plot_top_units(
   item_col = NULL,
   facet_by = NULL,
   top_n_items = NULL,
+  item_labels = NULL,
   title = "Units most consistently ranked highest",
   x_breaks = NULL,
   x_limits = NULL,
@@ -27,6 +28,11 @@ the function tries to infer \code{"book"} or \code{"book_id"}.}
 
 \item{top_n_items}{Optional integer. If supplied, keep only the best
 \code{top_n_items} per facet, based on \code{mean_rank}.}
+
+\item{item_labels}{Optional character vector for display labels. Use a named
+vector to map item IDs to labels, e.g. \code{c("1" = "Opening chapter")}. For
+chapter-like IDs that start with numbers, an unnamed vector is matched by
+chapter number.}
 
 \item{title}{Optional plot title.}
 

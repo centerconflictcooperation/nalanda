@@ -10,7 +10,10 @@ read_book_texts(chapter_list)
 \item{chapter_list}{A named list of character vectors with file paths.}
 }
 \value{
-A nested list of character scalars (texts) with chapter basenames as names.
+A nested list of character scalars (texts) with chapter basenames as
+names. Each book element also stores its book name in a \code{book} attribute so
+selecting a single book with \code{$} preserves enough metadata for simulation
+helpers.
 }
 \description{
 Convert a list of chapter file paths (as produced by \code{list_book_chapters()}) into

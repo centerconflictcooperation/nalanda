@@ -12,6 +12,7 @@ summarize_top_units(
   model_col = "model",
   top_n = 3,
   higher_is_better = TRUE,
+  standardize = c("z", "none", "minmax", "max"),
   include_ranks = FALSE,
   drop_missing = TRUE
 )
@@ -36,6 +37,14 @@ contexts, e.g. \code{"party"} to rank books separately within party.}
 \item{higher_is_better}{Logical. If \code{TRUE} (default), larger outcome values
 receive better ranks. If \code{FALSE}, smaller values receive better ranks.}
 
+\item{standardize}{Character. How to standardize item scores within each
+model before computing cross-model mean scores. \code{"z"} (default) centers
+and scales scores within model; \code{"none"} keeps raw scores; \code{"minmax"}
+rescales scores within model to 0--1; \code{"max"} divides scores within model
+by that model's maximum absolute score. Ranks are unchanged by monotonic
+standardization, but \code{mean_score} and point sizes in \code{\link[=plot_top_units]{plot_top_units()}} use
+the standardized scores.}
+
 \item{include_ranks}{Logical. If \code{TRUE}, return a list with both the summary
 table and the model-level ranks. If \code{FALSE} (default), return only the
 summary table.}
@@ -53,9 +62,14 @@ The summary table contains:
 separate ranking contexts, such as party.}
 \item{\code{item_by} columns}{The ranked item identifiers, such as book.}
 \item{\code{mean_score}}{Mean outcome score for the item across models.}
+\item{\code{score_scale}}{The score standardization method used for
+\code{mean_score}.}
 \item{\code{mean_rank}}{Average rank of the item across models. Lower values
 indicate more consistently high-ranked items when
 \code{higher_is_better = TRUE}.}
+\item{\code{overall_mean_rank}}{When \code{rank_within} is supplied, the item's
+average rank computed without those ranking contexts. This preserves a
+common item order for subgroup displays.}
 \item{\code{median_rank}}{Median rank of the item across models.}
 \item{\code{top_n_models}}{Number of models that ranked the item within the
 top \code{top_n} items in its ranking context. For example, if

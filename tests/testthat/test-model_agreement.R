@@ -334,6 +334,40 @@ test_that("summarize_top_units ranks items within groups across models", {
   expect_true(all(result$top_n_models >= 0 & result$top_n_models <= 3))
 })
 
+test_that("summarize_top_units keeps overall rank order metadata for grouped ranks", {
+  x <- tibble::tibble(
+    model = rep(c("m1", "m2"), each = 6),
+    book_id = rep(c("BookA", "BookB", "BookC"), each = 2, times = 2),
+    group = rep(c("Democrat", "Republican"), times = 6),
+    score = c(
+      10, 90, 60, 60, 90, 10,
+      20, 80, 70, 70, 80, 20
+    )
+  )
+
+  overall <- summarize_top_units(
+    x,
+    outcome = "score",
+    item_by = "book_id",
+    top_n = 1
+  )
+  grouped <- summarize_top_units(
+    x,
+    outcome = "score",
+    item_by = "book_id",
+    rank_within = "group",
+    top_n = 1
+  )
+
+  grouped_order <- grouped |>
+    dplyr::distinct(.data$book_id, .data$overall_mean_rank) |>
+    dplyr::arrange(.data$overall_mean_rank, .data$book_id)
+
+  expect_true("overall_mean_rank" %in% names(grouped))
+  expect_equal(grouped_order$book_id, overall$book_id)
+  expect_equal(grouped_order$overall_mean_rank, overall$mean_rank)
+})
+
 test_that("summarize_top_units can return model-level ranks", {
   agg <- aggregate_simulations(make_test_data(), outcome = "rating",
     by = c("model", "book_id", "chapter_id", "group"))
@@ -379,6 +413,66 @@ test_that("summarize_top_units supports lower-is-better rankings", {
   expect_equal(low$book_id[1], "BookA")
 })
 
+test_that("summarize_top_units can standardize scores within model", {
+  x <- tibble::tibble(
+    model = rep(c("m1", "m2"), each = 3),
+    book_id = rep(c("BookA", "BookB", "BookC"), times = 2),
+    score = c(1, 2, 3, 100, 200, 300)
+  )
+
+  raw <- summarize_top_units(
+    x,
+    outcome = "score",
+    item_by = "book_id",
+    top_n = 1,
+    standardize = "none"
+  )
+  z <- summarize_top_units(
+    x,
+    outcome = "score",
+    item_by = "book_id",
+    top_n = 1,
+    standardize = "z"
+  )
+  minmax <- summarize_top_units(
+    x,
+    outcome = "score",
+    item_by = "book_id",
+    top_n = 1,
+    standardize = "minmax"
+  )
+
+  expect_equal(raw$mean_score[raw$book_id == "BookC"], 151.5)
+  expect_equal(z$mean_score[z$book_id == "BookA"], -1)
+  expect_equal(z$mean_score[z$book_id == "BookB"], 0)
+  expect_equal(z$mean_score[z$book_id == "BookC"], 1)
+  expect_equal(minmax$mean_score[minmax$book_id == "BookA"], 0)
+  expect_equal(minmax$mean_score[minmax$book_id == "BookB"], 0.5)
+  expect_equal(minmax$mean_score[minmax$book_id == "BookC"], 1)
+  expect_equal(unique(z$score_scale), "z")
+  expect_equal(z$mean_rank, raw$mean_rank)
+})
+
+test_that("summarize_top_units standardizes scores by default", {
+  x <- tibble::tibble(
+    model = rep(c("m1", "m2"), each = 3),
+    book_id = rep(c("BookA", "BookB", "BookC"), times = 2),
+    score = c(1, 2, 3, 100, 200, 300)
+  )
+
+  result <- summarize_top_units(
+    x,
+    outcome = "score",
+    item_by = "book_id",
+    top_n = 1
+  )
+
+  expect_equal(unique(result$score_scale), "z")
+  expect_equal(result$mean_score[result$book_id == "BookA"], -1)
+  expect_equal(result$mean_score[result$book_id == "BookB"], 0)
+  expect_equal(result$mean_score[result$book_id == "BookC"], 1)
+})
+
 
 # ---- top-unit plots ----------------------------------------------------------
 
@@ -401,12 +495,61 @@ test_that("plot_top_units returns a ggplot", {
   )
 
   expect_s3_class(p, "ggplot")
-  expect_equal(p$scales$get_scales("size")$name, "Mean evaluation\nscore")
+  expect_equal(p$scales$get_scales("size")$name, "Mean standardized\nevaluation score")
   expect_null(p$scales$get_scales("fill"))
   expect_equal(p$labels$x, "Mean rank (lower = better)")
   expect_match(p$labels$caption, "top 3")
   built <- ggplot2::ggplot_build(p)
   expect_false(any(grepl("/", built$data[[2]]$label)))
+})
+
+test_that("plot_top_units labels standardized scores", {
+  x <- tibble::tibble(
+    book_id = c("BookA", "BookB"),
+    mean_score = c(-1, 1),
+    mean_rank = c(2, 1),
+    top_n_models = c(0, 2),
+    n_models = c(2, 2),
+    top_n = c(1, 1),
+    score_scale = c("z", "z")
+  )
+
+  p <- plot_top_units(x, item_col = "book_id")
+
+  expect_equal(p$scales$get_scales("size")$name, "Mean standardized\nevaluation score")
+  expect_equal(p$labels$caption, "Labels = models in top 1; size = mean score.")
+})
+
+test_that("top-unit plots can use item label dictionaries", {
+  x <- tibble::tibble(
+    book_id = c("BookA", "BookB"),
+    mean_score = c(-1, 1),
+    mean_rank = c(2, 1),
+    top_n_models = c(0, 2),
+    n_models = c(2, 2),
+    top_n = c(1, 1)
+  )
+  labels <- c(BookA = "First chapter", BookB = "Second chapter")
+
+  p <- plot_top_units(x, item_col = "book_id", item_labels = labels)
+
+  expect_equal(levels(p$data[["..item_label.."]]), c("First chapter", "Second chapter"))
+})
+
+test_that("top-unit plots can use unnamed labels for numeric chapter prefixes", {
+  x <- tibble::tibble(
+    chapter = c("1_FacingtheFracture.txt", "2_FacingtheFracture.txt"),
+    mean_score = c(-1, 1),
+    mean_rank = c(2, 1),
+    top_n_models = c(0, 2),
+    n_models = c(2, 2),
+    top_n = c(1, 1)
+  )
+  labels <- c("Get the Facts", "Consume News Wisely")
+
+  p <- plot_top_units(x, item_col = "chapter", item_labels = labels)
+
+  expect_equal(levels(p$data[["..item_label.."]]), c("Get the Facts", "Consume News Wisely"))
 })
 
 test_that("plot_top_unit_heatmap returns a ggplot", {
@@ -431,6 +574,19 @@ test_that("plot_top_unit_heatmap returns a ggplot", {
   expect_s3_class(p, "ggplot")
 })
 
+test_that("plot_top_unit_heatmap can use item label dictionaries", {
+  x <- tibble::tibble(
+    model = rep(c("m1", "m2"), each = 2),
+    chapter = rep(c("1", "2"), times = 2),
+    rank = c(1, 2, 2, 1)
+  )
+  labels <- c("1" = "Opening", "2" = "Aftermath")
+
+  p <- plot_top_unit_heatmap(x, item_col = "chapter", item_labels = labels)
+
+  expect_equal(levels(p$data[["..item_label.."]]), c("Opening", "Aftermath"))
+})
+
 test_that("plot_top_unit_pairs returns a ggplot for two subgroup levels", {
   agg <- aggregate_simulations(make_test_data(), outcome = "rating",
     by = c("model", "book_id", "chapter_id", "group"))
@@ -451,6 +607,41 @@ test_that("plot_top_unit_pairs returns a ggplot for two subgroup levels", {
 
   expect_s3_class(p, "ggplot")
   expect_equal(p$labels$x, "Mean rank (lower = better)")
+})
+
+test_that("plot_top_unit_pairs orders items by overall rank metadata when available", {
+  x <- tibble::tibble(
+    book_id = rep(c("BookA", "BookB"), each = 2),
+    group = rep(c("Democrat", "Republican"), times = 2),
+    mean_rank = c(1, 1, 2, 2),
+    overall_mean_rank = c(3, 3, 1, 1)
+  )
+
+  p <- plot_top_unit_pairs(
+    x,
+    item_col = "book_id",
+    subgroup_col = "group"
+  )
+
+  expect_equal(levels(p$data[["..item_label.."]]), c("BookA", "BookB"))
+})
+
+test_that("plot_top_unit_pairs can use item label dictionaries", {
+  x <- tibble::tibble(
+    book_id = rep(c("BookA", "BookB"), each = 2),
+    group = rep(c("Democrat", "Republican"), times = 2),
+    mean_rank = c(1, 1, 2, 2)
+  )
+  labels <- c(BookA = "First chapter", BookB = "Second chapter")
+
+  p <- plot_top_unit_pairs(
+    x,
+    item_col = "book_id",
+    subgroup_col = "group",
+    item_labels = labels
+  )
+
+  expect_equal(levels(p$data[["..item_label.."]]), c("Second chapter", "First chapter"))
 })
 
 test_that("plot_top_unit_pairs uses package party colors", {
