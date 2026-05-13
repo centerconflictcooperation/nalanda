@@ -13,6 +13,7 @@ plot_top_unit_heatmap(
   model_col = "model",
   facet_by = NULL,
   top_n_items = NULL,
+  item_labels = NULL,
   show_values = TRUE,
   title = "Unit ranks by model"
 )
@@ -43,6 +44,13 @@ plot_top_unit_heatmap(
 
   Optional integer. If supplied, keep only the best `top_n_items` per
   facet, based on average rank across models.
+
+- item_labels:
+
+  Optional character vector for display labels. Use a named vector to
+  map item IDs to labels, e.g. `c("1" = "Opening chapter")`. For
+  chapter-like IDs that start with numbers, an unnamed vector is matched
+  by chapter number.
 
 - show_values:
 

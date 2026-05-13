@@ -19,7 +19,10 @@ compute_run_ai_metrics(x, per_group = NULL)
   `turn_type`, and `rating`. If a list is supplied, the function will
   attempt to combine its data-frame elements with
   [`dplyr::bind_rows()`](https://dplyr.tidyverse.org/reference/bind_rows.html)
-  before computing metrics.
+  before computing metrics. If cumulative output from
+  [`run_ai_cumulative_chapters()`](https://centerconflictcooperation.github.io/nalanda/reference/run_ai_cumulative_chapters.md)
+  is detected, this function delegates to
+  [`compute_run_ai_metrics_cumulative()`](https://centerconflictcooperation.github.io/nalanda/reference/compute_run_ai_metrics_cumulative.md).
 
 - per_group:
 

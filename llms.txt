@@ -212,6 +212,9 @@ Projects](https://mindandlife-europe.org/2024-eva-recipients-projects/)
 - [`combine_book_files()`](https://centerconflictcooperation.github.io/nalanda/reference/combine_book_files.md)
   : Combine chapter text files into one numbered file per book
 
+- [`combine_split_chapter_files()`](https://centerconflictcooperation.github.io/nalanda/reference/combine_split_chapter_files.md)
+  : Combine split chapter chunk files
+
 - [`compute_run_ai_metrics()`](https://centerconflictcooperation.github.io/nalanda/reference/compute_run_ai_metrics.md)
   : Compute derived pre/post effect metrics from raw turn-level output
 

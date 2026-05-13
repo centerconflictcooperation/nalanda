@@ -115,7 +115,9 @@ when formatting the <code>ci</code> column. Ignored if <code>add_ci_label = FALS
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
     <p>Standard errors are computed as <code>sd / sqrt(sim)</code>. Confidence intervals
-are calculated using a normal approximation (<code>mean +/- 1.96 * SE</code>).</p>
+are calculated using a normal approximation (<code>mean +/- 1.96 * SE</code>).
+When a summary row has one observation and the standard deviation is
+therefore missing, the CI is collapsed to the point estimate.</p>
     </div>
 
     <div class="section level2">

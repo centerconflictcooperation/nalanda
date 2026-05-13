@@ -72,7 +72,11 @@ turn per chapter, preserving context across the full book.</p>
 <span>  integration <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/options.html" class="external-link">getOption</a></span><span class="op">(</span><span class="st">"nalanda.integration"</span><span class="op">)</span>,</span>
 <span>  virtual_key <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/options.html" class="external-link">getOption</a></span><span class="op">(</span><span class="st">"nalanda.virtual_key"</span><span class="op">)</span>,</span>
 <span>  base_url <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/options.html" class="external-link">getOption</a></span><span class="op">(</span><span class="st">"nalanda.base_url"</span><span class="op">)</span>,</span>
-<span>  excerpt_chars <span class="op">=</span> <span class="fl">200</span></span>
+<span>  excerpt_chars <span class="op">=</span> <span class="fl">200</span>,</span>
+<span>  checkpoint_dir <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  checkpoint_prefix <span class="op">=</span> <span class="st">"run_ai_cumulative_chapters"</span>,</span>
+<span>  save_dir <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  save_prefix <span class="op">=</span> <span class="st">"results"</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -144,6 +148,29 @@ when working with the NYU gateway.</p></dd>
 <dt id="arg-excerpt-chars">excerpt_chars<a class="anchor" aria-label="anchor" href="#arg-excerpt-chars"></a></dt>
 <dd><p>Integer. Number of chapter characters to retain in the
 stored prompt previews shown in results.</p></dd>
+
+
+<dt id="arg-checkpoint-dir">checkpoint_dir<a class="anchor" aria-label="anchor" href="#arg-checkpoint-dir"></a></dt>
+<dd><p>Optional directory. If supplied, each completed
+book/identity/simulation conversation is saved as its own <code>.Rds</code> file as
+soon as it finishes. If the same call is rerun with the same
+<code>checkpoint_dir</code>, <code>checkpoint_prefix</code>, model, books, groups, and
+simulations, completed conversations are loaded from disk and skipped.</p></dd>
+
+
+<dt id="arg-checkpoint-prefix">checkpoint_prefix<a class="anchor" aria-label="anchor" href="#arg-checkpoint-prefix"></a></dt>
+<dd><p>Character scalar used at the start of checkpoint
+filenames when <code>checkpoint_dir</code> is supplied.</p></dd>
+
+
+<dt id="arg-save-dir">save_dir<a class="anchor" aria-label="anchor" href="#arg-save-dir"></a></dt>
+<dd><p>Optional directory. If supplied, each book is saved as one
+<code>.Rds</code> file as soon as all of its identities and simulations finish.</p></dd>
+
+
+<dt id="arg-save-prefix">save_prefix<a class="anchor" aria-label="anchor" href="#arg-save-prefix"></a></dt>
+<dd><p>Character scalar used in book-level filenames when
+<code>save_dir</code> is supplied. Files are named <code>{save_prefix}_{book}.Rds</code>.</p></dd>
 
 </dl></div>
     <div class="section level2">

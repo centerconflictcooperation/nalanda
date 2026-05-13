@@ -64,7 +64,9 @@ metrics without re-running API calls.</p>
 <dd><p>A data frame or list-like object from <code><a href="run_ai_on_chapters.html">run_ai_on_chapters()</a></code> with
 turn-level rows including <code>chapter</code>, <code>sim</code>, <code>identity</code>, <code>turn_type</code>, and
 <code>rating</code>. If a list is supplied, the function will attempt to combine its
-data-frame elements with <code><a href="https://dplyr.tidyverse.org/reference/bind_rows.html" class="external-link">dplyr::bind_rows()</a></code> before computing metrics.</p></dd>
+data-frame elements with <code><a href="https://dplyr.tidyverse.org/reference/bind_rows.html" class="external-link">dplyr::bind_rows()</a></code> before computing metrics. If
+cumulative output from <code><a href="run_ai_cumulative_chapters.html">run_ai_cumulative_chapters()</a></code> is detected, this
+function delegates to <code><a href="compute_run_ai_metrics_cumulative.html">compute_run_ai_metrics_cumulative()</a></code>.</p></dd>
 
 
 <dt id="arg-per-group">per_group<a class="anchor" aria-label="anchor" href="#arg-per-group"></a></dt>

@@ -14,6 +14,7 @@ plot_top_unit_pairs(
   item_col = NULL,
   subgroup_col = "party",
   top_n_items = NULL,
+  item_labels = NULL,
   subgroup_order = NULL,
   title = "Paired subgroup ranks",
   x_breaks = NULL,
@@ -42,6 +43,13 @@ plot_top_unit_pairs(
 
   Optional integer. If supplied, keep only items with the best average
   `mean_rank` across subgroups.
+
+- item_labels:
+
+  Optional character vector for display labels. Use a named vector to
+  map item IDs to labels, e.g. `c("1" = "Opening chapter")`. For
+  chapter-like IDs that start with numbers, an unnamed vector is matched
+  by chapter number.
 
 - subgroup_order:
 

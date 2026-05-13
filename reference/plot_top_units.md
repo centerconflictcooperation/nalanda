@@ -14,6 +14,7 @@ plot_top_units(
   item_col = NULL,
   facet_by = NULL,
   top_n_items = NULL,
+  item_labels = NULL,
   title = "Units most consistently ranked highest",
   x_breaks = NULL,
   x_limits = NULL,
@@ -42,6 +43,13 @@ plot_top_units(
 
   Optional integer. If supplied, keep only the best `top_n_items` per
   facet, based on `mean_rank`.
+
+- item_labels:
+
+  Optional character vector for display labels. Use a named vector to
+  map item IDs to labels, e.g. `c("1" = "Opening chapter")`. For
+  chapter-like IDs that start with numbers, an unnamed vector is matched
+  by chapter number.
 
 - title:
 

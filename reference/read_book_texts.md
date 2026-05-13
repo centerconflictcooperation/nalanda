@@ -20,4 +20,6 @@ read_book_texts(chapter_list)
 ## Value
 
 A nested list of character scalars (texts) with chapter basenames as
-names.
+names. Each book element also stores its book name in a `book` attribute
+so selecting a single book with `$` preserves enough metadata for
+simulation helpers.

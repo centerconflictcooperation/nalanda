@@ -64,6 +64,7 @@ show how much the ranking differs between subgroups.</p>
 <span>  item_col <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  subgroup_col <span class="op">=</span> <span class="st">"party"</span>,</span>
 <span>  top_n_items <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  item_labels <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  subgroup_order <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  title <span class="op">=</span> <span class="st">"Paired subgroup ranks"</span>,</span>
 <span>  x_breaks <span class="op">=</span> <span class="cn">NULL</span>,</span>
@@ -93,6 +94,13 @@ the function tries to infer <code>"book"</code> or <code>"book_id"</code>.</p></
 <dt id="arg-top-n-items">top_n_items<a class="anchor" aria-label="anchor" href="#arg-top-n-items"></a></dt>
 <dd><p>Optional integer. If supplied, keep only items with the
 best average <code>mean_rank</code> across subgroups.</p></dd>
+
+
+<dt id="arg-item-labels">item_labels<a class="anchor" aria-label="anchor" href="#arg-item-labels"></a></dt>
+<dd><p>Optional character vector for display labels. Use a named
+vector to map item IDs to labels, e.g. <code>c("1" = "Opening chapter")</code>. For
+chapter-like IDs that start with numbers, an unnamed vector is matched by
+chapter number.</p></dd>
 
 
 <dt id="arg-subgroup-order">subgroup_order<a class="anchor" aria-label="anchor" href="#arg-subgroup-order"></a></dt>

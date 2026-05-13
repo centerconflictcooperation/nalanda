@@ -1,6 +1,6 @@
 # Build the post-intervention (Turn 2) prompt
 
-Constructs the prompt: chapter text + question(s). If the question
+Constructs the prompt: material text + question(s). If the question
 template contains `{group}`, it is expanded once per group (ingroup
 first). Otherwise, the question is used as-is (single-question mode).
 
@@ -14,7 +14,7 @@ make_post_prompt(chapter_text, question_template, groups, identity_label)
 
 - chapter_text:
 
-  Character scalar. The full chapter text.
+  Character scalar. The full material text.
 
 - question_template:
 
@@ -43,7 +43,7 @@ make_post_prompt(
   groups = c("Democrat", "Republican"),
   identity_label = "Democrat"
 )
-#> [1] "You have just read the chapter below.\n\nThis is a chapter about cooperation...\n\nYou have now just finished reading the book chapter. Now that this is done:\nHow warmly (0-100) do you feel towards Democrats? How warmly (0-100) do you feel towards Republicans?"
+#> [1] "You have just read the material below.\n\nThis is a chapter about cooperation...\n\nYou have now just finished reading the material. Now that this is done:\nHow warmly (0-100) do you feel towards Democrats? How warmly (0-100) do you feel towards Republicans?"
 
 # Single-question mode:
 make_post_prompt(
@@ -52,5 +52,5 @@ make_post_prompt(
   groups = c("Democrat", "Republican"),
   identity_label = "Democrat"
 )
-#> [1] "You have just read the chapter below.\n\nThis is a chapter about cooperation...\n\nYou have now just finished reading the book chapter. Now that this is done:\nHow warmly (0-100) do you feel towards your outgroup?"
+#> [1] "You have just read the material below.\n\nThis is a chapter about cooperation...\n\nYou have now just finished reading the material. Now that this is done:\nHow warmly (0-100) do you feel towards your outgroup?"
 ```

@@ -64,7 +64,9 @@ A tibble with added columns:
 ## Details
 
 Standard errors are computed as `sd / sqrt(sim)`. Confidence intervals
-are calculated using a normal approximation (`mean +/- 1.96 * SE`).
+are calculated using a normal approximation (`mean +/- 1.96 * SE`). When
+a summary row has one observation and the standard deviation is
+therefore missing, the CI is collapsed to the point estimate.
 
 ## Examples
 

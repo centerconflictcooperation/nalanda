@@ -16,6 +16,7 @@ summarize_top_units(
   model_col = "model",
   top_n = 3,
   higher_is_better = TRUE,
+  standardize = c("z", "none", "minmax", "max"),
   include_ranks = FALSE,
   drop_missing = TRUE
 )
@@ -54,6 +55,17 @@ summarize_top_units(
   Logical. If `TRUE` (default), larger outcome values receive better
   ranks. If `FALSE`, smaller values receive better ranks.
 
+- standardize:
+
+  Character. How to standardize item scores within each model before
+  computing cross-model mean scores. `"z"` (default) centers and scales
+  scores within model; `"none"` keeps raw scores; `"minmax"` rescales
+  scores within model to 0–1; `"max"` divides scores within model by
+  that model's maximum absolute score. Ranks are unchanged by monotonic
+  standardization, but `mean_score` and point sizes in
+  [`plot_top_units()`](https://centerconflictcooperation.github.io/nalanda/reference/plot_top_units.md)
+  use the standardized scores.
+
 - include_ranks:
 
   Logical. If `TRUE`, return a list with both the summary table and the
@@ -85,10 +97,20 @@ The summary table contains:
 
   Mean outcome score for the item across models.
 
+- `score_scale`:
+
+  The score standardization method used for `mean_score`.
+
 - `mean_rank`:
 
   Average rank of the item across models. Lower values indicate more
   consistently high-ranked items when `higher_is_better = TRUE`.
+
+- `overall_mean_rank`:
+
+  When `rank_within` is supplied, the item's average rank computed
+  without those ranking contexts. This preserves a common item order for
+  subgroup displays.
 
 - `median_rank`:
 

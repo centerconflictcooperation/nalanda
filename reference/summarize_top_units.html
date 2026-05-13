@@ -67,6 +67,7 @@ consistently have the strongest effects across models?"</p>
 <span>  model_col <span class="op">=</span> <span class="st">"model"</span>,</span>
 <span>  top_n <span class="op">=</span> <span class="fl">3</span>,</span>
 <span>  higher_is_better <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  standardize <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"z"</span>, <span class="st">"none"</span>, <span class="st">"minmax"</span>, <span class="st">"max"</span><span class="op">)</span>,</span>
 <span>  include_ranks <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  drop_missing <span class="op">=</span> <span class="cn">TRUE</span></span>
 <span><span class="op">)</span></span></code></pre></div>
@@ -109,6 +110,16 @@ contexts, e.g. <code>"party"</code> to rank books separately within party.</p></
 receive better ranks. If <code>FALSE</code>, smaller values receive better ranks.</p></dd>
 
 
+<dt id="arg-standardize">standardize<a class="anchor" aria-label="anchor" href="#arg-standardize"></a></dt>
+<dd><p>Character. How to standardize item scores within each
+model before computing cross-model mean scores. <code>"z"</code> (default) centers
+and scales scores within model; <code>"none"</code> keeps raw scores; <code>"minmax"</code>
+rescales scores within model to 0–1; <code>"max"</code> divides scores within model
+by that model's maximum absolute score. Ranks are unchanged by monotonic
+standardization, but <code>mean_score</code> and point sizes in <code><a href="plot_top_units.html">plot_top_units()</a></code> use
+the standardized scores.</p></dd>
+
+
 <dt id="arg-include-ranks">include_ranks<a class="anchor" aria-label="anchor" href="#arg-include-ranks"></a></dt>
 <dd><p>Logical. If <code>TRUE</code>, return a list with both the summary
 table and the model-level ranks. If <code>FALSE</code> (default), return only the
@@ -134,10 +145,19 @@ separate ranking contexts, such as party.</p></dd>
 <dt><code>mean_score</code></dt>
 <dd><p>Mean outcome score for the item across models.</p></dd>
 
+<dt><code>score_scale</code></dt>
+<dd><p>The score standardization method used for
+<code>mean_score</code>.</p></dd>
+
 <dt><code>mean_rank</code></dt>
 <dd><p>Average rank of the item across models. Lower values
 indicate more consistently high-ranked items when
 <code>higher_is_better = TRUE</code>.</p></dd>
+
+<dt><code>overall_mean_rank</code></dt>
+<dd><p>When <code>rank_within</code> is supplied, the item's
+average rank computed without those ranking contexts. This preserves a
+common item order for subgroup displays.</p></dd>
 
 <dt><code>median_rank</code></dt>
 <dd><p>Median rank of the item across models.</p></dd>
