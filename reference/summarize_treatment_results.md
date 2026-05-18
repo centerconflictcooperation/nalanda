@@ -11,6 +11,7 @@ sentiment, or any other custom numeric scores returned by the model.
 ``` r
 summarize_treatment_results(
   x,
+  aggregate_level = c("treatment", "book"),
   by_identity = FALSE,
   by_turn = TRUE,
   fields = NULL
@@ -25,6 +26,14 @@ summarize_treatment_results(
   [`simulate_treatment()`](https://centerconflictcooperation.github.io/nalanda/reference/simulate_treatment.md).
   If a list is supplied, nested data frames are flattened before
   summarising.
+
+- aggregate_level:
+
+  Character. One of `"treatment"` (default) or `"book"`. `"treatment"`
+  summarizes each treatment/intervention unit separately. `"book"`
+  summarizes across all treatment rows within each book and requires a
+  `book` column, usually produced by passing a nested book list to
+  [`simulate_treatment()`](https://centerconflictcooperation.github.io/nalanda/reference/simulate_treatment.md).
 
 - by_identity:
 

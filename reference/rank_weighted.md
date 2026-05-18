@@ -6,7 +6,13 @@ input data with a final `weighted_score`, sorted by score.
 ## Usage
 
 ``` r
-rank_weighted(data, weights, normalize = TRUE, decreasing = TRUE)
+rank_weighted(
+  data,
+  weights,
+  normalize = TRUE,
+  decreasing = TRUE,
+  na_rm = FALSE
+)
 ```
 
 ## Arguments
@@ -29,6 +35,13 @@ rank_weighted(data, weights, normalize = TRUE, decreasing = TRUE)
 
   Logical. If `TRUE` (default), rows are sorted from highest to lowest
   `weighted_score`.
+
+- na_rm:
+
+  Logical. If `TRUE`, missing values in weighted columns are ignored and
+  remaining weights are rescaled within each row. Rows where all
+  weighted columns are missing receive `NA_real_`. Defaults to `FALSE`,
+  which preserves missing values in `weighted_score`.
 
 ## Value
 

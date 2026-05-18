@@ -12,6 +12,9 @@ delta_gap).
 summarize_chapter_scores(
   x,
   aggregate_level = c("chapter", "book"),
+  book_chapter_strategy = c("all", "last"),
+  standardize = c("none", "z", "minmax", "max"),
+  model_aggregation = c("none", "mean"),
   by_party = FALSE
 )
 ```
@@ -31,6 +34,29 @@ summarize_chapter_scores(
 
   Character. One of "chapter" (default) or "book". When "book", results
   are aggregated to the book level.
+
+- book_chapter_strategy:
+
+  Character. One of `"all"` (default) or `"last"`. Used only when
+  `aggregate_level = "book"`. `"all"` averages across all chapter rows,
+  while `"last"` first keeps the last non-missing cumulative chapter row
+  per book, simulation, identity, model, and party. If `chapter_index`
+  is unavailable, chapter order is inferred from the `chapter` labels.
+
+- standardize:
+
+  Character. How to standardize metric columns before summarizing.
+  `"none"` (default) keeps raw scores; `"z"` centers and scales scores
+  within model; `"minmax"` rescales scores within model to 0–1; `"max"`
+  divides scores within model by that model's maximum absolute score.
+
+- model_aggregation:
+
+  Character. `"none"` (default) keeps separate rows per model when a
+  `model` column is present. `"mean"` averages the per-model summary
+  estimates into one consensus row per book/chapter/party grouping, adds
+  `n_models`, and adds `sd_model_*` columns measuring disagreement
+  across model-level mean estimates.
 
 - by_party:
 
