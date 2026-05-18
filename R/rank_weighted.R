@@ -10,6 +10,10 @@
 #'   to `[0, 1]` using min-max normalization before weighting.
 #' @param decreasing Logical. If `TRUE` (default), rows are sorted from highest
 #'   to lowest `weighted_score`.
+#' @param na_rm Logical. If `TRUE`, missing values in weighted columns are
+#'   ignored and remaining weights are rescaled within each row. Rows where all
+#'   weighted columns are missing receive `NA_real_`. Defaults to `FALSE`, which
+#'   preserves missing values in `weighted_score`.
 #'
 #' @return A tibble containing all original columns plus `weighted_score`,
 #'   sorted by score.
@@ -28,7 +32,8 @@ rank_weighted <- function(
   data,
   weights,
   normalize = TRUE,
-  decreasing = TRUE
+  decreasing = TRUE,
+  na_rm = FALSE
 ) {
   if (!is.data.frame(data)) {
     stop("`data` must be a data frame.", call. = FALSE)
@@ -49,6 +54,9 @@ rank_weighted <- function(
   }
   if (!is.logical(decreasing) || length(decreasing) != 1L || is.na(decreasing)) {
     stop("`decreasing` must be TRUE or FALSE.", call. = FALSE)
+  }
+  if (!is.logical(na_rm) || length(na_rm) != 1L || is.na(na_rm)) {
+    stop("`na_rm` must be TRUE or FALSE.", call. = FALSE)
   }
 
   missing_vars <- setdiff(vars, names(data))
@@ -101,9 +109,19 @@ rank_weighted <- function(
       )
   }
 
+  score_matrix <- as.matrix(score_data)
+  weighted_score <- if (isTRUE(na_rm)) {
+    present <- !is.na(score_matrix)
+    numerator <- rowSums(sweep(score_matrix, 2, w, `*`), na.rm = TRUE)
+    denominator <- as.vector(present %*% w)
+    ifelse(denominator > 0, numerator / denominator, NA_real_)
+  } else {
+    as.vector(score_matrix %*% w)
+  }
+
   df <- df |>
     dplyr::mutate(
-      weighted_score = as.vector(as.matrix(score_data) %*% w)
+      weighted_score = weighted_score
     ) |>
     dplyr::arrange(if (decreasing) dplyr::desc(.data$weighted_score) else .data$weighted_score)
 

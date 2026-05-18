@@ -226,6 +226,7 @@ plot_forest_books <- function(
   }
 
   if (!is.null(header)) {
+    header <- .normalize_forest_header(header, ncol(input$label_mat))
     p <- do.call(forestplot::fp_add_header, c(list(p), as.list(header)))
   }
 
@@ -242,6 +243,13 @@ plot_forest_books <- function(
   }
 
   p
+}
+
+.normalize_forest_header <- function(header, n_label_cols) {
+  if (length(header) > n_label_cols && is.null(names(header))) {
+    header <- header[seq_len(n_label_cols)]
+  }
+  header
 }
 
 .drop_empty_forestplot_rows <- function(input) {

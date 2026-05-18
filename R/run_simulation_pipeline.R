@@ -515,7 +515,8 @@ write_book_result <- function(
   model_label,
   temperature,
   n_simulations,
-  book
+  book,
+  column_renamer = NULL
 ) {
   if (is.null(save_dir) || length(rows) == 0) {
     return(invisible(NULL))
@@ -525,6 +526,9 @@ write_book_result <- function(
   out_tbl$model <- model_label
   out_tbl <- out_tbl[, c("model", setdiff(names(out_tbl), "model"))]
   out_tbl <- tibble::as_tibble(out_tbl)
+  if (!is.null(column_renamer)) {
+    out_tbl <- column_renamer(out_tbl)
+  }
   class(out_tbl) <- unique(c("nalanda", class(out_tbl)))
   attr(out_tbl, "model") <- normalize_model_name(model_label)
   attr(out_tbl, "temperature") <- temperature

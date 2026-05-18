@@ -4,7 +4,13 @@
 \alias{rank_weighted}
 \title{Rank rows using a weighted rubric}
 \usage{
-rank_weighted(data, weights, normalize = TRUE, decreasing = TRUE)
+rank_weighted(
+  data,
+  weights,
+  normalize = TRUE,
+  decreasing = TRUE,
+  na_rm = FALSE
+)
 }
 \arguments{
 \item{data}{A data frame.}
@@ -17,6 +23,11 @@ to \verb{[0, 1]} using min-max normalization before weighting.}
 
 \item{decreasing}{Logical. If \code{TRUE} (default), rows are sorted from highest
 to lowest \code{weighted_score}.}
+
+\item{na_rm}{Logical. If \code{TRUE}, missing values in weighted columns are
+ignored and remaining weights are rescaled within each row. Rows where all
+weighted columns are missing receive \code{NA_real_}. Defaults to \code{FALSE}, which
+preserves missing values in \code{weighted_score}.}
 }
 \value{
 A tibble containing all original columns plus \code{weighted_score},

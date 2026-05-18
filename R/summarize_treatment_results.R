@@ -8,6 +8,11 @@
 #' @param x A data frame or list-like object containing raw rows as produced by
 #'   [simulate_treatment()]. If a list is supplied, nested data frames are
 #'   flattened before summarising.
+#' @param aggregate_level Character. One of `"treatment"` (default) or `"book"`.
+#'   `"treatment"` summarizes each treatment/intervention unit separately.
+#'   `"book"` summarizes across all treatment rows within each book and requires
+#'   a `book` column, usually produced by passing a nested book list to
+#'   [simulate_treatment()].
 #' @param by_identity Logical. If `TRUE`, summaries are computed separately by
 #'   identity when an `identity` column is present.
 #' @param by_turn Logical. If `TRUE` (default), summaries are computed
@@ -33,10 +38,12 @@
 #' @export
 summarize_treatment_results <- function(
   x,
+  aggregate_level = c("treatment", "book"),
   by_identity = FALSE,
   by_turn = TRUE,
   fields = NULL
 ) {
+  aggregate_level <- match.arg(aggregate_level)
   model <- attr(x, "model")
   models <- attr(x, "models")
   temperature <- attr(x, "temperature")
@@ -44,9 +51,9 @@ summarize_treatment_results <- function(
 
   if (is.null(model) && is.list(x) && !inherits(x, "data.frame") &&
     length(x) > 0) {
-    model <- model %||% attr(x[[1]], "model")
-    temperature <- temperature %||% attr(x[[1]], "temperature")
-    n_simulations <- n_simulations %||% attr(x[[1]], "n_simulations")
+    model <- rlang::`%||%`(model, attr(x[[1]], "model"))
+    temperature <- rlang::`%||%`(temperature, attr(x[[1]], "temperature"))
+    n_simulations <- rlang::`%||%`(n_simulations, attr(x[[1]], "n_simulations"))
   }
   model <- normalize_model_name(model)
   models <- normalize_model_metadata(models)
@@ -108,9 +115,22 @@ summarize_treatment_results <- function(
     )
   }
 
+  if (aggregate_level == "book" && !"book" %in% names(df)) {
+    stop(
+      "`aggregate_level = \"book\"` requires a `book` column. ",
+      "Pass a nested named book list to `simulate_treatment()` or summarize ",
+      "with `aggregate_level = \"treatment\"`.",
+      call. = FALSE
+    )
+  }
+
   group_cols <- character()
   if ("model" %in% names(df)) group_cols <- c(group_cols, "model")
-  group_cols <- c(group_cols, "treatment")
+  if (aggregate_level == "book") {
+    group_cols <- c(group_cols, "book")
+  } else {
+    group_cols <- c(group_cols, "treatment")
+  }
   if (by_identity && has_identity) group_cols <- c(group_cols, "identity")
   if (by_turn) {
     if (has_turn_type) {
@@ -145,11 +165,13 @@ summarize_treatment_results <- function(
     suppressWarnings(as.integer(stringr::str_extract(x, "\\d+")))
   }
 
-  df <- df |>
-    dplyr::mutate(treatment_num = extract_treatment_num(.data$treatment))
+  if ("treatment" %in% names(df)) {
+    df <- df |>
+      dplyr::mutate(treatment_num = extract_treatment_num(.data$treatment))
+  }
 
   arrange_cols <- intersect(
-    c("turn_type", "turn_index", "identity", "treatment_num", "treatment"),
+    c("turn_type", "turn_index", "identity", "book", "treatment_num", "treatment"),
     names(df)
   )
 
@@ -169,7 +191,7 @@ summarize_treatment_results <- function(
       dplyr::mutate(treatment_index = dplyr::row_number())
   }
 
-  df <- dplyr::select(df, -dplyr::all_of("treatment_num"))
+  df <- dplyr::select(df, -dplyr::any_of("treatment_num"))
 
   attr(df, "model") <- model
   if (length(models) > 1) {
@@ -177,5 +199,6 @@ summarize_treatment_results <- function(
   }
   attr(df, "temperature") <- temperature
   attr(df, "n_simulations") <- n_simulations
+  attr(df, "aggregate_level") <- aggregate_level
   df
 }

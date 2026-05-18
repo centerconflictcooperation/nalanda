@@ -6,6 +6,7 @@
 \usage{
 summarize_treatment_results(
   x,
+  aggregate_level = c("treatment", "book"),
   by_identity = FALSE,
   by_turn = TRUE,
   fields = NULL
@@ -15,6 +16,12 @@ summarize_treatment_results(
 \item{x}{A data frame or list-like object containing raw rows as produced by
 \code{\link[=simulate_treatment]{simulate_treatment()}}. If a list is supplied, nested data frames are
 flattened before summarising.}
+
+\item{aggregate_level}{Character. One of \code{"treatment"} (default) or \code{"book"}.
+\code{"treatment"} summarizes each treatment/intervention unit separately.
+\code{"book"} summarizes across all treatment rows within each book and requires
+a \code{book} column, usually produced by passing a nested book list to
+\code{\link[=simulate_treatment]{simulate_treatment()}}.}
 
 \item{by_identity}{Logical. If \code{TRUE}, summaries are computed separately by
 identity when an \code{identity} column is present.}

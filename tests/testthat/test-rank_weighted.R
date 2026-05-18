@@ -54,3 +54,30 @@ test_that("rank_weighted validates inputs", {
     "missing from `data`"
   )
 })
+
+test_that("rank_weighted can ignore missing weighted values when requested", {
+  x <- tibble::tibble(
+    item = c("A", "B", "C"),
+    a = c(10, NA, NA),
+    b = c(20, 30, NA)
+  )
+
+  default <- rank_weighted(
+    x,
+    weights = c(a = 0.5, b = 0.5),
+    normalize = FALSE
+  )
+  expect_true(is.na(default$weighted_score[default$item == "B"]))
+  expect_true(is.na(default$weighted_score[default$item == "C"]))
+
+  out <- rank_weighted(
+    x,
+    weights = c(a = 0.5, b = 0.5),
+    normalize = FALSE,
+    na_rm = TRUE
+  )
+
+  expect_equal(out$weighted_score[out$item == "A"], 15)
+  expect_equal(out$weighted_score[out$item == "B"], 30)
+  expect_true(is.na(out$weighted_score[out$item == "C"]))
+})

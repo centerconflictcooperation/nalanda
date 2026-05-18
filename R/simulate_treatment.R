@@ -43,6 +43,18 @@
 #' @param base_url Character. Base URL for API calls.
 #' @param excerpt_chars Integer. Number of intervention-text characters to
 #'   retain in stored prompt previews.
+#' @param checkpoint_dir Optional directory. If supplied, each completed
+#'   treatment/identity/simulation unit is saved as its own `.Rds` file as soon
+#'   as it finishes. If the same call is rerun with the same `checkpoint_dir`,
+#'   `checkpoint_prefix`, model, treatments, groups, and simulations, completed
+#'   units are loaded from disk and skipped.
+#' @param checkpoint_prefix Character scalar used at the start of checkpoint
+#'   filenames when `checkpoint_dir` is supplied.
+#' @param save_dir Optional directory. If supplied, each intervention collection
+#'   is saved as one `.Rds` file as soon as all of its treatments, identities,
+#'   and simulations finish.
+#' @param save_prefix Character scalar used in book-level filenames when
+#'   `save_dir` is supplied. Files are named `{save_prefix}_{book}.Rds`.
 #'
 #' @return A tibble of raw turn-level responses, or a named list of tibbles
 #'   (one per book/intervention collection). Each row includes `treatment`,
@@ -98,7 +110,11 @@ simulate_treatment <- function(
   integration = getOption("nalanda.integration"),
   virtual_key = getOption("nalanda.virtual_key"),
   base_url = getOption("nalanda.base_url"),
-  excerpt_chars = 200
+  excerpt_chars = 200,
+  checkpoint_dir = NULL,
+  checkpoint_prefix = "simulate_treatment",
+  save_dir = NULL,
+  save_prefix = "results"
 ) {
   if (missing(intervention_text) || is.null(intervention_text)) {
     intervention_text <- ""
@@ -129,6 +145,10 @@ simulate_treatment <- function(
     executor = execute_generic_treatment_pipeline,
     require_groups = FALSE,
     default_unit_id = "intervention_1",
+    checkpoint_dir = checkpoint_dir,
+    checkpoint_prefix = checkpoint_prefix,
+    save_dir = save_dir,
+    save_prefix = save_prefix,
     prompt = as.character(prompt),
     response_type = response_type,
     output_mode = output_mode
@@ -149,11 +169,11 @@ rename_treatment_output_columns <- function(x) {
   }
 
   if ("chapter" %in% names(x) && !"treatment" %in% names(x)) {
-    x <- dplyr::rename(x, treatment = .data$chapter)
+    x <- dplyr::rename(x, treatment = "chapter")
   }
 
   if ("chapter_index" %in% names(x) && !"treatment_index" %in% names(x)) {
-    x <- dplyr::rename(x, treatment_index = .data$chapter_index)
+    x <- dplyr::rename(x, treatment_index = "chapter_index")
   }
 
   x
@@ -191,21 +211,53 @@ execute_generic_treatment_pipeline <- function(
   identities <- if (all(is.na(groups))) NA_character_ else groups
   all_rows <- list()
   all_row_i <- 0L
+  book_start <- 1L
+  checkpoint_index <- load_checkpoint_index(
+    checkpoint_dir = checkpoint_dir,
+    checkpoint_prefix = checkpoint_prefix,
+    model_label = model_label
+  )
 
   for (chapter_i in seq_len(nrow(chapter_jobs))) {
     chapter_job <- chapter_jobs[chapter_i, , drop = FALSE]
+    if (chapter_i == 1L || !identical(
+      progress_scope_id(chapter_job$book[[1]]),
+      progress_scope_id(chapter_jobs$book[[chapter_i - 1L]])
+    )) {
+      book_start <- all_row_i + 1L
+    }
 
     for (id_idx in seq_along(identities)) {
       identity_label <- identities[[id_idx]]
       identity_context <- context_text[[id_idx]]
 
       for (k in seq_len(n_simulations)) {
+        unit_start <- all_row_i + 1L
         progress_tick(
           book = chapter_job$book[[1]],
           chapter = chapter_job$chapter[[1]],
           identity = if (is.na(identity_label)) "default" else identity_label,
           sim = k
         )
+
+        checkpoint_rows <- checkpoint_index_get(
+          index = checkpoint_index,
+          book = chapter_job$book[[1]],
+          chapter = chapter_job$chapter[[1]],
+          identity = identity_label,
+          sim = k,
+          model_label = model_label
+        )
+        if (!is.null(checkpoint_rows)) {
+          appended <- append_checkpoint_rows(
+            all_rows = all_rows,
+            all_row_i = all_row_i,
+            rows = checkpoint_rows
+          )
+          all_rows <- appended$rows
+          all_row_i <- appended$row_i
+          next
+        }
 
         chat <- new_portkey_chat(
           model = model,
@@ -257,7 +309,43 @@ execute_generic_treatment_pipeline <- function(
           all_row_i <- all_row_i + 1L
           all_rows[[all_row_i]] <- row
         }
+
+        write_simulation_checkpoint(
+          rows = all_rows[unit_start:all_row_i],
+          long_cols = "prompt",
+          checkpoint_dir = checkpoint_dir,
+          checkpoint_prefix = checkpoint_prefix,
+          model_label = model_label,
+          book = chapter_job$book[[1]],
+          chapter = chapter_job$chapter[[1]],
+          identity = identity_label,
+          sim = k
+        )
       }
+    }
+
+    next_book <- if (chapter_i < nrow(chapter_jobs)) {
+      chapter_jobs$book[[chapter_i + 1L]]
+    } else {
+      NA_character_
+    }
+    if (!identical(
+      progress_scope_id(chapter_job$book[[1]]),
+      progress_scope_id(next_book)
+    )) {
+      write_book_result(
+        rows = all_rows[book_start:all_row_i],
+        long_cols = "prompt",
+        chapter_jobs = chapter_jobs,
+        save_dir = save_dir,
+        save_prefix = save_prefix,
+        n_models = n_models,
+        model_label = model_label,
+        temperature = temperature,
+        n_simulations = n_simulations,
+        book = chapter_job$book[[1]],
+        column_renamer = rename_treatment_output_columns
+      )
     }
   }
 

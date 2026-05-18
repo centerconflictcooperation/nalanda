@@ -55,9 +55,9 @@ summarize_identity_adherence <- function(
 
   if (is.null(model) && is.list(x) && !inherits(x, "data.frame") &&
     length(x) > 0) {
-    model <- model %||% attr(x[[1]], "model")
-    temperature <- temperature %||% attr(x[[1]], "temperature")
-    n_simulations <- n_simulations %||% attr(x[[1]], "n_simulations")
+    model <- rlang::`%||%`(model, attr(x[[1]], "model"))
+    temperature <- rlang::`%||%`(temperature, attr(x[[1]], "temperature"))
+    n_simulations <- rlang::`%||%`(n_simulations, attr(x[[1]], "n_simulations"))
   }
   model <- normalize_model_name(model)
   models <- normalize_model_metadata(models)
@@ -150,15 +150,15 @@ summarize_identity_adherence <- function(
     id_cols <- intersect(setdiff(by, observed_col), names(out))
     out <- out |>
       dplyr::mutate(.observed_key = suffix(.data[[observed_col]])) |>
-      dplyr::select(dplyr::all_of(id_cols), .data$total_n, .data$.observed_key, .data$prop) |>
+      dplyr::select(dplyr::all_of(id_cols), "total_n", ".observed_key", "prop") |>
       dplyr::distinct() |>
       tidyr::pivot_wider(
         id_cols = dplyr::all_of(c(id_cols, "total_n")),
-        names_from = .data$.observed_key,
+        names_from = ".observed_key",
         values_from = "prop",
         names_prefix = "rate_"
       ) |>
-      dplyr::rename(n = .data$total_n)
+      dplyr::rename(n = "total_n")
   }
 
   attr(out, "model") <- model
@@ -238,7 +238,7 @@ summarize_identity_match_rates <- function(
       dplyr::ungroup() |>
       tidyr::pivot_wider(
         id_cols = dplyr::all_of(unique(c(setdiff(group_cols, expected_col), "n"))),
-        names_from = .data$.identity_key,
+        names_from = ".identity_key",
         values_from = "adoption_rate",
         names_prefix = "rate_"
       )

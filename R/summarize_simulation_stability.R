@@ -51,9 +51,9 @@ summarize_simulation_stability <- function(
 
   if (is.null(model) && is.list(x) && !inherits(x, "data.frame") &&
     length(x) > 0) {
-    model <- model %||% attr(x[[1]], "model")
-    temperature <- temperature %||% attr(x[[1]], "temperature")
-    n_simulations <- n_simulations %||% attr(x[[1]], "n_simulations")
+    model <- rlang::`%||%`(model, attr(x[[1]], "model"))
+    temperature <- rlang::`%||%`(temperature, attr(x[[1]], "temperature"))
+    n_simulations <- rlang::`%||%`(n_simulations, attr(x[[1]], "n_simulations"))
   }
   model <- normalize_model_name(model)
   models <- normalize_model_metadata(models)
@@ -174,10 +174,10 @@ summarize_simulation_stability <- function(
   out <- out |>
     dplyr::select(
       dplyr::all_of(by_present),
-      .data$n_units,
-      .data$prop_units_any_pre_variation,
-      .data$prop_units_any_post_variation,
-      .data$all_stable
+      "n_units",
+      "prop_units_any_pre_variation",
+      "prop_units_any_post_variation",
+      "all_stable"
     )
 
   attr(out, "model") <- model

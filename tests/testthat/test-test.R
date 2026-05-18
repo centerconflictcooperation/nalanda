@@ -193,6 +193,131 @@ test_that("summarize_chapter_scores supports book-level aggregation", {
   expect_false("chapter_excerpt" %in% names(out))
 })
 
+test_that("summarize_chapter_scores can use last cumulative chapter for book aggregation", {
+  x <- tibble::tibble(
+    model = rep("test-model", 6),
+    book = rep("Book A", 6),
+    chapter = rep(c("chapter_1", "chapter_2", "chapter_3"), 2),
+    chapter_index = rep(1:3, 2),
+    sim = c(1, 1, 1, 2, 2, 2),
+    identity = rep("Democrat", 6),
+    party = rep("Democrat", 6),
+    pre_ingroup = c(60, 60, 60, 62, 62, 62),
+    post_ingroup = c(61, 62, 63, 63, 64, 65),
+    pre_outgroup = c(40, 40, 40, 42, 42, 42),
+    post_outgroup = c(42, 44, 46, 44, 46, 48),
+    pre_gap = c(20, 20, 20, 20, 20, 20),
+    post_gap = c(19, 18, 17, 19, 18, 17),
+    delta_outgroup = c(2, 4, 6, 2, 4, 6),
+    delta_ingroup = c(1, 2, 3, 1, 2, 3),
+    delta_gap = c(1, 2, 3, 1, NA_real_, 3)
+  )
+  attr(x, "model") <- "test-model"
+  attr(x, "temperature") <- 0.25
+  attr(x, "n_simulations") <- 2
+
+  out <- summarize_chapter_scores(
+    x,
+    aggregate_level = "book",
+    book_chapter_strategy = "last",
+    by_party = TRUE
+  )
+
+  expect_equal(nrow(out), 1)
+  expect_equal(out$sim, 2)
+  expect_equal(out$mean_delta_gap, 3)
+  expect_equal(out$mean_delta_outgroup, 6)
+  expect_equal(attr(out, "model"), "test-model")
+  expect_equal(attr(out, "temperature"), 0.25)
+  expect_equal(attr(out, "n_simulations"), 2)
+})
+
+test_that("summarize_chapter_scores infers last cumulative chapter order from chapter labels", {
+  x <- tibble::tibble(
+    book = rep("Book A", 4),
+    chapter = c("chapter_1", "chapter_10", "chapter_1", "chapter_10"),
+    sim = c(1, 1, 2, 2),
+    identity = rep("Democrat", 4),
+    pre_ingroup = c(60, 60, 62, 62),
+    post_ingroup = c(61, 63, 63, 65),
+    pre_outgroup = c(40, 40, 42, 42),
+    post_outgroup = c(42, 46, 44, 48),
+    pre_gap = c(20, 20, 20, 20),
+    post_gap = c(19, 17, 19, 17),
+    delta_outgroup = c(2, 6, 2, 6),
+    delta_ingroup = c(1, 3, 1, 3),
+    delta_gap = c(1, 3, 1, 3)
+  )
+
+  out <- summarize_chapter_scores(
+    x,
+    aggregate_level = "book",
+    book_chapter_strategy = "last"
+  )
+
+  expect_equal(out$sim, 2)
+  expect_equal(out$mean_delta_gap, 3)
+})
+
+test_that("summarize_chapter_scores can standardize metrics within model", {
+  x <- tibble::tibble(
+    model = rep(c("model-a", "model-b"), each = 3),
+    book = rep(c("Book A", "Book B", "Book C"), 2),
+    chapter = rep("full_book", 6),
+    pre_ingroup = 0,
+    post_ingroup = 0,
+    pre_outgroup = 0,
+    post_outgroup = 0,
+    pre_gap = 0,
+    post_gap = 0,
+    delta_outgroup = c(1, 2, 3, 100, 200, 300),
+    delta_ingroup = 0,
+    delta_gap = c(1, 2, 3, 100, 200, 300)
+  )
+
+  out <- summarize_chapter_scores(
+    x,
+    aggregate_level = "book",
+    standardize = "z"
+  )
+
+  expect_equal(out$mean_delta_gap[out$model == "model-a"], c(-1, 0, 1))
+  expect_equal(out$mean_delta_gap[out$model == "model-b"], c(-1, 0, 1))
+  expect_equal(attr(out, "score_scale"), "z")
+})
+
+test_that("summarize_chapter_scores can aggregate standardized model consensus", {
+  x <- tibble::tibble(
+    model = rep(c("model-a", "model-b"), each = 3),
+    book = rep(c("Book A", "Book B", "Book C"), 2),
+    chapter = rep("full_book", 6),
+    pre_ingroup = 0,
+    post_ingroup = 0,
+    pre_outgroup = 0,
+    post_outgroup = 0,
+    pre_gap = 0,
+    post_gap = 0,
+    delta_outgroup = c(1, 2, 3, 300, 200, 100),
+    delta_ingroup = 0,
+    delta_gap = c(1, 2, 3, 300, 200, 100)
+  )
+
+  out <- summarize_chapter_scores(
+    x,
+    aggregate_level = "book",
+    standardize = "z",
+    model_aggregation = "mean"
+  )
+
+  expect_equal(nrow(out), 3)
+  expect_false("model" %in% names(out))
+  expect_equal(out$book, c("Book A", "Book B", "Book C"))
+  expect_equal(out$n_models, c(2L, 2L, 2L))
+  expect_equal(out$mean_delta_gap, c(0, 0, 0))
+  expect_true("sd_model_mean_delta_gap" %in% names(out))
+  expect_equal(attr(out, "model_aggregation"), "mean")
+})
+
 test_that("compute_run_ai_metrics preserves chapter excerpt index", {
   x <- tibble::tibble(
     chapter = c("chapter_1", "chapter_1"),
@@ -1052,6 +1177,28 @@ test_that("summarize_treatment_results can split by identity", {
   expect_equal(out$mean_readability_score, c(6, 8))
 })
 
+test_that("summarize_treatment_results can aggregate readability fields by book", {
+  x <- tibble::tibble(
+    book = c("Book A", "Book A", "Book B", "Book B"),
+    treatment = c("chapter_1", "chapter_2", "chapter_1", "chapter_2"),
+    sim = c(1, 1, 1, 1),
+    turn_type = "turn_1",
+    readability_score = c(6, 8, 7, 9),
+    readability_confidence = c(4, 5, 3, 5)
+  )
+
+  out <- summarize_treatment_results(
+    x,
+    aggregate_level = "book"
+  )
+
+  expect_equal(out$book, c("Book A", "Book B"))
+  expect_false("treatment" %in% names(out))
+  expect_equal(out$mean_readability_score, c(7, 8))
+  expect_equal(out$mean_readability_confidence, c(4.5, 4))
+  expect_equal(attr(out, "aggregate_level"), "book")
+})
+
 test_that("summarize_identity_adherence deduplicates repeated one-turn rows", {
   x <- tibble::tibble(
     book = c("Book A", "Book A", "Book A", "Book A", "Book A", "Book A"),
@@ -1158,6 +1305,136 @@ test_that("simulate_treatment can parse soft structured text output", {
   expect_equal(out$raw_response, '{"score": "7"}')
   expect_match(seen_prompt, "Response format requirement", fixed = TRUE)
   expect_match(seen_prompt, '"score": <value>', fixed = TRUE)
+})
+
+test_that("simulate_treatment checkpoints completed simulation units", {
+  checkpoint_dir <- file.path(tempdir(), paste0("nalanda-sim-checkpoints-", Sys.getpid()))
+  dir.create(checkpoint_dir)
+  on.exit(unlink(checkpoint_dir, recursive = TRUE), add = TRUE)
+
+  testthat::local_mocked_bindings(
+    new_portkey_chat = function(model, base_url, temperature, seed) {
+      list(
+        chat_structured = function(full_prompt, type) {
+          list(score = 7)
+        }
+      )
+    },
+    .package = "nalanda"
+  )
+
+  out <- simulate_treatment(
+    intervention_text = list("Book A" = list(full_book = "Treatment text.")),
+    groups = c("Democrat", "Republican"),
+    context_text = "You are a {identity}.",
+    prompt = "Score this treatment.",
+    response_type = ellmer::type_object(score = ellmer::type_number()),
+    checkpoint_dir = checkpoint_dir,
+    checkpoint_prefix = "treatment-checkpoint"
+  )
+
+  files <- list.files(checkpoint_dir, pattern = "\\.Rds$", full.names = TRUE)
+  expect_length(files, 2)
+  expect_equal(sort(unique(out[["Book A"]]$identity)), c("Democrat", "Republican"))
+
+  checkpoint_rows <- dplyr::bind_rows(lapply(files, readRDS))
+  expect_true(all(c("model", "book", "chapter", "sim", "identity", "score") %in% names(checkpoint_rows)))
+  expect_equal(unique(checkpoint_rows$book), "Book A")
+  expect_equal(unique(checkpoint_rows$chapter), "full_book")
+})
+
+test_that("simulate_treatment resumes completed units from checkpoint_dir", {
+  checkpoint_dir <- file.path(tempdir(), paste0("nalanda-sim-resume-", Sys.getpid()))
+  dir.create(checkpoint_dir)
+  on.exit(unlink(checkpoint_dir, recursive = TRUE), add = TRUE)
+
+  nalanda:::write_simulation_checkpoint(
+    rows = list(
+      list(
+        book = "Book A",
+        chapter = "full_book",
+        sim = 1L,
+        identity = "Democrat",
+        turn_index = 1L,
+        turn_type = "score",
+        prompt = "checkpoint prompt",
+        score = 99
+      )
+    ),
+    long_cols = "prompt",
+    checkpoint_dir = checkpoint_dir,
+    checkpoint_prefix = "treatment-resume",
+    model_label = "gemini-2.5-flash-lite",
+    book = "Book A",
+    chapter = "full_book",
+    identity = "Democrat",
+    sim = 1L
+  )
+
+  calls <- 0L
+  testthat::local_mocked_bindings(
+    new_portkey_chat = function(model, base_url, temperature, seed) {
+      calls <<- calls + 1L
+      list(
+        chat_structured = function(full_prompt, type) {
+          list(score = 10)
+        }
+      )
+    },
+    .package = "nalanda"
+  )
+
+  out <- simulate_treatment(
+    intervention_text = list("Book A" = list(full_book = "Treatment text.")),
+    groups = c("Democrat", "Republican"),
+    context_text = "You are a {identity}.",
+    prompt = c(score = "Score this treatment."),
+    response_type = ellmer::type_object(score = ellmer::type_number()),
+    checkpoint_dir = checkpoint_dir,
+    checkpoint_prefix = "treatment-resume"
+  )
+
+  out_tbl <- out[["Book A"]]
+  expect_equal(calls, 1L)
+  expect_equal(out_tbl$score[out_tbl$identity == "Democrat"], 99)
+  expect_equal(out_tbl$prompt[out_tbl$identity == "Democrat"], "checkpoint prompt")
+  expect_equal(out_tbl$score[out_tbl$identity == "Republican"], 10)
+})
+
+test_that("simulate_treatment saves one completed file per book", {
+  save_dir <- file.path(tempdir(), paste0("nalanda-sim-save-", Sys.getpid()))
+  dir.create(save_dir)
+  on.exit(unlink(save_dir, recursive = TRUE), add = TRUE)
+
+  testthat::local_mocked_bindings(
+    new_portkey_chat = function(model, base_url, temperature, seed) {
+      list(
+        chat_structured = function(full_prompt, type) {
+          list(score = 7)
+        }
+      )
+    },
+    .package = "nalanda"
+  )
+
+  simulate_treatment(
+    intervention_text = list("Book A" = list(full_book = "Treatment text.")),
+    groups = c("Democrat", "Republican"),
+    context_text = "You are a {identity}.",
+    prompt = "Score this treatment.",
+    response_type = ellmer::type_object(score = ellmer::type_number()),
+    save_dir = save_dir,
+    save_prefix = "SIM_results"
+  )
+
+  files <- list.files(save_dir, pattern = "\\.Rds$", full.names = TRUE)
+  expect_equal(basename(files), "SIM_results_Book-A.Rds")
+
+  out <- readRDS(files[[1]])
+  expect_true(inherits(out, "nalanda"))
+  expect_true(all(c("model", "book", "treatment", "sim", "identity", "score") %in% names(out)))
+  expect_false("chapter" %in% names(out))
+  expect_equal(unique(out$treatment), "full_book")
 })
 
 test_that("run_ai_on_chapters can parse text-mode JSON into rating rows", {
@@ -1936,6 +2213,27 @@ test_that("grouped forest plot prints with one simulation per party", {
     header = c("Book tested", "Effect [95% CI]"),
     ci_label_fontsize = 8,
     ci_label_lineheight = 0.8,
+    show_overall = FALSE
+  )
+
+  expect_no_error(print(p))
+})
+
+test_that("plot_forest_books ignores extra unnamed headers without CI labels", {
+  grouped <- tibble::tibble(
+    book = c("Book A", "Book A", "Book B", "Book B"),
+    party = c("Democrat", "Republican", "Democrat", "Republican"),
+    sim = c(1, 1, 1, 1),
+    mean_delta_gap = c(8, 12, 10, 14),
+    sd_delta_gap = c(NA_real_, NA_real_, NA_real_, NA_real_)
+  )
+
+  p <- plot_forest_books(
+    grouped,
+    label_cols = "book",
+    dv = "delta_gap",
+    header = c("Book tested", "Effect [95% CI]"),
+    show_ci_label = FALSE,
     show_overall = FALSE
   )
 

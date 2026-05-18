@@ -12,6 +12,21 @@
 #'   If book and party are present, the summary will include those groupings.
 #' @param aggregate_level Character. One of "chapter" (default) or "book".
 #'   When "book", results are aggregated to the book level.
+#' @param book_chapter_strategy Character. One of `"all"` (default) or
+#'   `"last"`. Used only when `aggregate_level = "book"`. `"all"` averages
+#'   across all chapter rows, while `"last"` first keeps the last non-missing
+#'   cumulative chapter row per book, simulation, identity, model, and party.
+#'   If `chapter_index` is unavailable, chapter order is inferred from the
+#'   `chapter` labels.
+#' @param standardize Character. How to standardize metric columns before
+#'   summarizing. `"none"` (default) keeps raw scores; `"z"` centers and scales
+#'   scores within model; `"minmax"` rescales scores within model to 0--1;
+#'   `"max"` divides scores within model by that model's maximum absolute score.
+#' @param model_aggregation Character. `"none"` (default) keeps separate rows
+#'   per model when a `model` column is present. `"mean"` averages the
+#'   per-model summary estimates into one consensus row per book/chapter/party
+#'   grouping, adds `n_models`, and adds `sd_model_*` columns measuring
+#'   disagreement across model-level mean estimates.
 #' @param by_party Logical. If TRUE, summaries are computed separately by party
 #'   (if present).
 #' @return A tibble summarizing each chapter (and book if present). The returned
@@ -36,9 +51,15 @@
 summarize_chapter_scores <- function(
   x,
   aggregate_level = c("chapter", "book"),
+  book_chapter_strategy = c("all", "last"),
+  standardize = c("none", "z", "minmax", "max"),
+  model_aggregation = c("none", "mean"),
   by_party = FALSE
 ) {
   aggregate_level <- match.arg(aggregate_level)
+  book_chapter_strategy <- match.arg(book_chapter_strategy)
+  standardize <- match.arg(standardize)
+  model_aggregation <- match.arg(model_aggregation)
   model <- attr(x, "model")
   models <- attr(x, "models")
   temperature <- attr(x, "temperature")
@@ -48,9 +69,9 @@ summarize_chapter_scores <- function(
   # Fallback: check first list element (covers lapply(files, readRDS) workflow)
   if (is.null(model) && is.list(x) && !inherits(x, "data.frame") &&
     length(x) > 0) {
-    model <- model %||% attr(x[[1]], "model")
-    temperature <- temperature %||% attr(x[[1]], "temperature")
-    n_simulations <- n_simulations %||% attr(x[[1]], "n_simulations")
+    model <- rlang::`%||%`(model, attr(x[[1]], "model"))
+    temperature <- rlang::`%||%`(temperature, attr(x[[1]], "temperature"))
+    n_simulations <- rlang::`%||%`(n_simulations, attr(x[[1]], "n_simulations"))
   }
   model <- normalize_model_name(model)
   models <- normalize_model_metadata(models)
@@ -88,6 +109,88 @@ summarize_chapter_scores <- function(
 
   extract_chapter_num <- function(ch) {
     suppressWarnings(as.integer(stringr::str_extract(ch, "\\d+")))
+  }
+
+  if (book_chapter_strategy == "last") {
+    if (aggregate_level != "book") {
+      stop("`book_chapter_strategy = \"last\"` requires `aggregate_level = \"book\"`.")
+    }
+
+    required_last_cols <- c("book", "sim", "identity")
+    missing_last_cols <- setdiff(required_last_cols, names(df))
+    if (length(missing_last_cols) > 0) {
+      stop(
+        "`book_chapter_strategy = \"last\"` requires columns: ",
+        paste(required_last_cols, collapse = ", "),
+        ". Missing: ",
+        paste(missing_last_cols, collapse = ", "),
+        "."
+      )
+    }
+    if (!"chapter_index" %in% names(df)) {
+      df <- df |>
+        dplyr::mutate(chapter_index = extract_chapter_num(.data$chapter))
+      if (!any(!is.na(df$chapter_index))) {
+        stop(
+          "`book_chapter_strategy = \"last\"` requires `chapter_index` or ",
+          "chapter labels containing chapter numbers."
+        )
+      }
+    }
+
+    metric_col <- if ("delta_gap" %in% names(df)) {
+      "delta_gap"
+    } else if ("delta_outgroup" %in% names(df)) {
+      "delta_outgroup"
+    } else {
+      stop(
+        "`book_chapter_strategy = \"last\"` requires either `delta_gap` ",
+        "or `delta_outgroup` to identify non-missing cumulative metric rows."
+      )
+    }
+
+    last_group_cols <- c(
+      "book",
+      "sim",
+      "identity",
+      intersect(c("model", "party"), names(df))
+    )
+
+    df <- df |>
+      dplyr::filter(!is.na(.data[[metric_col]])) |>
+      dplyr::group_by(dplyr::across(dplyr::all_of(last_group_cols))) |>
+      dplyr::slice_max(.data$chapter_index, n = 1, with_ties = FALSE) |>
+      dplyr::ungroup()
+  }
+
+  metric_cols <- intersect(
+    c(
+      "pre_ingroup",
+      "post_ingroup",
+      "pre_outgroup",
+      "post_outgroup",
+      "pre_gap",
+      "post_gap",
+      "delta_outgroup",
+      "delta_ingroup",
+      "delta_gap"
+    ),
+    names(df)
+  )
+  if (standardize != "none") {
+    if (!"model" %in% names(df)) {
+      stop("`standardize` requires a `model` column.", call. = FALSE)
+    }
+
+    df <- df |>
+      dplyr::group_by(.data$model) |>
+      dplyr::mutate(
+        dplyr::across(
+          dplyr::all_of(metric_cols),
+          ~ standardize_top_unit_vector(.x, standardize)
+        )
+      ) |>
+      dplyr::ungroup()
   }
 
   # --- Determine grouping columns ---
@@ -128,6 +231,33 @@ summarize_chapter_scores <- function(
       sd_delta_gap = stats::sd(.data$delta_gap, na.rm = TRUE),
       .groups = "drop"
     )
+
+  if (model_aggregation == "mean" && "model" %in% names(df)) {
+    model_group_cols <- setdiff(group_cols, "model")
+    mean_cols <- grep("^mean_", names(df), value = TRUE)
+    sd_cols <- grep("^sd_", names(df), value = TRUE)
+
+    df <- df |>
+      dplyr::group_by(dplyr::across(dplyr::all_of(model_group_cols))) |>
+      dplyr::summarise(
+        sim = sum(.data$sim, na.rm = TRUE),
+        n_models = dplyr::n_distinct(.data$model),
+        dplyr::across(
+          dplyr::all_of(mean_cols),
+          ~ mean(.x, na.rm = TRUE)
+        ),
+        dplyr::across(
+          dplyr::all_of(sd_cols),
+          ~ mean(.x, na.rm = TRUE)
+        ),
+        dplyr::across(
+          dplyr::all_of(mean_cols),
+          ~ stats::sd(.x, na.rm = TRUE),
+          .names = "sd_model_{.col}"
+        ),
+        .groups = "drop"
+      )
+  }
 
   if (aggregate_level == "chapter" && nrow(chapter_excerpts) > 0) {
     join_cols <- intersect(c("book", "chapter"), names(df))
@@ -170,6 +300,8 @@ summarize_chapter_scores <- function(
   }
   attr(df, "temperature") <- temperature
   attr(df, "n_simulations") <- n_simulations
+  attr(df, "score_scale") <- standardize
+  attr(df, "model_aggregation") <- model_aggregation
   df
 }
 

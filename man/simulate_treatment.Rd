@@ -18,7 +18,11 @@ simulate_treatment(
   integration = getOption("nalanda.integration"),
   virtual_key = getOption("nalanda.virtual_key"),
   base_url = getOption("nalanda.base_url"),
-  excerpt_chars = 200
+  excerpt_chars = 200,
+  checkpoint_dir = NULL,
+  checkpoint_prefix = "simulate_treatment",
+  save_dir = NULL,
+  save_prefix = "results"
 )
 }
 \arguments{
@@ -72,6 +76,22 @@ not fully-qualified, nalanda will build \code{"@{virtual_key}/{model}"}.}
 
 \item{excerpt_chars}{Integer. Number of intervention-text characters to
 retain in stored prompt previews.}
+
+\item{checkpoint_dir}{Optional directory. If supplied, each completed
+treatment/identity/simulation unit is saved as its own \code{.Rds} file as soon
+as it finishes. If the same call is rerun with the same \code{checkpoint_dir},
+\code{checkpoint_prefix}, model, treatments, groups, and simulations, completed
+units are loaded from disk and skipped.}
+
+\item{checkpoint_prefix}{Character scalar used at the start of checkpoint
+filenames when \code{checkpoint_dir} is supplied.}
+
+\item{save_dir}{Optional directory. If supplied, each intervention collection
+is saved as one \code{.Rds} file as soon as all of its treatments, identities,
+and simulations finish.}
+
+\item{save_prefix}{Character scalar used in book-level filenames when
+\code{save_dir} is supplied. Files are named \verb{\{save_prefix\}_\{book\}.Rds}.}
 }
 \value{
 A tibble of raw turn-level responses, or a named list of tibbles

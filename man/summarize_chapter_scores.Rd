@@ -7,6 +7,9 @@
 summarize_chapter_scores(
   x,
   aggregate_level = c("chapter", "book"),
+  book_chapter_strategy = c("all", "last"),
+  standardize = c("none", "z", "minmax", "max"),
+  model_aggregation = c("none", "mean"),
   by_party = FALSE
 )
 }
@@ -19,6 +22,24 @@ If book and party are present, the summary will include those groupings.}
 
 \item{aggregate_level}{Character. One of "chapter" (default) or "book".
 When "book", results are aggregated to the book level.}
+
+\item{book_chapter_strategy}{Character. One of \code{"all"} (default) or
+\code{"last"}. Used only when \code{aggregate_level = "book"}. \code{"all"} averages
+across all chapter rows, while \code{"last"} first keeps the last non-missing
+cumulative chapter row per book, simulation, identity, model, and party.
+If \code{chapter_index} is unavailable, chapter order is inferred from the
+\code{chapter} labels.}
+
+\item{standardize}{Character. How to standardize metric columns before
+summarizing. \code{"none"} (default) keeps raw scores; \code{"z"} centers and scales
+scores within model; \code{"minmax"} rescales scores within model to 0--1;
+\code{"max"} divides scores within model by that model's maximum absolute score.}
+
+\item{model_aggregation}{Character. \code{"none"} (default) keeps separate rows
+per model when a \code{model} column is present. \code{"mean"} averages the
+per-model summary estimates into one consensus row per book/chapter/party
+grouping, adds \code{n_models}, and adds \verb{sd_model_*} columns measuring
+disagreement across model-level mean estimates.}
 
 \item{by_party}{Logical. If TRUE, summaries are computed separately by party
 (if present).}
