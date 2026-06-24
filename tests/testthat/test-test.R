@@ -42,6 +42,33 @@ test_that("make_post_prompt_preview stores a cropped chapter preview", {
   expect_false(grepl("book chapter", out, fixed = TRUE))
 })
 
+test_that("make_post_prompt_preview repairs invalid multibyte chapter text", {
+  chapter_text <- rawToChar(as.raw(c(
+    charToRaw(strrep("A", 80)),
+    0xe9,
+    charToRaw(strrep("B", 80))
+  )))
+  Encoding(chapter_text) <- "UTF-8"
+
+  expect_error(
+    nchar(chapter_text, type = "chars", allowNA = FALSE, keepNA = FALSE),
+    "invalid"
+  )
+
+  out <- nalanda:::make_post_prompt_preview(
+    chapter_text = chapter_text,
+    question_template = "How warmly do you feel towards your outgroup?",
+    groups = c("Democrat", "Republican"),
+    identity_label = "Democrat",
+    excerpt_chars = 40
+  )
+
+  expect_match(out, strrep("A", 20), fixed = TRUE)
+  expect_match(out, "\\[\\.\\.\\. chapter text cropped for storage \\.\\.\\.\\]")
+  expect_match(out, strrep("B", 20), fixed = TRUE)
+  expect_match(out, "How warmly do you feel towards your outgroup\\?")
+})
+
 test_that("make_one_turn_prompt uses generic material wording", {
   out <- nalanda:::make_one_turn_prompt(
     chapter_text = "Prompt body here.",

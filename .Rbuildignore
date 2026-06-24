@@ -1,5 +1,6 @@
 ^nalanda\.Rproj$
 ^\.Rproj\.user$
+^\.git($|[\\/])
 ^LICENSE\.md$
 ^README\.Rmd$
 ^TODO\.md$

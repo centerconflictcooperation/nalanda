@@ -915,6 +915,7 @@ compact_chapter_text <- function(chapter_text, excerpt_chars = 200) {
     stop("`excerpt_chars` must be a positive integer.")
   }
 
+  chapter_text <- repair_chapter_text_encoding(chapter_text)
   n_chars <- nchar(chapter_text, type = "chars", allowNA = FALSE, keepNA = FALSE)
   if (n_chars <= excerpt_chars) {
     return(chapter_text)
@@ -927,5 +928,40 @@ compact_chapter_text <- function(chapter_text, excerpt_chars = 200) {
     substr(chapter_text, 1, head_chars),
     "\n\n[... chapter text cropped for storage ...]\n\n",
     substr(chapter_text, n_chars - tail_chars + 1L, n_chars)
+  )
+}
+
+repair_chapter_text_encoding <- function(chapter_text) {
+  is_valid_text <- function(x) {
+    tryCatch(
+      {
+        nchar(x, type = "chars", allowNA = FALSE, keepNA = FALSE)
+        TRUE
+      },
+      error = function(e) FALSE
+    )
+  }
+
+  if (is_valid_text(chapter_text)) {
+    return(chapter_text)
+  }
+
+  encodings <- c("", "UTF-8", "WINDOWS-1252", "latin1")
+  for (from in encodings) {
+    repaired <- suppressWarnings(
+      tryCatch(
+        iconv(chapter_text, from = from, to = "UTF-8", sub = ""),
+        error = function(e) NA_character_
+      )
+    )
+
+    if (!is.na(repaired) && is_valid_text(repaired)) {
+      return(repaired)
+    }
+  }
+
+  stop(
+    "Unable to repair invalid multibyte `chapter_text`.",
+    call. = FALSE
   )
 }
