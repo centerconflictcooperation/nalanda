@@ -262,6 +262,7 @@ extract_pdf_text_with_llm_impl <- function(
       model <- paste0("@", prefix, "/", model)
     }
   }
+  validate_model_parameters(model = model, temperature = temperature)
 
   chat <- new_portkey_chat(
     model = model,

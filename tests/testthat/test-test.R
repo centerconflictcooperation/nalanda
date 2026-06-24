@@ -483,6 +483,32 @@ test_that("normalize_model_name strips integration prefixes", {
   )
 })
 
+test_that("run_ai_on_chapters rejects gpt-5-mini temperature before model calls", {
+  calls <- 0L
+  testthat::local_mocked_bindings(
+    new_portkey_chat = function(...) {
+      calls <<- calls + 1L
+      stop("model should not be called")
+    },
+    .package = "nalanda"
+  )
+
+  expect_error(
+    run_ai_on_chapters(
+      book_texts = list("Book A" = list("chapter_1.txt" = "Ordinary chapter text.")),
+      groups = c("Democrat", "Republican"),
+      context_text = "You are simulating a {identity}.",
+      question_text = "How warmly do you feel towards {group}s?",
+      n_simulations = 1,
+      temperature = 0,
+      model = "@gpt-5-mini/gpt-5-mini"
+    ),
+    "`temperature` must be 1 when using model `gpt-5-mini`",
+    fixed = TRUE
+  )
+  expect_equal(calls, 0L)
+})
+
 test_that("summarize_chapter_scores normalizes fully-qualified model attrs", {
   x <- tibble::tibble(
     book = c("Book A", "Book A"),

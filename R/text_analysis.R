@@ -188,6 +188,7 @@ run_text_analysis <- function(
       model <- paste0("@", prefix, "/", model)
     }
   }
+  validate_model_parameters(model = model, temperature = temperature)
 
   df <- tibble::as_tibble(data)
   if (is.null(id_col)) {

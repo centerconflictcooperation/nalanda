@@ -68,6 +68,9 @@
 #'   simulations, completed units are loaded from disk and skipped.
 #' @param checkpoint_prefix Character scalar used at the start of checkpoint
 #'   filenames when `checkpoint_dir` is supplied.
+#' @param on_error Character. `"stop"` raises model/API errors immediately.
+#'   `"skip"` records the failed chapter/identity/simulation with missing
+#'   ratings and continues. Defaults to `"stop"`.
 #' @param save_dir Optional directory. If supplied, each book is saved as one
 #'   `.Rds` file as soon as all of its chapters, identities, and simulations
 #'   finish.
@@ -124,10 +127,12 @@ run_ai_on_chapters <- function(
   excerpt_chars = 200,
   checkpoint_dir = NULL,
   checkpoint_prefix = "run_ai_on_chapters",
+  on_error = c("stop", "skip"),
   save_dir = NULL,
   save_prefix = "results"
 ) {
   output_mode <- normalize_output_mode(output_mode)
+  on_error <- match.arg(on_error)
 
   if (is_flat_text_list(book_texts) && is.null(flat_text_list_book_name(book_texts))) {
     stop(
@@ -184,7 +189,8 @@ run_ai_on_chapters <- function(
     checkpoint_prefix = checkpoint_prefix,
     save_dir = save_dir,
     save_prefix = save_prefix,
-    output_mode = output_mode
+    output_mode = output_mode,
+    on_error = on_error
   )
 
   out
@@ -210,8 +216,10 @@ execute_two_turn_pipeline <- function(
   n_models,
   pb,
   progress_tick,
-  output_mode
+  output_mode,
+  on_error = "stop"
 ) {
+  on_error <- match.arg(on_error, c("stop", "skip"))
   group_keys <- group_keys_from_groups(groups)
   turn_types <- build_turn_types(
     per_group = per_group,
@@ -281,7 +289,10 @@ execute_two_turn_pipeline <- function(
             extra = c(
               list(
                 baseline_prompt = NA_character_,
-                post_prompt = NA_character_
+                post_prompt = NA_character_,
+                error = FALSE,
+                error_turn = NA_character_,
+                error_message = NA_character_
               ),
               if (identical(output_mode, "text")) {
                 list(
@@ -374,18 +385,6 @@ execute_two_turn_pipeline <- function(
           groups,
           identity_label
         )
-        baseline_response <- chat_model_response(
-          chat = chat,
-          prompt = baseline_prompt,
-          type = type_baseline,
-          output_mode = output_mode,
-          fields = build_response_fields(
-            per_group = per_group,
-            groups = groups,
-            include_party = TRUE
-          )
-        )
-
         full_post_prompt <- make_post_prompt(
           chapter_job$chapter_text[[1]],
           question_text,
@@ -399,17 +398,152 @@ execute_two_turn_pipeline <- function(
           identity_label = identity_label,
           excerpt_chars = excerpt_chars
         )
-        post_response <- chat_model_response(
-          chat = chat,
-          prompt = full_post_prompt,
-          type = type_post,
-          output_mode = output_mode,
-          fields = build_response_fields(
+
+        baseline_response <- tryCatch(
+          chat_model_response(
+            chat = chat,
+            prompt = baseline_prompt,
+            type = type_baseline,
+            output_mode = output_mode,
+            fields = build_response_fields(
+              per_group = per_group,
+              groups = groups,
+              include_party = TRUE
+            )
+          ),
+          error = function(e) {
+            if (identical(on_error, "stop")) {
+              stop(e)
+            }
+            structure(
+              list(error = e, turn = "baseline"),
+              class = "nalanda_skipped_model_error"
+            )
+          }
+        )
+
+        if (inherits(baseline_response, "nalanda_skipped_model_error")) {
+          skipped <- append_skipped_two_turn_rows(
+            all_rows = all_rows,
+            all_row_i = all_row_i,
+            book = chapter_job$book[[1]],
+            chapter = chapter_job$chapter[[1]],
+            sim = k,
+            identity = identity_label,
+            party = identity_label,
+            baseline_prompt = baseline_prompt,
+            post_prompt = post_prompt,
+            error_turn = baseline_response$turn,
+            error_message = conditionMessage(baseline_response$error),
             per_group = per_group,
             groups = groups,
-            include_party = FALSE
+            output_mode = output_mode
           )
+          all_rows <- skipped$rows
+          all_row_i <- skipped$row_i
+
+          write_simulation_checkpoint(
+            rows = all_rows[unit_start:all_row_i],
+            long_cols = c("baseline_prompt", "post_prompt", "error_message"),
+            checkpoint_dir = checkpoint_dir,
+            checkpoint_prefix = checkpoint_prefix,
+            model_label = model_label,
+            book = chapter_job$book[[1]],
+            chapter = chapter_job$chapter[[1]],
+            identity = identity_label,
+            sim = k
+          )
+
+          warning(
+            "Skipping failed simulation unit: ",
+            chapter_job$book[[1]],
+            " - ",
+            chapter_job$chapter[[1]],
+            " [",
+            identity_label,
+            "] sim ",
+            k,
+            " (",
+            model_label,
+            "): ",
+            conditionMessage(baseline_response$error),
+            call. = FALSE
+          )
+          next
+        }
+
+        post_response <- tryCatch(
+          chat_model_response(
+            chat = chat,
+            prompt = full_post_prompt,
+            type = type_post,
+            output_mode = output_mode,
+            fields = build_response_fields(
+              per_group = per_group,
+              groups = groups,
+              include_party = FALSE
+            )
+          ),
+          error = function(e) {
+            if (identical(on_error, "stop")) {
+              stop(e)
+            }
+            structure(
+              list(error = e, turn = "post"),
+              class = "nalanda_skipped_model_error"
+            )
+          }
         )
+
+        if (inherits(post_response, "nalanda_skipped_model_error")) {
+          skipped <- append_skipped_two_turn_rows(
+            all_rows = all_rows,
+            all_row_i = all_row_i,
+            book = chapter_job$book[[1]],
+            chapter = chapter_job$chapter[[1]],
+            sim = k,
+            identity = identity_label,
+            party = baseline_response$party,
+            baseline_prompt = baseline_prompt,
+            post_prompt = post_prompt,
+            error_turn = post_response$turn,
+            error_message = conditionMessage(post_response$error),
+            per_group = per_group,
+            groups = groups,
+            output_mode = output_mode
+          )
+          all_rows <- skipped$rows
+          all_row_i <- skipped$row_i
+
+          write_simulation_checkpoint(
+            rows = all_rows[unit_start:all_row_i],
+            long_cols = c("baseline_prompt", "post_prompt", "error_message"),
+            checkpoint_dir = checkpoint_dir,
+            checkpoint_prefix = checkpoint_prefix,
+            model_label = model_label,
+            book = chapter_job$book[[1]],
+            chapter = chapter_job$chapter[[1]],
+            identity = identity_label,
+            sim = k
+          )
+
+          warning(
+            "Skipping failed simulation unit: ",
+            chapter_job$book[[1]],
+            " - ",
+            chapter_job$chapter[[1]],
+            " [",
+            identity_label,
+            "] sim ",
+            k,
+            " (",
+            model_label,
+            "): ",
+            conditionMessage(post_response$error),
+            call. = FALSE
+          )
+          next
+        }
 
         base_fields <- make_result_base_fields(
           book = chapter_job$book[[1]],
@@ -420,7 +554,10 @@ execute_two_turn_pipeline <- function(
           extra = c(
             list(
               baseline_prompt = baseline_prompt,
-              post_prompt = post_prompt
+              post_prompt = post_prompt,
+              error = FALSE,
+              error_turn = NA_character_,
+              error_message = NA_character_
             ),
             soft_raw_response_field(
               baseline_response,
@@ -491,7 +628,7 @@ execute_two_turn_pipeline <- function(
 
         write_simulation_checkpoint(
           rows = all_rows[unit_start:all_row_i],
-          long_cols = c("baseline_prompt", "post_prompt"),
+          long_cols = c("baseline_prompt", "post_prompt", "error_message"),
           checkpoint_dir = checkpoint_dir,
           checkpoint_prefix = checkpoint_prefix,
           model_label = model_label,
@@ -514,7 +651,7 @@ execute_two_turn_pipeline <- function(
     )) {
       write_book_result(
         rows = all_rows[book_start:all_row_i],
-        long_cols = c("baseline_prompt", "post_prompt"),
+        long_cols = c("baseline_prompt", "post_prompt", "error_message"),
         chapter_jobs = chapter_jobs,
         save_dir = save_dir,
         save_prefix = save_prefix,
@@ -529,9 +666,105 @@ execute_two_turn_pipeline <- function(
 
   finalize_simulation_output(
     out_rows = all_rows,
-    long_cols = c("baseline_prompt", "post_prompt"),
+    long_cols = c("baseline_prompt", "post_prompt", "error_message"),
     chapter_jobs = chapter_jobs
   )
+}
+
+append_skipped_two_turn_rows <- function(
+  all_rows,
+  all_row_i,
+  book,
+  chapter,
+  sim,
+  identity,
+  party,
+  baseline_prompt,
+  post_prompt,
+  error_turn,
+  error_message,
+  per_group,
+  groups,
+  output_mode
+) {
+  base_fields <- make_result_base_fields(
+    book = book,
+    chapter = chapter,
+    sim = sim,
+    identity = identity,
+    party = party,
+    extra = c(
+      list(
+        baseline_prompt = baseline_prompt,
+        post_prompt = post_prompt,
+        error = TRUE,
+        error_turn = error_turn,
+        error_message = error_message
+      ),
+      if (identical(output_mode, "text")) {
+        list(
+          baseline_raw_response = NA_character_,
+          post_raw_response = NA_character_
+        )
+      } else {
+        list()
+      }
+    )
+  )
+
+  if (per_group) {
+    for (g_idx in seq_along(groups)) {
+      row_pre <- c(
+        base_fields,
+        list(
+          turn_index = 1L,
+          turn_type = "baseline",
+          target_group = groups[[g_idx]],
+          rating = NA_real_
+        )
+      )
+      row_post <- c(
+        base_fields,
+        list(
+          turn_index = 2L,
+          turn_type = "post",
+          target_group = groups[[g_idx]],
+          rating = NA_real_
+        )
+      )
+
+      all_row_i <- all_row_i + 1L
+      all_rows[[all_row_i]] <- row_pre
+      all_row_i <- all_row_i + 1L
+      all_rows[[all_row_i]] <- row_post
+    }
+  } else {
+    row_pre <- c(
+      base_fields,
+      list(
+        turn_index = 1L,
+        turn_type = "baseline",
+        target_group = NA_character_,
+        rating = NA_real_
+      )
+    )
+    row_post <- c(
+      base_fields,
+      list(
+        turn_index = 2L,
+        turn_type = "post",
+        target_group = NA_character_,
+        rating = NA_real_
+      )
+    )
+
+    all_row_i <- all_row_i + 1L
+    all_rows[[all_row_i]] <- row_pre
+    all_row_i <- all_row_i + 1L
+    all_rows[[all_row_i]] <- row_post
+  }
+
+  list(rows = all_rows, row_i = all_row_i)
 }
 
 #' Build the baseline (Turn 1) prompt

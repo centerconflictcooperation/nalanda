@@ -99,6 +99,10 @@ run_simulation_pipeline <- function(
     integration_missing = integration_missing,
     virtual_key_missing = virtual_key_missing
   )
+  validate_model_parameters(
+    model = vapply(model_specs, `[[`, character(1), "model"),
+    temperature = temperature
+  )
 
   chapter_jobs <- build_chapter_jobs(
     book_texts,
@@ -325,10 +329,7 @@ sanitize_checkpoint_part <- function(x, fallback) {
 }
 
 rows_to_tibble <- function(rows, long_cols = character()) {
-  out_tbl <- tibble::as_tibble(do.call(
-    rbind.data.frame,
-    lapply(rows, function(r) as.data.frame(r, stringsAsFactors = FALSE))
-  ))
+  out_tbl <- dplyr::bind_rows(lapply(rows, tibble::as_tibble_row))
 
   present_long <- intersect(long_cols, names(out_tbl))
   if (length(present_long) > 0) {
@@ -646,6 +647,8 @@ chapter_jobs_to_excerpt_index <- function(chapter_jobs) {
 }
 
 new_portkey_chat <- function(model, base_url, temperature, seed) {
+  validate_model_parameters(model = model, temperature = temperature)
+
   tryCatch(
     ellmer::chat_portkey(
       model = model,

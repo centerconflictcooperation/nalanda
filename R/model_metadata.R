@@ -13,6 +13,27 @@ normalize_model_name <- function(model) {
   sub("^@?[^/]+/", "", model)
 }
 
+validate_model_parameters <- function(model, temperature = NULL) {
+  if (!is.null(temperature)) {
+    if (!is.numeric(temperature) || length(temperature) != 1 || is.na(temperature)) {
+      stop("`temperature` must be a single numeric value.", call. = FALSE)
+    }
+
+    model_labels <- normalize_model_metadata(model)
+    default_temperature_only <- intersect(model_labels, "gpt-5-mini")
+    if (length(default_temperature_only) > 0 &&
+      !isTRUE(all.equal(as.numeric(temperature), 1))) {
+      stop(
+        "`temperature` must be 1 when using model `gpt-5-mini`; ",
+        "this model only supports the default temperature value.",
+        call. = FALSE
+      )
+    }
+  }
+
+  invisible(TRUE)
+}
+
 resolve_model_route <- function(
   integration,
   virtual_key,

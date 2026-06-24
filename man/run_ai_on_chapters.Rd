@@ -20,6 +20,7 @@ run_ai_on_chapters(
   excerpt_chars = 200,
   checkpoint_dir = NULL,
   checkpoint_prefix = "run_ai_on_chapters",
+  on_error = c("stop", "skip"),
   save_dir = NULL,
   save_prefix = "results"
 )
@@ -92,6 +93,10 @@ simulations, completed units are loaded from disk and skipped.}
 
 \item{checkpoint_prefix}{Character scalar used at the start of checkpoint
 filenames when \code{checkpoint_dir} is supplied.}
+
+\item{on_error}{Character. \code{"stop"} raises model/API errors immediately.
+\code{"skip"} records the failed chapter/identity/simulation with missing
+ratings and continues. Defaults to \code{"stop"}.}
 
 \item{save_dir}{Optional directory. If supplied, each book is saved as one
 \code{.Rds} file as soon as all of its chapters, identities, and simulations
