@@ -1,5 +1,19 @@
 # Changelog
 
+## nalanda 0.0.2.0
+
+- Added early validation for `gpt-5-mini`, which only supports
+  `temperature = 1`, so invalid simulation configurations fail before
+  API calls are made.
+- Added
+  [`split_book_section_by_headings()`](https://centerconflictcooperation.github.io/nalanda/reference/split_book_section_by_headings.md)
+  to split oversized section text files into chapter-level files using
+  known chapter headings.
+- Added
+  [`renumber_chapters_across_folders()`](https://centerconflictcooperation.github.io/nalanda/reference/renumber_chapters_across_folders.md)
+  to renumber chapter files across ordered folders while preserving
+  title slugs.
+
 ## nalanda 0.0.1.4
 
 - Added shared multi-model support across the simulation pipeline so

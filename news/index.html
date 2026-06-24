@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">nalanda</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.1.4</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.2.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -43,6 +43,12 @@
       <small>Source: <a href="https://github.com/centerconflictcooperation/nalanda/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.0.2.0" id="nalanda-0020">nalanda 0.0.2.0<a class="anchor" aria-label="anchor" href="#nalanda-0020"></a></h2>
+<ul><li>Added early validation for <code>gpt-5-mini</code>, which only supports <code>temperature = 1</code>, so invalid simulation configurations fail before API calls are made.</li>
+<li>Added <code><a href="../reference/split_book_section_by_headings.html">split_book_section_by_headings()</a></code> to split oversized section text files into chapter-level files using known chapter headings.</li>
+<li>Added <code><a href="../reference/renumber_chapters_across_folders.html">renumber_chapters_across_folders()</a></code> to renumber chapter files across ordered folders while preserving title slugs.</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.0.1.4" id="nalanda-0014">nalanda 0.0.1.4<a class="anchor" aria-label="anchor" href="#nalanda-0014"></a></h2>
 <ul><li>Added shared multi-model support across the simulation pipeline so <code><a href="../reference/simulate_treatment.html">simulate_treatment()</a></code>, <code><a href="../reference/run_ai_on_chapters.html">run_ai_on_chapters()</a></code>, <code><a href="../reference/run_ai_on_chapters_one_turn.html">run_ai_on_chapters_one_turn()</a></code>, and <code><a href="../reference/run_ai_cumulative_chapters.html">run_ai_cumulative_chapters()</a></code> can accept <code>length(model) &gt;= 1</code>.</li>

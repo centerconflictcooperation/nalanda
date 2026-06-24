@@ -34,6 +34,7 @@ run_ai_on_chapters(
   excerpt_chars = 200,
   checkpoint_dir = NULL,
   checkpoint_prefix = "run_ai_on_chapters",
+  on_error = c("stop", "skip"),
   save_dir = NULL,
   save_prefix = "results"
 )
@@ -141,6 +142,12 @@ run_ai_on_chapters(
 
   Character scalar used at the start of checkpoint filenames when
   `checkpoint_dir` is supplied.
+
+- on_error:
+
+  Character. `"stop"` raises model/API errors immediately. `"skip"`
+  records the failed chapter/identity/simulation with missing ratings
+  and continues. Defaults to `"stop"`.
 
 - save_dir:
 

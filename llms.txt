@@ -312,6 +312,9 @@ Projects](https://mindandlife-europe.org/2024-eva-recipients-projects/)
 - [`rename_chapters()`](https://centerconflictcooperation.github.io/nalanda/reference/rename_chapters.md)
   : Rename chapter text files in a folder to a sequential order
 
+- [`renumber_chapters_across_folders()`](https://centerconflictcooperation.github.io/nalanda/reference/renumber_chapters_across_folders.md)
+  : Renumber chapter files across ordered folders
+
 - [`run_ai_cumulative_chapters()`](https://centerconflictcooperation.github.io/nalanda/reference/run_ai_cumulative_chapters.md)
   : Run AI model on books with cumulative chapter context
 
@@ -329,6 +332,9 @@ Projects](https://mindandlife-europe.org/2024-eva-recipients-projects/)
 
 - [`simulate_treatment()`](https://centerconflictcooperation.github.io/nalanda/reference/simulate_treatment.md)
   : Simulate a generic multi-turn treatment workflow
+
+- [`split_book_section_by_headings()`](https://centerconflictcooperation.github.io/nalanda/reference/split_book_section_by_headings.md)
+  : Split a book section into chapter files using known headings
 
 - [`summarize_chapter_scores()`](https://centerconflictcooperation.github.io/nalanda/reference/summarize_chapter_scores.md)
   : Summarize simulated chapter scores
