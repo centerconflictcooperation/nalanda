@@ -412,6 +412,9 @@ execute_two_turn_pipeline <- function(
             )
           ),
           error = function(e) {
+            if (is_unrecoverable_model_error(e)) {
+              stop_unrecoverable_model_error(e, model_label)
+            }
             if (identical(on_error, "stop")) {
               stop(e)
             }
@@ -485,6 +488,9 @@ execute_two_turn_pipeline <- function(
             )
           ),
           error = function(e) {
+            if (is_unrecoverable_model_error(e)) {
+              stop_unrecoverable_model_error(e, model_label)
+            }
             if (identical(on_error, "stop")) {
               stop(e)
             }

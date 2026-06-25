@@ -1004,6 +1004,25 @@ inform_missing_chapter_jobs <- function(chapter_jobs) {
   invisible(NULL)
 }
 
+is_unrecoverable_model_error <- function(error) {
+  grepl(
+    "Model .+ is not allowed for this integration",
+    conditionMessage(error)
+  )
+}
+
+stop_unrecoverable_model_error <- function(error, model_label) {
+  stop(
+    "Model route validation failed for `",
+    model_label,
+    "`: ",
+    conditionMessage(error),
+    "\nThis error is not chapter-specific, so `on_error = \"skip\"` cannot recover. ",
+    "Check `model`, `integration`, and `nalanda.integration`.",
+    call. = FALSE
+  )
+}
+
 make_result_base_fields <- function(book, chapter, sim, identity, party, extra = list()) {
   fields <- c(
     list(

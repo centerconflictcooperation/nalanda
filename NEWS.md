@@ -1,6 +1,7 @@
 # nalanda 0.0.2.0
 
 - Added early validation for `gpt-5-mini`, which only supports `temperature = 1`, so invalid simulation configurations fail before API calls are made.
+- Added fail-fast handling for unrecoverable model/integration route mismatches, so `run_ai_on_chapters(on_error = "skip")` no longer repeats the same backend configuration failure across every simulation unit.
 - Added `split_book_section_by_headings()` to split oversized section text files into chapter-level files using known chapter headings.
 - Added `renumber_chapters_across_folders()` to renumber chapter files across ordered folders while preserving title slugs.
 

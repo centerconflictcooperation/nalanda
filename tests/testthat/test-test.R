@@ -536,6 +536,44 @@ test_that("run_ai_on_chapters rejects gpt-5-mini temperature before model calls"
   expect_equal(calls, 0L)
 })
 
+test_that("run_ai_on_chapters fails fast for route/model mismatch with skip errors", {
+  calls <- 0L
+  testthat::local_mocked_bindings(
+    new_portkey_chat = function(...) {
+      list(
+        chat_structured = function(prompt, type) {
+          calls <<- calls + 1L
+          stop(
+            "HTTP 412 Precondition Failed.\n",
+            "Model gpt-4-mini is not allowed for this integration"
+          )
+        }
+      )
+    },
+    .package = "nalanda"
+  )
+
+  expect_error(
+    run_ai_on_chapters(
+      book_texts = list(
+        "Book A" = list(
+          "chapter_1.txt" = "Ordinary chapter text.",
+          "chapter_2.txt" = "More ordinary chapter text."
+        )
+      ),
+      groups = c("Democrat", "Republican"),
+      context_text = "You are simulating a {identity}.",
+      question_text = "How warmly do you feel towards {group}s?",
+      n_simulations = 1,
+      model = "gpt-4-mini",
+      on_error = "skip"
+    ),
+    "Model route validation failed for `gpt-4-mini`",
+    fixed = TRUE
+  )
+  expect_equal(calls, 1L)
+})
+
 test_that("summarize_chapter_scores normalizes fully-qualified model attrs", {
   x <- tibble::tibble(
     book = c("Book A", "Book A"),
