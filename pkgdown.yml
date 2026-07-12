@@ -1,5 +1,5 @@
 pandoc: 3.8.3
-pkgdown: 2.2.0
+pkgdown: 2.2.1
 pkgdown_sha: ~
 articles:
   getting-started: getting-started.html
@@ -7,7 +7,7 @@ articles:
   psychological-text-analysis: psychological-text-analysis.html
   simulation-roadmap: simulation-roadmap.html
   understanding-hewitt-et-al: understanding-hewitt-et-al.html
-last_built: 2026-06-25T19:01Z
+last_built: 2026-07-12T23:02Z
 urls:
   reference: https://centerconflictcooperation.github.io/nalanda/reference
   article: https://centerconflictcooperation.github.io/nalanda/articles

@@ -36,7 +36,8 @@ run_ai_on_chapters(
   checkpoint_prefix = "run_ai_on_chapters",
   on_error = c("stop", "skip"),
   save_dir = NULL,
-  save_prefix = "results"
+  save_prefix = "results",
+  .repair_units = NULL
 )
 ```
 
@@ -158,6 +159,12 @@ run_ai_on_chapters(
 
   Character scalar used in book-level filenames when `save_dir` is
   supplied. Files are named `{save_prefix}_{book}.Rds`.
+
+- .repair_units:
+
+  Internal data frame used by
+  [`repair_run_ai_on_chapters()`](https://centerconflictcooperation.github.io/nalanda/reference/repair_run_ai_on_chapters.md)
+  to select exact simulation units.
 
 ## Value
 

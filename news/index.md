@@ -2,6 +2,10 @@
 
 ## nalanda 0.0.2.0
 
+- Added
+  [`repair_run_ai_on_chapters()`](https://centerconflictcooperation.github.io/nalanda/reference/repair_run_ai_on_chapters.md)
+  to rerun only failed or fully missing simulation units and return a
+  merged result without overwriting the source.
 - Added early validation for `gpt-5-mini`, which only supports
   `temperature = 1`, so invalid simulation configurations fail before
   API calls are made.

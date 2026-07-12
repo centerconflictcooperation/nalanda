@@ -111,6 +111,9 @@
 - [`renumber_chapters_across_folders()`](https://centerconflictcooperation.github.io/nalanda/reference/renumber_chapters_across_folders.md)
   : Renumber chapter files across ordered folders
 
+- [`repair_run_ai_on_chapters()`](https://centerconflictcooperation.github.io/nalanda/reference/repair_run_ai_on_chapters.md)
+  : Repair failed chapter simulation units
+
 - [`run_ai_cumulative_chapters()`](https://centerconflictcooperation.github.io/nalanda/reference/run_ai_cumulative_chapters.md)
   : Run AI model on books with cumulative chapter context
 
