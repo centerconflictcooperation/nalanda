@@ -79,11 +79,11 @@ supplying function arguments.}
 stored prompt preview shown in results.}
 
 \item{max_active}{Integer. Maximum number of concurrent requests passed to
-\code{\link[ellmer:parallel_chat_structured]{ellmer::parallel_chat_structured()}} in structured mode. Text mode runs
+\code{\link[ellmer:parallel_chat]{ellmer::parallel_chat_structured()}} in structured mode. Text mode runs
 plain chat requests sequentially.}
 
 \item{rpm}{Integer. Requests-per-minute cap passed to
-\code{\link[ellmer:parallel_chat_structured]{ellmer::parallel_chat_structured()}} in structured mode. Text mode runs
+\code{\link[ellmer:parallel_chat]{ellmer::parallel_chat_structured()}} in structured mode. Text mode runs
 plain chat requests sequentially.}
 }
 \value{
@@ -97,5 +97,5 @@ summaries.
 \description{
 This function implements a one-turn design where identity context, chapter
 text, and the rating question are combined into a single prompt. Independent
-prompts are executed in parallel with \code{\link[ellmer:parallel_chat_structured]{ellmer::parallel_chat_structured()}}.
+prompts are executed in parallel with \code{\link[ellmer:parallel_chat]{ellmer::parallel_chat_structured()}}.
 }

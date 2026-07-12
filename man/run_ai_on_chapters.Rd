@@ -22,7 +22,8 @@ run_ai_on_chapters(
   checkpoint_prefix = "run_ai_on_chapters",
   on_error = c("stop", "skip"),
   save_dir = NULL,
-  save_prefix = "results"
+  save_prefix = "results",
+  .repair_units = NULL
 )
 }
 \arguments{
@@ -104,6 +105,9 @@ finish.}
 
 \item{save_prefix}{Character scalar used in book-level filenames when
 \code{save_dir} is supplied. Files are named \verb{\{save_prefix\}_\{book\}.Rds}.}
+
+\item{.repair_units}{Internal data frame used by
+\code{\link[=repair_run_ai_on_chapters]{repair_run_ai_on_chapters()}} to select exact simulation units.}
 }
 \value{
 A tibble of raw turn-level ratings, or a named list of tibbles (one

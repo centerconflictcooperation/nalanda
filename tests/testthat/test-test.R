@@ -1133,6 +1133,48 @@ test_that("run_ai_on_chapters resumes completed units from checkpoint_dir", {
   expect_equal(republican$rating, c(40, 45))
 })
 
+test_that("repair_run_ai_on_chapters reruns and replaces only failed units", {
+  old <- tibble::tibble(
+    model = "gemini-2.5-flash-lite", book = "Book A",
+    chapter = rep("chapter_1.txt", 4), sim = rep(c(1L, 2L), each = 2),
+    identity = "Democrat", party = "Democrat",
+    turn_index = rep(1:2, 2), turn_type = rep(c("baseline", "post"), 2),
+    target_group = NA_character_, rating = c(10, 20, NA, NA),
+    baseline_prompt = "old", post_prompt = "old",
+    error = c(FALSE, FALSE, TRUE, TRUE),
+    error_turn = c(NA, NA, "post", "post"),
+    error_message = c(NA, NA, "HTTP 502", "HTTP 502")
+  )
+  class(old) <- unique(c("nalanda", class(old)))
+  attr(old, "temperature") <- 0
+  attr(old, "n_simulations") <- 2L
+  seeds <- integer()
+  testthat::local_mocked_bindings(
+    new_portkey_chat = function(model, base_url, temperature, seed) {
+      seeds <<- c(seeds, seed)
+      list(chat_structured = function(prompt, type) {
+        if (grepl("finished reading", prompt, fixed = TRUE)) return(list(rating = 40))
+        list(party = "Democrat", rating = 30)
+      })
+    },
+    .package = "nalanda"
+  )
+
+  out <- repair_run_ai_on_chapters(
+    old,
+    book_texts = list("Book A" = list("chapter_1.txt" = "Text")),
+    groups = c("Democrat", "Republican"),
+    context_text = "You are a {identity}.",
+    question_text = "How warmly do you feel toward your outgroup?"
+  )
+
+  expect_equal(seeds, 43L)
+  expect_equal(out$rating[out$sim == 1], c(10, 20))
+  expect_equal(out$rating[out$sim == 2], c(30, 40))
+  expect_false(any(out$error[out$sim == 2]))
+  expect_equal(nrow(attr(out, "repaired_units")), 1L)
+})
+
 test_that("run_ai_on_chapters saves one completed file per book", {
   save_dir <- file.path(tempdir(), paste0("nalanda-book-save-", Sys.getpid()))
   dir.create(save_dir)

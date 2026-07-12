@@ -44,3 +44,4 @@ BugReports: https://github.com/centerconflictcooperation/nalanda/issues
 Remotes:
     rempsyc/rempsyc
 Config/roxygen2/version: 8.0.0
+RoxygenNote: 7.3.3

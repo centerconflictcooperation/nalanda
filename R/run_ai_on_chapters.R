@@ -76,6 +76,8 @@
 #'   finish.
 #' @param save_prefix Character scalar used in book-level filenames when
 #'   `save_dir` is supplied. Files are named `{save_prefix}_{book}.Rds`.
+#' @param .repair_units Internal data frame used by
+#'   [repair_run_ai_on_chapters()] to select exact simulation units.
 #'
 #' @details
 #' Authentication uses `PORTKEY_API_KEY` via `ellmer::chat_portkey()`. Set it
@@ -129,7 +131,8 @@ run_ai_on_chapters <- function(
   checkpoint_prefix = "run_ai_on_chapters",
   on_error = c("stop", "skip"),
   save_dir = NULL,
-  save_prefix = "results"
+  save_prefix = "results",
+  .repair_units = NULL
 ) {
   output_mode <- normalize_output_mode(output_mode)
   on_error <- match.arg(on_error)
@@ -190,7 +193,9 @@ run_ai_on_chapters <- function(
     save_dir = save_dir,
     save_prefix = save_prefix,
     output_mode = output_mode,
-    on_error = on_error
+    on_error = on_error,
+    repair_units = .repair_units,
+    total_steps = if (is.null(.repair_units)) NULL else nrow(.repair_units)
   )
 
   out
@@ -217,7 +222,8 @@ execute_two_turn_pipeline <- function(
   pb,
   progress_tick,
   output_mode,
-  on_error = "stop"
+  on_error = "stop",
+  repair_units = NULL
 ) {
   on_error <- match.arg(on_error, c("stop", "skip"))
   group_keys <- group_keys_from_groups(groups)
@@ -252,6 +258,14 @@ execute_two_turn_pipeline <- function(
       identity_context <- context_text[[id_idx]]
 
       for (k in seq_len(n_simulations)) {
+        if (!is.null(repair_units)) {
+          wanted <- repair_units$book == chapter_job$book[[1]] &
+            repair_units$chapter == chapter_job$chapter[[1]] &
+            repair_units$identity == identity_label &
+            repair_units$sim == k &
+            repair_units$model == model_label
+          if (!any(wanted)) next
+        }
         unit_start <- all_row_i + 1L
         progress_tick(
           book = chapter_job$book[[1]],
