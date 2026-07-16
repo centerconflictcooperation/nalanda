@@ -1,8 +1,9 @@
 # Repair failed chapter simulation units
 
-Reads a saved result (or accepts one in memory), reruns only failed
-simulation units, and returns a copy with those units replaced. The
-source file is never modified; inspect the result and call
+Reads a saved result (or accepts one in memory), reruns retryable failed
+simulation units, and returns a copy with those units replaced.
+Permanent Azure content-policy failures are retained without being
+retried. The source file is never modified; inspect the result and call
 [`saveRDS()`](https://rdrr.io/r/base/readRDS.html) yourself.
 
 ## Usage
@@ -123,4 +124,7 @@ repair_run_ai_on_chapters(
 
 ## Value
 
-A repaired result with the same outer shape as `x`.
+A repaired result with the same outer shape as `x`. Attributes
+`repaired_units` and `non_retryable_units` identify the units selected
+for retry and those retained because of content-policy failures,
+respectively.

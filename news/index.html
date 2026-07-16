@@ -46,8 +46,11 @@
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.0.2.0" id="nalanda-0020">nalanda 0.0.2.0<a class="anchor" aria-label="anchor" href="#nalanda-0020"></a></h2>
 <ul><li>Added <code><a href="../reference/repair_run_ai_on_chapters.html">repair_run_ai_on_chapters()</a></code> to rerun only failed or fully missing simulation units and return a merged result without overwriting the source.</li>
+<li>Fixed <code><a href="../reference/repair_run_ai_on_chapters.html">repair_run_ai_on_chapters()</a></code> model selection so fully-qualified Portkey names match their normalized model labels in saved results.</li>
+<li>
+<code><a href="../reference/repair_run_ai_on_chapters.html">repair_run_ai_on_chapters()</a></code> now retains Azure content-policy failures without retrying their unchanged prompts, while continuing to repair transient failures in the same result.</li>
 <li>Added early validation for <code>gpt-5-mini</code>, which only supports <code>temperature = 1</code>, so invalid simulation configurations fail before API calls are made.</li>
-<li>Added fail-fast handling for unrecoverable model/integration route mismatches, so <code>run_ai_on_chapters(on_error = "skip")</code> no longer repeats the same backend configuration failure across every simulation unit.</li>
+<li>Added fail-fast handling for unrecoverable model/integration route mismatches and unreachable gateway errors, so <code>run_ai_on_chapters(on_error = "skip")</code> no longer repeats the same backend or network failure across every simulation unit.</li>
 <li>Added <code><a href="../reference/split_book_section_by_headings.html">split_book_section_by_headings()</a></code> to split oversized section text files into chapter-level files using known chapter headings.</li>
 <li>Added <code><a href="../reference/renumber_chapters_across_folders.html">renumber_chapters_across_folders()</a></code> to renumber chapter files across ordered folders while preserving title slugs.</li>
 </ul></div>

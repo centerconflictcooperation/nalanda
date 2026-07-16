@@ -79,7 +79,9 @@ for the wide-format response variables.</p>
 <span>  image_jitter_height <span class="op">=</span> <span class="fl">0</span>,</span>
 <span>  facet <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  facet_ncol <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  facets.order <span class="op">=</span> <span class="st">"increasing"</span></span>
+<span>  facets.order <span class="op">=</span> <span class="st">"increasing"</span>,</span>
+<span>  max_collapse <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  collapse_caption_width <span class="op">=</span> <span class="fl">80</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -214,7 +216,25 @@ as <code>ncol</code> when <code>facet</code> is supplied.</p></dd>
 Either provide the levels directly, or a string: "increasing" or
 "decreasing", to order panels based on the average value of the
 y variable, or "string.length" to order panels by facet label length.
+Use <code>NULL</code> or <code>"none"</code> to preserve existing factor levels, or, for a
+character facet variable, the order in which values first appear.
 Defaults to "increasing".</p></dd>
+
+
+<dt id="arg-max-collapse">max_collapse<a class="anchor" aria-label="anchor" href="#arg-max-collapse"></a></dt>
+<dd><p>Optional positive integer. Books with more than this
+number of chapters are collapsed into this many consecutive, approximately
+equal-sized chapter bins. Scores are averaged within each simulation and
+group before plotting. Books at or below the limit are left unchanged. A
+caption identifies books whose chapters were collapsed. Defaults to <code>NULL</code>,
+which disables collapsing.</p></dd>
+
+
+<dt id="arg-collapse-caption-width">collapse_caption_width<a class="anchor" aria-label="anchor" href="#arg-collapse-caption-width"></a></dt>
+<dd><p>Optional positive number giving the approximate
+number of characters per line in the automatically generated collapse
+caption. Defaults to <code>80</code>. Use a smaller value for narrow exports or <code>NULL</code>
+to disable wrapping. The affected-book list starts on a new line regardless.</p></dd>
 
 </dl></div>
     <div class="section level2">

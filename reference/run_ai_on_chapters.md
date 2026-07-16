@@ -148,7 +148,9 @@ run_ai_on_chapters(
 
   Character. `"stop"` raises model/API errors immediately. `"skip"`
   records the failed chapter/identity/simulation with missing ratings
-  and continues. Defaults to `"stop"`.
+  and continues. Errors that cannot be chapter-specific, such as an
+  unreachable gateway or invalid model route, always stop the run early.
+  Defaults to `"stop"`.
 
 - save_dir:
 
