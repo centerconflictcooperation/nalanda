@@ -83,10 +83,13 @@ stored post-prompt preview shown in results.}
 \item{on_error}{Error policy for the repair attempts.}
 }
 \value{
-A repaired result with the same outer shape as \code{x}.
+A repaired result with the same outer shape as \code{x}. Attributes
+\code{repaired_units} and \code{non_retryable_units} identify the units selected for
+retry and those retained because of content-policy failures, respectively.
 }
 \description{
-Reads a saved result (or accepts one in memory), reruns only failed
-simulation units, and returns a copy with those units replaced. The source
+Reads a saved result (or accepts one in memory), reruns retryable failed
+simulation units, and returns a copy with those units replaced. Permanent
+Azure content-policy failures are retained without being retried. The source
 file is never modified; inspect the result and call \code{saveRDS()} yourself.
 }

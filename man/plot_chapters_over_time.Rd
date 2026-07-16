@@ -30,7 +30,9 @@ plot_chapters_over_time(
   image_jitter_height = 0,
   facet = NULL,
   facet_ncol = NULL,
-  facets.order = "increasing"
+  facets.order = "increasing",
+  max_collapse = NULL,
+  collapse_caption_width = 80
 )
 }
 \arguments{
@@ -110,7 +112,21 @@ as \code{ncol} when \code{facet} is supplied.}
 Either provide the levels directly, or a string: "increasing" or
 "decreasing", to order panels based on the average value of the
 y variable, or "string.length" to order panels by facet label length.
+Use \code{NULL} or \code{"none"} to preserve existing factor levels, or, for a
+character facet variable, the order in which values first appear.
 Defaults to "increasing".}
+
+\item{max_collapse}{Optional positive integer. Books with more than this
+number of chapters are collapsed into this many consecutive, approximately
+equal-sized chapter bins. Scores are averaged within each simulation and
+group before plotting. Books at or below the limit are left unchanged. A
+caption identifies books whose chapters were collapsed. Defaults to \code{NULL},
+which disables collapsing.}
+
+\item{collapse_caption_width}{Optional positive number giving the approximate
+number of characters per line in the automatically generated collapse
+caption. Defaults to \code{80}. Use a smaller value for narrow exports or \code{NULL}
+to disable wrapping. The affected-book list starts on a new line regardless.}
 }
 \value{
 A ggplot2 object.

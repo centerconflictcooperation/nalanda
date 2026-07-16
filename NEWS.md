@@ -2,8 +2,13 @@
 
 - Added `repair_run_ai_on_chapters()` to rerun only failed or fully missing
   simulation units and return a merged result without overwriting the source.
+- Fixed `repair_run_ai_on_chapters()` model selection so fully-qualified
+  Portkey names match their normalized model labels in saved results.
+- `repair_run_ai_on_chapters()` now retains Azure content-policy failures
+  without retrying their unchanged prompts, while continuing to repair
+  transient failures in the same result.
 - Added early validation for `gpt-5-mini`, which only supports `temperature = 1`, so invalid simulation configurations fail before API calls are made.
-- Added fail-fast handling for unrecoverable model/integration route mismatches, so `run_ai_on_chapters(on_error = "skip")` no longer repeats the same backend configuration failure across every simulation unit.
+- Added fail-fast handling for unrecoverable model/integration route mismatches and unreachable gateway errors, so `run_ai_on_chapters(on_error = "skip")` no longer repeats the same backend or network failure across every simulation unit.
 - Added `split_book_section_by_headings()` to split oversized section text files into chapter-level files using known chapter headings.
 - Added `renumber_chapters_across_folders()` to renumber chapter files across ordered folders while preserving title slugs.
 

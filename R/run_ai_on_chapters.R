@@ -70,7 +70,9 @@
 #'   filenames when `checkpoint_dir` is supplied.
 #' @param on_error Character. `"stop"` raises model/API errors immediately.
 #'   `"skip"` records the failed chapter/identity/simulation with missing
-#'   ratings and continues. Defaults to `"stop"`.
+#'   ratings and continues. Errors that cannot be chapter-specific, such as an
+#'   unreachable gateway or invalid model route, always stop the run early.
+#'   Defaults to `"stop"`.
 #' @param save_dir Optional directory. If supplied, each book is saved as one
 #'   `.Rds` file as soon as all of its chapters, identities, and simulations
 #'   finish.

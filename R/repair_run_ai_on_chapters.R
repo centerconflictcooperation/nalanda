@@ -1,13 +1,16 @@
 #' Repair failed chapter simulation units
 #'
-#' Reads a saved result (or accepts one in memory), reruns only failed
-#' simulation units, and returns a copy with those units replaced. The source
+#' Reads a saved result (or accepts one in memory), reruns retryable failed
+#' simulation units, and returns a copy with those units replaced. Permanent
+#' Azure content-policy failures are retained without being retried. The source
 #' file is never modified; inspect the result and call `saveRDS()` yourself.
 #'
 #' @param x A result from [run_ai_on_chapters()] or a path to its `.Rds` file.
 #' @inheritParams run_ai_on_chapters
 #' @param on_error Error policy for the repair attempts.
-#' @return A repaired result with the same outer shape as `x`.
+#' @return A repaired result with the same outer shape as `x`. Attributes
+#'   `repaired_units` and `non_retryable_units` identify the units selected for
+#'   retry and those retained because of content-policy failures, respectively.
 #' @export
 repair_run_ai_on_chapters <- function(
   x, book_texts, groups, context_text, question_text,
@@ -30,6 +33,7 @@ repair_run_ai_on_chapters <- function(
   }
   combined <- dplyr::bind_rows(tables)
   unit_cols <- c("model", "book", "chapter", "sim", "identity")
+  make_unit_key <- function(z) do.call(paste, c(z[unit_cols], sep = "\r"))
   required <- c(unit_cols, "rating")
   missing_cols <- setdiff(required, names(combined))
   if (length(missing_cols)) {
@@ -50,8 +54,54 @@ repair_run_ai_on_chapters <- function(
     return(x)
   }
   if (is.null(model)) model <- unique(failed$model)
-  failed <- failed[failed$model %in% model, , drop = FALSE]
+  requested_model_labels <- normalize_model_metadata(model)
+  failed_model_labels <- vapply(
+    failed$model,
+    normalize_model_name,
+    character(1)
+  )
+  failed <- failed[
+    failed_model_labels %in% requested_model_labels,
+    ,
+    drop = FALSE
+  ]
   if (!nrow(failed)) stop("No failed units match `model`.", call. = FALSE)
+
+  non_retryable_units <- failed[FALSE, , drop = FALSE]
+  if ("error_message" %in% names(combined)) {
+    selected_failed_rows <- combined[
+      is_failed & make_unit_key(combined) %in% make_unit_key(failed),
+      ,
+      drop = FALSE
+    ]
+    content_policy_error <- vapply(
+      selected_failed_rows$error_message,
+      is_content_policy_error_message,
+      logical(1)
+    )
+    non_retryable_units <- unique(
+      selected_failed_rows[content_policy_error, unit_cols, drop = FALSE]
+    )
+  }
+  if (nrow(non_retryable_units)) {
+    message(
+      "Skipping ",
+      nrow(non_retryable_units),
+      " non-retryable Azure content-policy failed simulation unit(s)."
+    )
+    failed <- failed[
+      !make_unit_key(failed) %in% make_unit_key(non_retryable_units),
+      ,
+      drop = FALSE
+    ]
+  }
+  if (!nrow(failed)) {
+    message("No retryable failed simulation units found; returning `x` unchanged.")
+    attr(x, "repair_source") <- source_path
+    attr(x, "repaired_units") <- failed
+    attr(x, "non_retryable_units") <- non_retryable_units
+    return(x)
+  }
   if (is.null(temperature)) {
     temperature <- attr(x, "temperature")
     if (is.null(temperature)) temperature <- attr(tables[[1]], "temperature")
@@ -78,8 +128,11 @@ repair_run_ai_on_chapters <- function(
   )
   repair_tables <- if (is.data.frame(repaired)) list(repaired) else unclass(repaired)
   repair_rows <- dplyr::bind_rows(repair_tables)
-  make_key <- function(z) do.call(paste, c(z[unit_cols], sep = "\r"))
-  merged <- combined[!make_key(combined) %in% make_key(repair_rows), , drop = FALSE]
+  merged <- combined[
+    !make_unit_key(combined) %in% make_unit_key(repair_rows),
+    ,
+    drop = FALSE
+  ]
   merged <- dplyr::bind_rows(merged, repair_rows)
   order_cols <- intersect(c("book", "chapter", "sim", "identity", "turn_index", "target_group"), names(merged))
   merged <- merged[do.call(order, merged[order_cols]), , drop = FALSE]
@@ -102,5 +155,26 @@ repair_run_ai_on_chapters <- function(
   }
   attr(out, "repair_source") <- source_path
   attr(out, "repaired_units") <- failed
+  attr(out, "non_retryable_units") <- non_retryable_units
   out
+}
+
+is_content_policy_error_message <- function(message) {
+  if (length(message) != 1L || is.na(message) || !nzchar(message)) {
+    return(FALSE)
+  }
+
+  message <- tolower(message)
+  patterns <- c(
+    "content management policy",
+    "responsibleaipolicyviolation",
+    "content_filter"
+  )
+  any(vapply(
+    patterns,
+    grepl,
+    logical(1),
+    x = message,
+    fixed = TRUE
+  ))
 }

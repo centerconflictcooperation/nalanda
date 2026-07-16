@@ -1005,13 +1005,44 @@ inform_missing_chapter_jobs <- function(chapter_jobs) {
 }
 
 is_unrecoverable_model_error <- function(error) {
-  grepl(
-    "Model .+ is not allowed for this integration",
-    conditionMessage(error)
-  )
+  !is.null(unrecoverable_model_error_type(error))
+}
+
+unrecoverable_model_error_type <- function(error) {
+  message <- conditionMessage(error)
+
+  if (grepl("Model .+ is not allowed for this integration", message)) {
+    return("model_route")
+  }
+
+  # curl error 7: the request never reached the gateway. Retrying the same
+  # request for every chapter cannot recover a missing VPN/network route.
+  if (
+    grepl("Failed to connect to .+ port [0-9]+", message, ignore.case = TRUE) ||
+      grepl("Could not connect to server", message, fixed = TRUE)
+  ) {
+    return("gateway_connection")
+  }
+
+  NULL
 }
 
 stop_unrecoverable_model_error <- function(error, model_label) {
+  error_type <- unrecoverable_model_error_type(error)
+
+  if (identical(error_type, "gateway_connection")) {
+    stop(
+      "Could not connect to the AI gateway for `",
+      model_label,
+      "`: ",
+      conditionMessage(error),
+      "\nThis is a gateway/network failure, not a chapter-specific error, so ",
+      "`on_error = \"skip\"` cannot recover. Check your network connection ",
+      "and connect to the required VPN before rerunning.",
+      call. = FALSE
+    )
+  }
+
   stop(
     "Model route validation failed for `",
     model_label,

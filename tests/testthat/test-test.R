@@ -574,6 +574,47 @@ test_that("run_ai_on_chapters fails fast for route/model mismatch with skip erro
   expect_equal(calls, 1L)
 })
 
+test_that("run_ai_on_chapters fails fast when the gateway is unreachable", {
+  calls <- 0L
+  testthat::local_mocked_bindings(
+    new_portkey_chat = function(...) {
+      list(
+        chat_structured = function(prompt, type) {
+          calls <<- calls + 1L
+          stop(
+            "Failed to perform HTTP request.\n",
+            "Caused by error in `curl::curl_fetch_memory()`:\n",
+            "Timeout was reached [ai-gateway.example.edu]:\n",
+            "Failed to connect to ai-gateway.example.edu port 443 after ",
+            "21050 ms: Could not connect to server"
+          )
+        }
+      )
+    },
+    .package = "nalanda"
+  )
+
+  expect_error(
+    run_ai_on_chapters(
+      book_texts = list(
+        "Book A" = list(
+          "chapter_1.txt" = "Ordinary chapter text.",
+          "chapter_2.txt" = "More ordinary chapter text."
+        )
+      ),
+      groups = c("Democrat", "Republican"),
+      context_text = "You are simulating a {identity}.",
+      question_text = "How warmly do you feel towards {group}s?",
+      n_simulations = 1,
+      model = "gpt-4-mini",
+      on_error = "skip"
+    ),
+    "Could not connect to the AI gateway for `gpt-4-mini`",
+    fixed = TRUE
+  )
+  expect_equal(calls, 1L)
+})
+
 test_that("summarize_chapter_scores normalizes fully-qualified model attrs", {
   x <- tibble::tibble(
     book = c("Book A", "Book A"),
@@ -1173,6 +1214,95 @@ test_that("repair_run_ai_on_chapters reruns and replaces only failed units", {
   expect_equal(out$rating[out$sim == 2], c(30, 40))
   expect_false(any(out$error[out$sim == 2]))
   expect_equal(nrow(attr(out, "repaired_units")), 1L)
+})
+
+test_that("repair_run_ai_on_chapters matches fully-qualified model names", {
+  old <- tibble::tibble(
+    model = "gpt-5-mini", book = "Book A",
+    chapter = rep("chapter_1.txt", 2), sim = 1L,
+    identity = "Democrat", party = "Democrat",
+    turn_index = 1:2, turn_type = c("baseline", "post"),
+    target_group = NA_character_, rating = NA_real_,
+    baseline_prompt = "old", post_prompt = "old",
+    error = TRUE, error_turn = "baseline", error_message = "HTTP 502"
+  )
+  class(old) <- unique(c("nalanda", class(old)))
+  attr(old, "temperature") <- 1
+  attr(old, "n_simulations") <- 1L
+  requested_models <- character()
+  testthat::local_mocked_bindings(
+    new_portkey_chat = function(model, base_url, temperature, seed) {
+      requested_models <<- c(requested_models, model)
+      list(chat_structured = function(prompt, type) {
+        if (grepl("finished reading", prompt, fixed = TRUE)) return(list(rating = 40))
+        list(party = "Democrat", rating = 30)
+      })
+    },
+    .package = "nalanda"
+  )
+
+  out <- repair_run_ai_on_chapters(
+    old,
+    book_texts = list("Book A" = list("chapter_1.txt" = "Text")),
+    groups = c("Democrat", "Republican"),
+    context_text = "You are a {identity}.",
+    question_text = "How warmly do you feel toward your outgroup?",
+    model = "@gpt-5-mini/gpt-5-mini"
+  )
+
+  expect_equal(requested_models, "@gpt-5-mini/gpt-5-mini")
+  expect_equal(out$rating, c(30, 40))
+  expect_equal(unique(out$model), "gpt-5-mini")
+})
+
+test_that("repair_run_ai_on_chapters does not retry content-policy failures", {
+  azure_error <- paste0(
+    "\033[38;5;255mHTTP 400 Bad Request.\n",
+    "azure-openai error: The response was filtered due to the prompt ",
+    "triggering Azure OpenAI's content management policy."
+  )
+  old <- tibble::tibble(
+    model = "gpt-5-mini", book = "Book A",
+    chapter = "chapter_1.txt", sim = rep(1:2, each = 2),
+    identity = "Democrat", party = "Democrat",
+    turn_index = rep(1:2, 2), turn_type = rep(c("baseline", "post"), 2),
+    target_group = NA_character_, rating = NA_real_,
+    baseline_prompt = "old", post_prompt = "old",
+    error = TRUE, error_turn = rep(c("post", "baseline"), each = 2),
+    error_message = rep(c(azure_error, "HTTP 502 Bad Gateway"), each = 2)
+  )
+  class(old) <- unique(c("nalanda", class(old)))
+  attr(old, "temperature") <- 1
+  attr(old, "n_simulations") <- 2L
+  seeds <- integer()
+  testthat::local_mocked_bindings(
+    new_portkey_chat = function(model, base_url, temperature, seed) {
+      seeds <<- c(seeds, seed)
+      list(chat_structured = function(prompt, type) {
+        if (grepl("finished reading", prompt, fixed = TRUE)) return(list(rating = 40))
+        list(party = "Democrat", rating = 30)
+      })
+    },
+    .package = "nalanda"
+  )
+
+  expect_message(
+    out <- repair_run_ai_on_chapters(
+      old,
+      book_texts = list("Book A" = list("chapter_1.txt" = "Text")),
+      groups = c("Democrat", "Republican"),
+      context_text = "You are a {identity}.",
+      question_text = "How warmly do you feel toward your outgroup?",
+      model = "@gpt-5-mini/gpt-5-mini"
+    ),
+    "Skipping 1 non-retryable Azure content-policy failed simulation unit"
+  )
+
+  expect_equal(seeds, 43L)
+  expect_true(all(is.na(out$rating[out$sim == 1L])))
+  expect_equal(out$rating[out$sim == 2L], c(30, 40))
+  expect_equal(attr(out, "repaired_units")$sim, 2L)
+  expect_equal(attr(out, "non_retryable_units")$sim, 1L)
 })
 
 test_that("run_ai_on_chapters saves one completed file per book", {

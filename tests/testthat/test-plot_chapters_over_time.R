@@ -517,6 +517,79 @@ test_that("plot_chapters_over_time keeps points when point_images is NULL", {
   expect_true(has_point)
 })
 
+test_that("plot_chapters_over_time collapses only books above max_collapse", {
+  skip_if_not_installed("Rmisc")
+
+  chapters <- tibble::tibble(
+    book = c(rep("Long Book", 32), rep("Short Book", 8)),
+    chapter = c(
+      rep(paste("Chapter", 1:16), each = 2),
+      rep(paste("Chapter", 1:4), each = 2)
+    ),
+    sim = rep(1:2, 20),
+    delta_gap = c(rep(1:16, each = 2), rep(1:4, each = 2))
+  )
+
+  p <- plot_chapters_over_time(
+    chapters,
+    max_collapse = 4,
+    append_model_info = FALSE
+  )
+
+  expect_equal(levels(p$data$Time), paste0("T", 1:4))
+  expect_match(p$labels$caption, "Long Book \\(16 chapters\\)")
+  expect_match(p$labels$caption, "for:\\nLong Book")
+  expect_false(grepl("Short Book", p$labels$caption, fixed = TRUE))
+  expect_equal(p$theme$plot.caption$hjust, 0)
+  expect_equal(p$theme$plot.caption.position, "plot")
+
+  long_values <- p$data$value[p$data$book == "Long Book"]
+  expect_equal(long_values, c(2.5, 6.5, 10.5, 14.5))
+  short_values <- p$data$value[p$data$book == "Short Book"]
+  expect_equal(short_values, 1:4)
+})
+
+test_that("plot_chapters_over_time validates max_collapse", {
+  chapters <- tibble::tibble(
+    book = "Book A",
+    chapter = "Chapter 1",
+    sim = 1,
+    delta_gap = 1
+  )
+
+  expect_error(
+    plot_chapters_over_time(chapters, max_collapse = 0),
+    "positive integer"
+  )
+  expect_error(
+    plot_chapters_over_time(chapters, max_collapse = 2.5),
+    "positive integer"
+  )
+  expect_error(
+    plot_chapters_over_time(chapters, collapse_caption_width = 0),
+    "positive number"
+  )
+})
+
+test_that("plot_chapters_over_time wraps long collapse captions", {
+  skip_if_not_installed("Rmisc")
+
+  chapters <- tibble::tibble(
+    book = rep("A Book With An Intentionally Long Name", 8),
+    chapter = rep(paste("Chapter", 1:4), each = 2),
+    sim = rep(1:2, 4),
+    delta_gap = rep(1:4, each = 2)
+  )
+
+  p <- plot_chapters_over_time(
+    chapters,
+    max_collapse = 2,
+    collapse_caption_width = 15
+  )
+
+  expect_gt(length(strsplit(p$labels$caption, "\n", fixed = TRUE)[[1]]), 2)
+})
+
 test_that("plot_chapters_over_time passes facet_ncol to facet_wrap", {
   skip_if_not_installed("Rmisc")
 
@@ -535,6 +608,51 @@ test_that("plot_chapters_over_time passes facet_ncol to facet_wrap", {
   )
 
   expect_equal(p$facet$params$ncol, 2)
+})
+
+test_that("plot_chapters_over_time preserves facet order with none or NULL", {
+  skip_if_not_installed("Rmisc")
+
+  chapters <- tibble::tibble(
+    book = rep(c("Book B", "Book C", "Book A"), each = 4),
+    chapter = rep(c("Chapter 1", "Chapter 2"), 6),
+    sim = rep(c(1, 1, 2, 2), 3),
+    delta_gap = seq_len(12)
+  )
+
+  p_none <- plot_chapters_over_time(
+    chapters,
+    facet = "book",
+    facets.order = "none"
+  )
+  p_null <- plot_chapters_over_time(
+    chapters,
+    facet = "book",
+    facets.order = NULL
+  )
+
+  expected <- c("Book B", "Book C", "Book A")
+  expect_equal(levels(p_none$data$book), expected)
+  expect_equal(levels(p_null$data$book), expected)
+})
+
+test_that("plot_chapters_over_time accepts an explicit facet order", {
+  skip_if_not_installed("Rmisc")
+
+  chapters <- tibble::tibble(
+    book = rep(c("Book A", "Book B", "Book C"), each = 4),
+    chapter = rep(c("Chapter 1", "Chapter 2"), 6),
+    sim = rep(c(1, 1, 2, 2), 3),
+    delta_gap = seq_len(12)
+  )
+
+  p <- plot_chapters_over_time(
+    chapters,
+    facet = "book",
+    facets.order = c("Book C", "Book A", "Book B")
+  )
+
+  expect_equal(levels(p$data$book), c("Book C", "Book A", "Book B"))
 })
 
 test_that("plot_chapters_over_time accepts list inputs from compute_run_ai_metrics", {

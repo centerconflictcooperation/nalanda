@@ -32,6 +32,16 @@
 #' @param reverse_score Logical. Whether to reverse score scale.
 #' @param error_bars Logical. Show error bars.
 #' @param neutrality_line Logical. Add a horizontal neutrality line at 50.
+#' @param max_collapse Optional positive integer. Books with more than this
+#'   number of chapters are collapsed into this many consecutive, approximately
+#'   equal-sized chapter bins. Scores are averaged within each simulation and
+#'   group before plotting. Books at or below the limit are left unchanged. A
+#'   caption identifies books whose chapters were collapsed. Defaults to `NULL`,
+#'   which disables collapsing.
+#' @param collapse_caption_width Optional positive number giving the approximate
+#'   number of characters per line in the automatically generated collapse
+#'   caption. Defaults to `80`. Use a smaller value for narrow exports or `NULL`
+#'   to disable wrapping. The affected-book list starts on a new line regardless.
 #' @param facet The variable by which to facet grid.
 #' @param facet_ncol Optional numeric value passed to `ggplot2::facet_wrap()`
 #'   as `ncol` when `facet` is supplied.
@@ -54,6 +64,8 @@
 #'   Either provide the levels directly, or a string: "increasing" or
 #'   "decreasing", to order panels based on the average value of the
 #'   y variable, or "string.length" to order panels by facet label length.
+#'   Use `NULL` or `"none"` to preserve existing factor levels, or, for a
+#'   character facet variable, the order in which values first appear.
 #'   Defaults to "increasing".
 #' @return A ggplot2 object.
 #'
@@ -92,9 +104,37 @@ plot_chapters_over_time <- function(
   image_jitter_height = 0,
   facet = NULL,
   facet_ncol = NULL,
-  facets.order = "increasing"
+  facets.order = "increasing",
+  max_collapse = NULL,
+  collapse_caption_width = 80
 ) {
   input <- chapters
+
+  if (!is.null(max_collapse)) {
+    if (
+      length(max_collapse) != 1 ||
+        !is.numeric(max_collapse) ||
+        is.na(max_collapse) ||
+        !is.finite(max_collapse) ||
+        max_collapse < 1 ||
+        max_collapse != as.integer(max_collapse)
+    ) {
+      stop("`max_collapse` must be NULL or a single positive integer.")
+    }
+    max_collapse <- as.integer(max_collapse)
+  }
+  if (
+    !is.null(collapse_caption_width) &&
+      (
+        length(collapse_caption_width) != 1 ||
+          !is.numeric(collapse_caption_width) ||
+          is.na(collapse_caption_width) ||
+          !is.finite(collapse_caption_width) ||
+          collapse_caption_width <= 0
+      )
+  ) {
+    stop("`collapse_caption_width` must be NULL or a positive number.")
+  }
 
   # Extract metadata before binding (works for tibble, list-of-tibbles, or
   # individual tibbles loaded via readRDS and reassembled into a plain list)
@@ -115,6 +155,52 @@ plot_chapters_over_time <- function(
   df <- bind_simulation_results(input)
   if (!"book" %in% names(df)) {
     df$book <- "book_1"
+  }
+
+  facet_levels <- NULL
+  if (is.null(facets.order)) {
+    facets.order <- "none"
+  }
+  facet_order_keywords <- c(
+    "none",
+    "increasing",
+    "decreasing",
+    "string.length"
+  )
+  preserve_facet_order <- !is.null(facet) &&
+    facet %in% names(df) &&
+    (
+      identical(facets.order, "none") ||
+        !(
+          length(facets.order) == 1 &&
+            facets.order %in% facet_order_keywords
+        )
+    )
+  if (preserve_facet_order) {
+    facet_values <- df[[facet]]
+    observed_facets <- unique(as.character(facet_values))
+    facet_levels <- if (identical(facets.order, "none")) {
+      if (is.factor(facet_values)) {
+        levels(facet_values)
+      } else {
+        observed_facets
+      }
+    } else {
+      if (anyDuplicated(facets.order)) {
+        stop("`facets.order` must not contain duplicate facet levels.")
+      }
+      missing_facets <- setdiff(observed_facets, facets.order)
+      if (length(missing_facets) > 0) {
+        stop(
+          "`facets.order` is missing facet level(s): ",
+          paste(missing_facets, collapse = ", "),
+          "."
+        )
+      }
+      as.character(facets.order)
+    }
+    df[[facet]] <- factor(facet_values, levels = facet_levels)
+    facets.order <- "none"
   }
 
   dv_column <- dv
@@ -163,8 +249,31 @@ plot_chapters_over_time <- function(
     dplyr::left_join(chapter_lookup, by = c("book", "chapter")) |>
     dplyr::arrange(.data$book, .data$chapter_num, .data$sim) |>
     dplyr::group_by(.data$book) |>
-    dplyr::mutate(chapter_index = dplyr::dense_rank(.data$chapter_num)) |>
+    dplyr::mutate(
+      chapter_index = dplyr::dense_rank(.data$chapter_num),
+      chapter_count = dplyr::n_distinct(.data$chapter_num)
+    ) |>
     dplyr::ungroup()
+
+  collapsed_books <- df |>
+    dplyr::distinct(.data$book, .data$chapter_count)
+  if (is.null(max_collapse)) {
+    collapsed_books <- collapsed_books[0, , drop = FALSE]
+  } else {
+    collapsed_books <- collapsed_books |>
+      dplyr::filter(.data$chapter_count > max_collapse)
+  }
+
+  if (nrow(collapsed_books) > 0) {
+    df <- df |>
+      dplyr::mutate(
+        chapter_index = dplyr::if_else(
+          .data$chapter_count > max_collapse,
+          ceiling(.data$chapter_index * max_collapse / .data$chapter_count),
+          as.double(.data$chapter_index)
+        )
+      )
+  }
 
   # Create a unique simulation ID to handle cases with multiple identities/parties per sim
   # This ensures pivot_wider has a unique key for each row
@@ -179,6 +288,23 @@ plot_chapters_over_time <- function(
       dplyr::ungroup()
   } else {
     df$sim_unique_id <- df$sim
+  }
+
+  if (nrow(collapsed_books) > 0) {
+    collapse_group_cols <- intersect(
+      c("book", "sim_unique_id", "party", "chapter_index"),
+      names(df)
+    )
+    df <- df |>
+      dplyr::group_by(dplyr::pick(dplyr::all_of(collapse_group_cols))) |>
+      dplyr::summarise(
+        score = if (all(is.na(.data$score))) {
+          NA_real_
+        } else {
+          mean(.data$score, na.rm = TRUE)
+        },
+        .groups = "drop"
+      )
   }
 
   df_wide <- df |>
@@ -220,6 +346,39 @@ plot_chapters_over_time <- function(
       axis.title = ggplot2::element_text(size = text_size),
       plot.title = ggplot2::element_text(size = text_size)
     )
+  if (!is.null(facet_levels) && facet %in% names(p$data)) {
+    p$data[[facet]] <- factor(
+      as.character(p$data[[facet]]),
+      levels = facet_levels
+    )
+  }
+  if (nrow(collapsed_books) > 0) {
+    collapse_details <- paste0(
+      collapsed_books$book,
+      " (",
+      collapsed_books$chapter_count,
+      " chapters)"
+    )
+    collapse_details <- paste(collapse_details, collapse = "; ")
+    if (!is.null(collapse_caption_width)) {
+      collapse_details <- stringr::str_wrap(
+        collapse_details,
+        width = collapse_caption_width
+      )
+    }
+    p <- p + ggplot2::labs(
+      caption = paste0(
+        "Chapters collapsed into ",
+        max_collapse,
+        " consecutive bins for:\n",
+        collapse_details,
+        "."
+      )
+    ) + ggplot2::theme(
+      plot.caption = ggplot2::element_text(hjust = 0),
+      plot.caption.position = "plot"
+    )
+  }
   if (is.character(plot_title) && length(plot_title) == 1 && nzchar(plot_title)) {
     p <- p + ggplot2::labs(title = plot_title)
   }
