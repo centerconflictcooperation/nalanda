@@ -85,7 +85,8 @@ include <code>{intervention_text}</code>, <code>{identity}</code>, and <code>{gr
 
 <dt id="arg-intervention-text">intervention_text<a class="anchor" aria-label="anchor" href="#arg-intervention-text"></a></dt>
 <dd><p>Character scalar. The intervention text to insert
-into <code>{intervention_text}</code>.</p></dd>
+into <code>{intervention_text}</code>. Invalid multibyte text is repaired as UTF-8,
+with Windows-1252 used as the primary fallback encoding.</p></dd>
 
 
 <dt id="arg-identity-context">identity_context<a class="anchor" aria-label="anchor" href="#arg-identity-context"></a></dt>

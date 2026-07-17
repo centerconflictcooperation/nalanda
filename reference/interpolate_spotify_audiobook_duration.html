@@ -140,7 +140,7 @@ Use this when <code>measure = "word_count"</code>.</p></dd>
 <dd><p>Character scalar or <code>NULL</code>. Column containing paths to text
 files. If supplied with <code>measure = "file_size"</code>, file sizes are computed
 with <code><a href="https://rdrr.io/r/base/file.info.html" class="external-link">file.info()</a></code>. If supplied with <code>measure = "word_count"</code>, words are
-counted from the files.</p></dd>
+counted from the files after invalid multibyte text is repaired as UTF-8.</p></dd>
 
 
 <dt id="arg-text-col">text_col<a class="anchor" aria-label="anchor" href="#arg-text-col"></a></dt>

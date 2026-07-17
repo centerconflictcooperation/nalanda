@@ -87,7 +87,8 @@ interpolate_spotify_audiobook_duration(
   Character scalar or `NULL`. Column containing paths to text files. If
   supplied with `measure = "file_size"`, file sizes are computed with
   [`file.info()`](https://rdrr.io/r/base/file.info.html). If supplied
-  with `measure = "word_count"`, words are counted from the files.
+  with `measure = "word_count"`, words are counted from the files after
+  invalid multibyte text is repaired as UTF-8.
 
 - text_col:
 

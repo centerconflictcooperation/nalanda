@@ -38,7 +38,8 @@ build_simulate_treatment_prompt(
 - intervention_text:
 
   Character scalar. The intervention text to insert into
-  `{intervention_text}`.
+  `{intervention_text}`. Invalid multibyte text is repaired as UTF-8,
+  with Windows-1252 used as the primary fallback encoding.
 
 - identity_context:
 
