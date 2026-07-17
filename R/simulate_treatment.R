@@ -366,7 +366,8 @@ execute_generic_treatment_pipeline <- function(
 #' @param prompt_template Character scalar. A single prompt template that may
 #'   include `{intervention_text}`, `{identity}`, and `{group}`.
 #' @param intervention_text Character scalar. The intervention text to insert
-#'   into `{intervention_text}`.
+#'   into `{intervention_text}`. Invalid multibyte text is repaired as UTF-8,
+#'   with Windows-1252 used as the primary fallback encoding.
 #' @param identity_context Character scalar. Optional identity context to
 #'   prepend to the prompt.
 #' @param identity_label Character scalar. Optional identity label used to
@@ -388,11 +389,15 @@ make_treatment_prompt <- function(
   identity_context = "",
   identity_label = NA_character_
 ) {
-  out <- prompt_template
-  out <- gsub("\\{intervention_text\\}", intervention_text, out)
+  out <- repair_chapter_text_encoding(prompt_template)
+  intervention_text <- repair_chapter_text_encoding(intervention_text)
+  identity_context <- repair_chapter_text_encoding(identity_context)
+
+  out <- gsub("{intervention_text}", intervention_text, out, fixed = TRUE)
   if (!is.na(identity_label)) {
-    out <- gsub("\\{identity\\}", identity_label, out)
-    out <- gsub("\\{group\\}", identity_label, out)
+    identity_label <- repair_chapter_text_encoding(identity_label)
+    out <- gsub("{identity}", identity_label, out, fixed = TRUE)
+    out <- gsub("{group}", identity_label, out, fixed = TRUE)
   }
 
   out <- paste(identity_context, out)

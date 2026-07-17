@@ -965,10 +965,13 @@ repair_chapter_text_encoding <- function(chapter_text) {
   }
 
   if (is_valid_text(chapter_text)) {
-    return(chapter_text)
+    return(enc2utf8(chapter_text))
   }
 
-  encodings <- c("", "UTF-8", "WINDOWS-1252", "latin1")
+  # Invalid UTF-8 bytes in book files most commonly come from Windows-1252.
+  # Try it before the native encoding because iconv(sub = "") can otherwise
+  # silently discard bytes such as 0x92 (a curly apostrophe in Windows-1252).
+  encodings <- c("WINDOWS-1252", "latin1", "", "UTF-8")
   for (from in encodings) {
     repaired <- suppressWarnings(
       tryCatch(

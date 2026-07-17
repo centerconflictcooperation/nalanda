@@ -158,6 +158,41 @@ test_that("interpolate_spotify_audiobook_duration supports word counts", {
   expect_equal(attr(out, "estimated_total_minutes"), 120)
 })
 
+test_that("interpolate_spotify_audiobook_duration repairs text before counting words", {
+  root <- withr::local_tempdir()
+  known_file <- file.path(root, "known.txt")
+  target_file <- file.path(root, "target.txt")
+
+  writeBin(charToRaw("one two three four"), known_file)
+  writeBin(c(
+    charToRaw("one two"),
+    as.raw(0x92),
+    charToRaw("three four")
+  ), target_file)
+
+  reference <- tibble::tibble(
+    file = known_file,
+    spotify_duration_seconds = 40
+  )
+  target <- tibble::tibble(
+    chapter = "chapter_1",
+    file = target_file
+  )
+
+  expect_no_warning(
+    out <- interpolate_spotify_audiobook_duration(
+      reference,
+      target,
+      duration_col = "spotify_duration_seconds",
+      file_col = "file",
+      measure = "word_count",
+      output_unit = "seconds"
+    )
+  )
+
+  expect_equal(out$estimated_duration_seconds, 40)
+})
+
 test_that("interpolate_spotify_audiobook_duration validates required columns", {
   expect_error(
     interpolate_spotify_audiobook_duration(

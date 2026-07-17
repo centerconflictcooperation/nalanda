@@ -342,6 +342,7 @@ test_that("summarize_chapter_scores can aggregate standardized model consensus",
   expect_equal(out$n_models, c(2L, 2L, 2L))
   expect_equal(out$mean_delta_gap, c(0, 0, 0))
   expect_true("sd_model_mean_delta_gap" %in% names(out))
+  expect_equal(out$sd_model_mean_delta_gap, c(sqrt(2), 0, sqrt(2)))
   expect_equal(attr(out, "model_aggregation"), "mean")
 })
 
@@ -983,6 +984,25 @@ test_that("make_treatment_prompt works without identity", {
 
   expect_match(out, "BOOK TEXT")
   expect_false(grepl("\\{identity\\}|\\{group\\}", out))
+})
+
+test_that("make_treatment_prompt repairs Windows-1252 intervention text", {
+  intervention_text <- rawToChar(c(
+    charToRaw("I"),
+    as.raw(0x92),
+    charToRaw("d asked my parents.")
+  ))
+  Encoding(intervention_text) <- "UTF-8"
+
+  expect_false(validUTF8(intervention_text))
+
+  out <- make_treatment_prompt(
+    prompt_template = "Read this:\n{intervention_text}\nScore it.",
+    intervention_text = intervention_text
+  )
+
+  expect_true(validUTF8(out))
+  expect_match(out, "I\u2019d asked my parents.", fixed = TRUE)
 })
 
 test_that("build_simulate_treatment_prompt remains an alias", {

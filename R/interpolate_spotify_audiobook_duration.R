@@ -29,7 +29,7 @@
 #' @param file_col Character scalar or `NULL`. Column containing paths to text
 #'   files. If supplied with `measure = "file_size"`, file sizes are computed
 #'   with [file.info()]. If supplied with `measure = "word_count"`, words are
-#'   counted from the files.
+#'   counted from the files after invalid multibyte text is repaired as UTF-8.
 #' @param text_col Character scalar or `NULL`. Column containing text strings to
 #'   measure directly.
 #' @param measure Character scalar. Either `"file_size"` or `"word_count"`.
@@ -414,6 +414,12 @@ format_seconds_as_hms <- function(x) {
 }
 
 count_words <- function(text) {
+  text <- vapply(
+    text,
+    repair_chapter_text_encoding,
+    character(1),
+    USE.NAMES = FALSE
+  )
   matches <- gregexpr("\\b[[:alnum:]']+\\b", text, perl = TRUE)
   vapply(regmatches(text, matches), length, integer(1), USE.NAMES = FALSE)
 }

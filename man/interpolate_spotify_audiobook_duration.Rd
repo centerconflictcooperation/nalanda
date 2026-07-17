@@ -57,7 +57,7 @@ Use this when \code{measure = "word_count"}.}
 \item{file_col}{Character scalar or \code{NULL}. Column containing paths to text
 files. If supplied with \code{measure = "file_size"}, file sizes are computed
 with \code{\link[=file.info]{file.info()}}. If supplied with \code{measure = "word_count"}, words are
-counted from the files.}
+counted from the files after invalid multibyte text is repaired as UTF-8.}
 
 \item{text_col}{Character scalar or \code{NULL}. Column containing text strings to
 measure directly.}

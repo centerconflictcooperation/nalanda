@@ -244,16 +244,16 @@ summarize_chapter_scores <- function(
         n_models = dplyr::n_distinct(.data$model),
         dplyr::across(
           dplyr::all_of(mean_cols),
+          ~ stats::sd(.x, na.rm = TRUE),
+          .names = "sd_model_{.col}"
+        ),
+        dplyr::across(
+          dplyr::all_of(mean_cols),
           ~ mean(.x, na.rm = TRUE)
         ),
         dplyr::across(
           dplyr::all_of(sd_cols),
           ~ mean(.x, na.rm = TRUE)
-        ),
-        dplyr::across(
-          dplyr::all_of(mean_cols),
-          ~ stats::sd(.x, na.rm = TRUE),
-          .names = "sd_model_{.col}"
         ),
         .groups = "drop"
       )

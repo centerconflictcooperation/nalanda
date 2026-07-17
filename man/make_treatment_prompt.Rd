@@ -24,7 +24,8 @@ build_simulate_treatment_prompt(
 include \code{{intervention_text}}, \code{{identity}}, and \code{{group}}.}
 
 \item{intervention_text}{Character scalar. The intervention text to insert
-into \code{{intervention_text}}.}
+into \code{{intervention_text}}. Invalid multibyte text is repaired as UTF-8,
+with Windows-1252 used as the primary fallback encoding.}
 
 \item{identity_context}{Character scalar. Optional identity context to
 prepend to the prompt.}
