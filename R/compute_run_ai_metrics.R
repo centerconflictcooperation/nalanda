@@ -19,7 +19,8 @@
 #' @return A simulation-level tibble with derived metrics (for example
 #'   `pre_outgroup`, `post_outgroup`, `delta_outgroup`, and in per-group mode
 #'   also `pre_ingroup`, `post_ingroup`, `pre_gap`, `post_gap`,
-#'   `delta_ingroup`, `delta_gap`).
+#'   `delta_ingroup`, `delta_gap`). When present in the input, failed units
+#'   retain `error`, `error_turn`, and `error_message` diagnostics.
 #'
 #' @examples
 #' metrics <- compute_run_ai_metrics(toy_run_ai_turns)
@@ -98,6 +99,7 @@ compute_run_ai_metrics <- function(x, per_group = NULL) {
     row_i <- row_i + 1L
     xi <- x[idx, , drop = FALSE]
     row <- as.list(xi[1, id_cols, drop = FALSE])
+    row <- add_error_diagnostics(row, xi)
 
     pre <- xi[xi$turn_type == "baseline", , drop = FALSE]
     post <- xi[xi$turn_type == "post", , drop = FALSE]
@@ -176,6 +178,39 @@ mean_or_na <- function(x) {
   }
 
   mean(x, na.rm = TRUE)
+}
+
+add_error_diagnostics <- function(row, x) {
+  if (!("error" %in% names(x))) {
+    return(row)
+  }
+
+  failed <- !is.na(x$error) & as.logical(x$error)
+  row$error <- any(failed)
+
+  if (!("error_message" %in% names(x))) {
+    return(row)
+  }
+
+  messages <- unique(as.character(x$error_message[failed]))
+  messages <- messages[!is.na(messages) & nzchar(messages)]
+  row$error_message <- if (length(messages) > 0) {
+    paste(messages, collapse = "; ")
+  } else {
+    NA_character_
+  }
+
+  if ("error_turn" %in% names(x)) {
+    turns <- unique(as.character(x$error_turn[failed]))
+    turns <- turns[!is.na(turns) & nzchar(turns)]
+    row$error_turn <- if (length(turns) > 0) {
+      paste(turns, collapse = "; ")
+    } else {
+      NA_character_
+    }
+  }
+
+  row
 }
 
 fill_missing_model_column <- function(x, model = NULL, models = NULL) {

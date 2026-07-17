@@ -26,7 +26,8 @@ from \code{target_group}:
 A simulation-level tibble with derived metrics (for example
 \code{pre_outgroup}, \code{post_outgroup}, \code{delta_outgroup}, and in per-group mode
 also \code{pre_ingroup}, \code{post_ingroup}, \code{pre_gap}, \code{post_gap},
-\code{delta_ingroup}, \code{delta_gap}).
+\code{delta_ingroup}, \code{delta_gap}). When present in the input, failed units
+retain \code{error}, \code{error_turn}, and \code{error_message} diagnostics.
 }
 \description{
 Separates post-processing from model execution so users can re-compute

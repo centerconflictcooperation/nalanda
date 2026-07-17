@@ -575,6 +575,28 @@ test_that("run_ai_on_chapters fails fast for route/model mismatch with skip erro
   expect_equal(calls, 1L)
 })
 
+test_that("compute_run_ai_metrics retains diagnostics for failed simulation units", {
+  x <- tibble::tibble(
+    chapter = rep("chapter_1", 4),
+    sim = rep(1:2, each = 2),
+    identity = "Democrat",
+    turn_type = rep(c("baseline", "post"), 2),
+    target_group = NA_character_,
+    rating = c(40, 45, NA, NA),
+    error = c(FALSE, FALSE, TRUE, TRUE),
+    error_turn = c(NA, NA, "post", "post"),
+    error_message = c(NA, NA, "HTTP 502", "HTTP 502")
+  )
+
+  out <- compute_run_ai_metrics(x)
+
+  expect_false(out$error[out$sim == 1])
+  expect_true(out$error[out$sim == 2])
+  expect_true(is.na(out$error_message[out$sim == 1]))
+  expect_equal(out$error_turn[out$sim == 2], "post")
+  expect_equal(out$error_message[out$sim == 2], "HTTP 502")
+})
+
 test_that("run_ai_on_chapters fails fast when the gateway is unreachable", {
   calls <- 0L
   testthat::local_mocked_bindings(
@@ -1895,7 +1917,10 @@ test_that("compute_run_ai_metrics_cumulative compares each chapter to baseline",
     target_group = c("Democrat", "Republican", "Democrat", "Republican", "Democrat", "Republican"),
     rating = c(70, 40, 68, 45, 66, 50),
     baseline_prompt = "baseline",
-    post_prompt = c(NA, NA, "chapter 1", "chapter 1", "chapter 2", "chapter 2")
+    post_prompt = c(NA, NA, "chapter 1", "chapter 1", "chapter 2", "chapter 2"),
+    error = c(FALSE, FALSE, FALSE, FALSE, TRUE, TRUE),
+    error_turn = c(NA, NA, NA, NA, "post", "post"),
+    error_message = c(NA, NA, NA, NA, "HTTP 502", "HTTP 502")
   )
   attr(x, "model") <- "test-model"
   attr(x, "temperature") <- 0
@@ -1909,6 +1934,8 @@ test_that("compute_run_ai_metrics_cumulative compares each chapter to baseline",
   expect_equal(out$post_outgroup, c(45, 50))
   expect_equal(out$delta_outgroup, c(5, 10))
   expect_equal(out$delta_gap, c(7, 14))
+  expect_false(out$error[out$chapter == "chapter_1"])
+  expect_equal(out$error_message[out$chapter == "chapter_2"], "HTTP 502")
   expect_equal(attr(out, "model"), "test-model")
 })
 

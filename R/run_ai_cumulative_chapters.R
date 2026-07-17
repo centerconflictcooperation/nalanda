@@ -564,6 +564,7 @@ compute_run_ai_metrics_cumulative <- function(x, per_group = NULL) {
     for (chapter_id in unique(post$chapter)) {
       chapter_post <- post[post$chapter == chapter_id, , drop = FALSE]
       row <- as.list(chapter_post[1, c(convo_cols, intersect(c("chapter", "chapter_index", "post_prompt"), names(chapter_post))), drop = FALSE])
+      row <- add_error_diagnostics(row, rbind(pre, chapter_post))
 
       if (include_token_col) {
         row$input_tokens <- sum(as.numeric(chapter_post$input_tokens), na.rm = TRUE) +
