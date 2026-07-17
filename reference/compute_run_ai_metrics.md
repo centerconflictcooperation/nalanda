@@ -39,7 +39,8 @@ compute_run_ai_metrics(x, per_group = NULL)
 A simulation-level tibble with derived metrics (for example
 `pre_outgroup`, `post_outgroup`, `delta_outgroup`, and in per-group mode
 also `pre_ingroup`, `post_ingroup`, `pre_gap`, `post_gap`,
-`delta_ingroup`, `delta_gap`).
+`delta_ingroup`, `delta_gap`). When present in the input, failed units
+retain `error`, `error_turn`, and `error_message` diagnostics.
 
 ## Examples
 
