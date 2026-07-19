@@ -575,6 +575,41 @@ test_that("run_ai_on_chapters fails fast for route/model mismatch with skip erro
   expect_equal(calls, 1L)
 })
 
+test_that("run_ai_on_chapters records an Azure content-policy failure once", {
+  calls <- 0L
+  azure_error <- paste0(
+    "HTTP 400 Bad Request. azure-openai error: The response was filtered due ",
+    "to the prompt triggering Azure OpenAI's content management policy."
+  )
+  testthat::local_mocked_bindings(
+    new_portkey_chat = function(...) {
+      list(chat_structured = function(prompt, type) {
+        calls <<- calls + 1L
+        stop(azure_error)
+      })
+    },
+    .package = "nalanda"
+  )
+
+  expect_silent(
+    suppressWarnings(out <- run_ai_on_chapters(
+      book_texts = list("Book A" = list("chapter_1.txt" = "Ordinary chapter text.")),
+      groups = c("Democrat", "Republican"),
+      context_text = "You are simulating a {identity}.",
+      question_text = "How warmly do you feel towards {group}s?",
+      n_simulations = 3,
+      model = "gpt-4o-mini",
+      on_error = "skip"
+    ))
+  )
+
+  rows <- if (is.data.frame(out)) out else out[[1L]]
+  expect_equal(calls, 2L)
+  expect_equal(unique(rows$sim), 1L)
+  expect_true(all(rows$error))
+  expect_true(all(grepl("content management policy", rows$error_message, fixed = TRUE)))
+})
+
 test_that("compute_run_ai_metrics retains diagnostics for failed simulation units", {
   x <- tibble::tibble(
     chapter = rep("chapter_1", 4),

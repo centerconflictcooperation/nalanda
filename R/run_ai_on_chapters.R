@@ -70,8 +70,11 @@
 #'   filenames when `checkpoint_dir` is supplied.
 #' @param on_error Character. `"stop"` raises model/API errors immediately.
 #'   `"skip"` records the failed chapter/identity/simulation with missing
-#'   ratings and continues. Errors that cannot be chapter-specific, such as an
-#'   unreachable gateway or invalid model route, always stop the run early.
+#'   ratings and continues. Azure content-policy failures are recorded once and
+#'   suppress the remaining simulations for that chapter, identity, and model,
+#'   since they reuse the blocked prompt. Errors that cannot be chapter-specific,
+#'   such as an unreachable gateway or invalid model route, always stop the run
+#'   early.
 #'   Defaults to `"stop"`.
 #' @param save_dir Optional directory. If supplied, each book is saved as one
 #'   `.Rds` file as soon as all of its chapters, identities, and simulations
@@ -488,6 +491,9 @@ execute_two_turn_pipeline <- function(
             conditionMessage(baseline_response$error),
             call. = FALSE
           )
+          if (is_content_policy_error_message(conditionMessage(baseline_response$error))) {
+            break
+          }
           next
         }
 
@@ -564,6 +570,9 @@ execute_two_turn_pipeline <- function(
             conditionMessage(post_response$error),
             call. = FALSE
           )
+          if (is_content_policy_error_message(conditionMessage(post_response$error))) {
+            break
+          }
           next
         }
 
