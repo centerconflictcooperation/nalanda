@@ -202,8 +202,11 @@ filenames when <code>checkpoint_dir</code> is supplied.</p></dd>
 <dt id="arg-on-error">on_error<a class="anchor" aria-label="anchor" href="#arg-on-error"></a></dt>
 <dd><p>Character. <code>"stop"</code> raises model/API errors immediately.
 <code>"skip"</code> records the failed chapter/identity/simulation with missing
-ratings and continues. Errors that cannot be chapter-specific, such as an
-unreachable gateway or invalid model route, always stop the run early.
+ratings and continues. Azure content-policy failures are recorded once and
+suppress the remaining simulations for that chapter, identity, and model,
+since they reuse the blocked prompt. Errors that cannot be chapter-specific,
+such as an unreachable gateway or invalid model route, always stop the run
+early.
 Defaults to <code>"stop"</code>.</p></dd>
 
 
