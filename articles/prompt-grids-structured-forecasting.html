@@ -141,6 +141,7 @@ interpolated into a prompt template.</p>
 <span>  family <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"developer-a"</span>, <span class="st">"developer-a"</span>, <span class="st">"developer-b"</span>, <span class="st">"developer-c"</span><span class="op">)</span>,</span>
 <span>  temperature <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">0</span>, <span class="fl">0.3</span>, <span class="fl">0</span><span class="op">)</span>,</span>
 <span>  n_completions <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">2L</span>, <span class="fl">1L</span>, <span class="fl">3L</span>, <span class="fl">5L</span><span class="op">)</span>,</span>
+<span>  phase <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"first"</span>, <span class="st">"later"</span>, <span class="st">"later"</span>, <span class="st">"not_selected"</span><span class="op">)</span>,</span>
 <span>  active <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="cn">TRUE</span>, <span class="cn">TRUE</span>, <span class="cn">TRUE</span>, <span class="cn">FALSE</span><span class="op">)</span></span>
 <span><span class="op">)</span></span></code></pre></div>
 <p><code>model_id</code> is a stable analysis label, while
@@ -214,45 +215,107 @@ describe the scale and direction of each forecast clearly enough that
 every model returns comparable numbers.</p>
 </div>
 <div class="section level2">
-<h2 id="smoke-then-run-and-resume">Smoke, then run and resume<a class="anchor" aria-label="anchor" href="#smoke-then-run-and-resume"></a>
+<h2 id="smoke-phase-the-spend-then-resume">Smoke, phase the spend, then resume<a class="anchor" aria-label="anchor" href="#smoke-phase-the-spend-then-resume"></a>
 </h2>
-<p>The live smoke call is:</p>
+<p>Cost-gated studies can begin with one inexpensive model. A smoke test
+remains a deliberate fresh check on one input row and is kept separate
+from the full-data task identity:</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">smoke</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/run_prompt_grid.html">run_prompt_grid</a></span><span class="op">(</span></span>
+<code class="sourceCode R"><span><span class="va">first_model</span> <span class="op">&lt;-</span> <span class="va">models</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html" class="external-link">filter</a></span><span class="op">(</span><span class="va">model_id</span> <span class="op">==</span> <span class="st">"fast_a"</span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">smoke</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/run_prompt_grid.html">run_prompt_grid</a></span><span class="op">(</span></span>
 <span>  data <span class="op">=</span> <span class="va">interventions</span>,</span>
 <span>  id_col <span class="op">=</span> <span class="st">"condition_id"</span>,</span>
 <span>  prompt_variants <span class="op">=</span> <span class="va">prompts</span>,</span>
 <span>  response_type <span class="op">=</span> <span class="va">response_type</span>,</span>
-<span>  model_config <span class="op">=</span> <span class="va">models</span>,</span>
+<span>  model_config <span class="op">=</span> <span class="va">first_model</span>,</span>
 <span>  smoke_n <span class="op">=</span> <span class="fl">1</span>,</span>
 <span>  output_dir <span class="op">=</span> <span class="st">"results/forecast-smoke"</span>,</span>
 <span>  resume <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  on_error <span class="op">=</span> <span class="st">"continue"</span></span>
 <span><span class="op">)</span></span></code></pre></div>
 <p>After inspecting <code>smoke$results</code> and
-<code>smoke$errors</code>, remove <code>smoke_n</code> and use a
-separate directory for the full run.</p>
+<code>smoke$errors</code>, run that inexpensive model over the full
+inputs. Saving the returned list as one RDS file keeps results, the call
+plan, task statuses, and errors together as a compact run bundle.</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">full</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/run_prompt_grid.html">run_prompt_grid</a></span><span class="op">(</span></span>
+<code class="sourceCode R"><span><span class="va">phase_one</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/run_prompt_grid.html">run_prompt_grid</a></span><span class="op">(</span></span>
 <span>  data <span class="op">=</span> <span class="va">interventions</span>,</span>
 <span>  id_col <span class="op">=</span> <span class="st">"condition_id"</span>,</span>
 <span>  prompt_variants <span class="op">=</span> <span class="va">prompts</span>,</span>
 <span>  response_type <span class="op">=</span> <span class="va">response_type</span>,</span>
-<span>  model_config <span class="op">=</span> <span class="va">models</span>,</span>
-<span>  output_dir <span class="op">=</span> <span class="st">"results/forecast-full"</span>,</span>
+<span>  model_config <span class="op">=</span> <span class="va">first_model</span>,</span>
+<span>  output_dir <span class="op">=</span> <span class="st">"results/forecast-checkpoints"</span>,</span>
+<span>  resume <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  on_error <span class="op">=</span> <span class="st">"continue"</span></span>
+<span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/readRDS.html" class="external-link">saveRDS</a></span><span class="op">(</span><span class="va">phase_one</span>, <span class="st">"results/forecast-phase-one-bundle.rds"</span><span class="op">)</span></span></code></pre></div>
+<p>When the first phase is accepted, activate the later models. Existing
+results can be a results table, a previous run bundle, or an RDS/CSV
+path. The checkpoint collector is useful when the shared directory also
+contains successful models that are no longer active in the current
+configuration.</p>
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">prior</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/collect_prompt_grid_results.html">collect_prompt_grid_results</a></span><span class="op">(</span></span>
+<span>  <span class="st">"results/forecast-checkpoints"</span>,</span>
+<span>  existing_results <span class="op">=</span> <span class="st">"results/forecast-phase-one-bundle.rds"</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">later_models</span> <span class="op">&lt;-</span> <span class="va">models</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html" class="external-link">filter</a></span><span class="op">(</span><span class="va">active</span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">later_plan</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/run_prompt_grid.html">run_prompt_grid</a></span><span class="op">(</span></span>
+<span>  data <span class="op">=</span> <span class="va">interventions</span>,</span>
+<span>  id_col <span class="op">=</span> <span class="st">"condition_id"</span>,</span>
+<span>  prompt_variants <span class="op">=</span> <span class="va">prompts</span>,</span>
+<span>  response_type <span class="op">=</span> <span class="va">response_type</span>,</span>
+<span>  model_config <span class="op">=</span> <span class="va">later_models</span>,</span>
+<span>  existing_results <span class="op">=</span> <span class="va">prior</span>,</span>
+<span>  dry_run <span class="op">=</span> <span class="cn">TRUE</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">later_plan</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span></span>
+<span>  <span class="st">"model_id"</span>, <span class="st">"prompt_id"</span>, <span class="st">"configured_calls"</span>,</span>
+<span>  <span class="st">"reused_calls"</span>, <span class="st">"pending_calls"</span></span>
+<span><span class="op">)</span><span class="op">]</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/sum.html" class="external-link">sum</a></span><span class="op">(</span><span class="va">later_plan</span><span class="op">$</span><span class="va">pending_calls</span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">full</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/run_prompt_grid.html">run_prompt_grid</a></span><span class="op">(</span></span>
+<span>  data <span class="op">=</span> <span class="va">interventions</span>,</span>
+<span>  id_col <span class="op">=</span> <span class="st">"condition_id"</span>,</span>
+<span>  prompt_variants <span class="op">=</span> <span class="va">prompts</span>,</span>
+<span>  response_type <span class="op">=</span> <span class="va">response_type</span>,</span>
+<span>  model_config <span class="op">=</span> <span class="va">later_models</span>,</span>
+<span>  existing_results <span class="op">=</span> <span class="va">prior</span>,</span>
+<span>  output_dir <span class="op">=</span> <span class="st">"results/forecast-checkpoints"</span>,</span>
 <span>  resume <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  on_error <span class="op">=</span> <span class="st">"continue"</span></span>
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">raw_forecasts</span> <span class="op">&lt;-</span> <span class="va">full</span><span class="op">$</span><span class="va">results</span></span>
 <span><span class="va">full</span><span class="op">$</span><span class="va">tasks</span></span>
-<span><span class="va">full</span><span class="op">$</span><span class="va">errors</span></span></code></pre></div>
+<span><span class="va">full</span><span class="op">$</span><span class="va">errors</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/readRDS.html" class="external-link">saveRDS</a></span><span class="op">(</span><span class="va">full</span>, <span class="st">"results/forecast-full-bundle.rds"</span><span class="op">)</span></span></code></pre></div>
 <p>Each successful model-prompt-completion unit is written to its own
 RDS file before the workflow advances. The filename contains readable
 IDs and a hash of the inputs and settings. With
 <code>resume = TRUE</code>, a compatible file is loaded instead of
 rerun. Failed units are listed in <code>errors</code> and are
 deliberately not checkpointed, so a later run retries them.</p>
+<p>Every raw row also carries <code>task_hash</code> and
+<code>input_row</code>. The hash covers the input table, prompt text,
+response specification, and effective model settings. Consequently, the
+same readable IDs with revised prompt text or a revised response schema
+remain pending rather than being silently reused. A complete prior task
+must contain every expected <code>input_row</code> before it suppresses
+calls.</p>
+<p>Older unhashed results are rejected by default. For a reviewed
+one-time migration only, <code>trust_legacy_results = TRUE</code>
+verifies exact task IDs, inputs, and stored prompt text before assigning
+current hashes. The caller must independently verify the old model
+settings and response specification; save the resulting hashed bundle
+and return to the default afterward.</p>
 <p>The combined raw table retains the input metadata and adds
 <code>model_id</code>, <code>model</code>, <code>family</code>,
 <code>prompt_id</code>, <code>prompt_template</code>,
@@ -288,7 +351,7 @@ counts or belong to families with different numbers of models. The
 helper below returns every stage rather than hiding a final scientific
 choice.</p>
 <p>This small local table mimics one outcome from a completed run:</p>
-<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">mock_raw</span> <span class="op">&lt;-</span> <span class="fu">tibble</span><span class="fu">::</span><span class="fu"><a href="https://tibble.tidyverse.org/reference/tibble.html" class="external-link">tibble</a></span><span class="op">(</span></span>
 <span>  condition_id <span class="op">=</span> <span class="st">"cooperation"</span>,</span>
 <span>  family <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"developer-a"</span>, <span class="st">"developer-a"</span>, <span class="st">"developer-a"</span>, <span class="st">"developer-a"</span>, <span class="st">"developer-b"</span><span class="op">)</span>,</span>
@@ -299,14 +362,23 @@ choice.</p>
 <span>  effect_trust <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">2</span>, <span class="fl">4</span>, <span class="fl">5</span>, <span class="fl">7</span>, <span class="fl">9</span><span class="op">)</span></span>
 <span><span class="op">)</span></span>
 <span></span>
-<span><span class="va">aggregated</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/aggregate_model_forecasts.html">aggregate_model_forecasts</a></span><span class="op">(</span></span>
+<span><span class="va">median_aggregated</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/aggregate_model_forecasts.html">aggregate_model_forecasts</a></span><span class="op">(</span></span>
 <span>  <span class="va">mock_raw</span>,</span>
 <span>  outcomes <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"effect_support"</span>, <span class="st">"effect_trust"</span><span class="op">)</span>,</span>
 <span>  unit_by <span class="op">=</span> <span class="st">"condition_id"</span>,</span>
-<span>  family_col <span class="op">=</span> <span class="st">"family"</span></span>
+<span>  family_col <span class="op">=</span> <span class="st">"family"</span>,</span>
+<span>  method <span class="op">=</span> <span class="st">"median"</span></span>
 <span><span class="op">)</span></span>
 <span></span>
-<span><span class="va">aggregated</span><span class="op">$</span><span class="va">prompt</span></span>
+<span><span class="va">mean_aggregated</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/aggregate_model_forecasts.html">aggregate_model_forecasts</a></span><span class="op">(</span></span>
+<span>  <span class="va">mock_raw</span>,</span>
+<span>  outcomes <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"effect_support"</span>, <span class="st">"effect_trust"</span><span class="op">)</span>,</span>
+<span>  unit_by <span class="op">=</span> <span class="st">"condition_id"</span>,</span>
+<span>  family_col <span class="op">=</span> <span class="st">"family"</span>,</span>
+<span>  method <span class="op">=</span> <span class="st">"mean"</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">median_aggregated</span><span class="op">$</span><span class="va">prompt</span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 4 × 7</span></span></span>
 <span><span class="co">#&gt;   condition_id family      model_id    prompt_id  effect_support effect_trust</span></span>
 <span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>        <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>       <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>       <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>               <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>        <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
@@ -315,20 +387,25 @@ choice.</p>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span> cooperation  developer-a reasoning_a direct                  6            7</span></span>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">4</span> cooperation  developer-b fast_b      direct                 10            9</span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># ℹ 1 more variable: n_completions &lt;int&gt;</span></span></span>
-<span><span class="va">aggregated</span><span class="op">$</span><span class="va">model</span></span>
+<span><span class="va">median_aggregated</span><span class="op">$</span><span class="va">model</span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 3 × 6</span></span></span>
 <span><span class="co">#&gt;   condition_id family      model_id    effect_support effect_trust n_prompts</span></span>
 <span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>        <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>       <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>                <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>        <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> cooperation  developer-a fast_a                   2            4         2</span></span>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> cooperation  developer-a reasoning_a              6            7         1</span></span>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span> cooperation  developer-b fast_b                  10            9         1</span></span>
-<span><span class="va">aggregated</span><span class="op">$</span><span class="va">family</span></span>
+<span><span class="va">median_aggregated</span><span class="op">$</span><span class="va">family</span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 2 × 5</span></span></span>
 <span><span class="co">#&gt;   condition_id family      effect_support effect_trust n_models</span></span>
 <span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>        <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>                <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>        <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> cooperation  developer-a              4          5.5        2</span></span>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> cooperation  developer-b             10          9          1</span></span>
-<span><span class="va">aggregated</span><span class="op">$</span><span class="va">consensus</span></span>
+<span><span class="va">median_aggregated</span><span class="op">$</span><span class="va">consensus</span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 4</span></span></span>
+<span><span class="co">#&gt;   condition_id effect_support effect_trust n_families</span></span>
+<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>                 <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>        <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> cooperation               7         7.25          2</span></span>
+<span><span class="va">mean_aggregated</span><span class="op">$</span><span class="va">consensus</span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 4</span></span></span>
 <span><span class="co">#&gt;   condition_id effect_support effect_trust n_families</span></span>
 <span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>                 <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>        <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
@@ -346,14 +423,22 @@ every model equal weight directly. The count columns
 <code>n_models</code>, and <code>n_families</code>) make each stage
 auditable. A raw mean would instead give extra weight to whichever model
 produced more rows.</p>
+<p><code>method = "mean"</code> is the backward-compatible default.
+<code>method = "median"</code> uses medians at all four stages, which
+can make the primary estimate less sensitive to an extreme completion
+while retaining the same equal-weight hierarchy. Missing values are
+omitted separately for each outcome at each stage; an all-missing group
+remains missing. Counts describe all configured contributors, including
+contributors missing a particular outcome.</p>
 </div>
 <div class="section level2">
 <h2 id="what-remains-downstream">What remains downstream<a class="anchor" aria-label="anchor" href="#what-remains-downstream"></a>
 </h2>
 <p><code>nalanda</code> handles configuration validation, expansion,
-budgeting, provenance, checkpointing, resume, and arithmetic
-aggregation. The following choices stay in downstream analysis because
-they depend on the study:</p>
+pending-call budgeting, strong-identity reuse, checkpoint collection,
+provenance, resume, and mean/median hierarchical aggregation. The
+following choices stay in downstream analysis because they depend on the
+study:</p>
 <ul>
 <li>which models and prompt variants belong in the estimand,</li>
 <li>whether a <code>family</code> groups developers, model lineages, or

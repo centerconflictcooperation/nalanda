@@ -1,6 +1,6 @@
 # Aggregate structured forecasts through an explicit weighting hierarchy
 
-Average repeated completions within prompt, prompts within model, models
+Reduce repeated completions within prompt, prompts within model, models
 within family, and then families into a consensus. Each stage operates
 on the already-aggregated rows from the previous stage, so unequal
 completion counts do not give a model more weight. Supplying
@@ -17,7 +17,8 @@ aggregate_model_forecasts(
   completion_col = "completion",
   prompt_col = "prompt_id",
   model_col = "model_id",
-  family_col = "family"
+  family_col = "family",
+  method = c("mean", "median")
 )
 ```
 
@@ -43,8 +44,13 @@ aggregate_model_forecasts(
 
 - family_col:
 
-  Optional column identifying model families. Set to `NULL` to average
+  Optional column identifying model families. Set to `NULL` to combine
   models directly into the consensus.
+
+- method:
+
+  Aggregation statistic applied at every stage: `"mean"` (the
+  backward-compatible default) or `"median"`.
 
 ## Value
 
@@ -53,7 +59,11 @@ A named list of tibbles: `prompt`, `model`, optional `family`, and
 
 ## Details
 
-This helper only computes arithmetic means. Choosing this hierarchy,
-deciding whether model outputs represent simulations or expert
-forecasts, and any uncertainty analysis remain scientific decisions for
-the caller.
+`method = "mean"` preserves the original arithmetic-mean behavior.
+`method = "median"` applies the median at every stage of the same
+hierarchy. Missing values are removed independently for each outcome at
+each stage. A stage returns `NA_real_` when all values for that outcome
+and group are missing. Count columns count distinct configured
+contributors regardless of outcome missingness, so they audit the
+weighting structure rather than the non-missing sample size for an
+individual outcome.

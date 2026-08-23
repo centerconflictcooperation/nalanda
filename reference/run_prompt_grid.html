@@ -76,6 +76,8 @@ use-case wrapper.</p>
 <span>  smoke_n <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  dry_run <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  output_dir <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  existing_results <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  trust_legacy_results <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  resume <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  on_error <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"stop"</span>, <span class="st">"continue"</span><span class="op">)</span>,</span>
 <span>  progress <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/interactive.html" class="external-link">interactive</a></span><span class="op">(</span><span class="op">)</span>,</span>
@@ -131,6 +133,24 @@ a chat or making model calls.</p></dd>
 model-prompt-completion unit. Files contain raw, unaggregated results.</p></dd>
 
 
+<dt id="arg-existing-results">existing_results<a class="anchor" aria-label="anchor" href="#arg-existing-results"></a></dt>
+<dd><p>Optional prior results created by <code>run_prompt_grid()</code>:
+a data frame, a returned run bundle, or the path to either an RDS run
+bundle/results table or a CSV results table. Complete tasks with matching
+<code>task_hash</code> values are reused without model calls. All prior rows, including
+rows for models not active in the current configuration, are retained in
+the returned combined results.</p></dd>
+
+
+<dt id="arg-trust-legacy-results">trust_legacy_results<a class="anchor" aria-label="anchor" href="#arg-trust-legacy-results"></a></dt>
+<dd><p>Logical. The default <code>FALSE</code> requires strong
+hashes. Set to <code>TRUE</code> only for a deliberate one-time migration of an older
+unhashed results table whose model settings and response specification you
+have independently verified. Nalanda still requires exact task IDs, input
+rows, and stored prompt text before assigning current hashes. This explicit
+escape hatch must not be used for routine resume.</p></dd>
+
+
 <dt id="arg-resume">resume<a class="anchor" aria-label="anchor" href="#arg-resume"></a></dt>
 <dd><p>Logical. If <code>TRUE</code> and <code>output_dir</code> is supplied, compatible
 completed units are read instead of rerun. Checkpoint identity includes
@@ -156,7 +176,10 @@ configuration row overrides the corresponding global default.</p></dd>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
     <p>If <code>dry_run = TRUE</code>, the plan tibble. Otherwise, a list with
-<code>results</code> (combined raw results), <code>plan</code>, <code>tasks</code>, and <code>errors</code>.</p>
+<code>results</code> (combined raw and prior results), <code>plan</code>, <code>tasks</code>, and <code>errors</code>.
+Plans returned here add <code>configured_calls</code>, <code>reused_calls</code>, and
+<code>pending_calls</code>; <code>estimated_calls</code> remains the backward-compatible name
+for all configured calls.</p>
     </div>
 
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

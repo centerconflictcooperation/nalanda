@@ -66,6 +66,7 @@ models <- tibble::tibble(
   family = c("developer-a", "developer-a", "developer-b", "developer-c"),
   temperature = c(0, 0, 0.3, 0),
   n_completions = c(2L, 1L, 3L, 5L),
+  phase = c("first", "later", "later", "not_selected"),
   active = c(TRUE, TRUE, TRUE, FALSE)
 )
 ```
@@ -149,18 +150,23 @@ Use meaningful field names in a real study. The schema should describe
 the scale and direction of each forecast clearly enough that every model
 returns comparable numbers.
 
-## Smoke, then run and resume
+## Smoke, phase the spend, then resume
 
-The live smoke call is:
+Cost-gated studies can begin with one inexpensive model. A smoke test
+remains a deliberate fresh check on one input row and is kept separate
+from the full-data task identity:
 
 ``` r
+
+first_model <- models |>
+  dplyr::filter(model_id == "fast_a")
 
 smoke <- run_prompt_grid(
   data = interventions,
   id_col = "condition_id",
   prompt_variants = prompts,
   response_type = response_type,
-  model_config = models,
+  model_config = first_model,
   smoke_n = 1,
   output_dir = "results/forecast-smoke",
   resume = TRUE,
@@ -168,18 +174,66 @@ smoke <- run_prompt_grid(
 )
 ```
 
-After inspecting `smoke$results` and `smoke$errors`, remove `smoke_n`
-and use a separate directory for the full run.
+After inspecting `smoke$results` and `smoke$errors`, run that
+inexpensive model over the full inputs. Saving the returned list as one
+RDS file keeps results, the call plan, task statuses, and errors
+together as a compact run bundle.
 
 ``` r
+
+phase_one <- run_prompt_grid(
+  data = interventions,
+  id_col = "condition_id",
+  prompt_variants = prompts,
+  response_type = response_type,
+  model_config = first_model,
+  output_dir = "results/forecast-checkpoints",
+  resume = TRUE,
+  on_error = "continue"
+)
+saveRDS(phase_one, "results/forecast-phase-one-bundle.rds")
+```
+
+When the first phase is accepted, activate the later models. Existing
+results can be a results table, a previous run bundle, or an RDS/CSV
+path. The checkpoint collector is useful when the shared directory also
+contains successful models that are no longer active in the current
+configuration.
+
+``` r
+
+prior <- collect_prompt_grid_results(
+  "results/forecast-checkpoints",
+  existing_results = "results/forecast-phase-one-bundle.rds"
+)
+
+later_models <- models |>
+  dplyr::filter(active)
+
+later_plan <- run_prompt_grid(
+  data = interventions,
+  id_col = "condition_id",
+  prompt_variants = prompts,
+  response_type = response_type,
+  model_config = later_models,
+  existing_results = prior,
+  dry_run = TRUE
+)
+
+later_plan[, c(
+  "model_id", "prompt_id", "configured_calls",
+  "reused_calls", "pending_calls"
+)]
+sum(later_plan$pending_calls)
 
 full <- run_prompt_grid(
   data = interventions,
   id_col = "condition_id",
   prompt_variants = prompts,
   response_type = response_type,
-  model_config = models,
-  output_dir = "results/forecast-full",
+  model_config = later_models,
+  existing_results = prior,
+  output_dir = "results/forecast-checkpoints",
   resume = TRUE,
   on_error = "continue"
 )
@@ -187,6 +241,7 @@ full <- run_prompt_grid(
 raw_forecasts <- full$results
 full$tasks
 full$errors
+saveRDS(full, "results/forecast-full-bundle.rds")
 ```
 
 Each successful model-prompt-completion unit is written to its own RDS
@@ -195,6 +250,20 @@ and a hash of the inputs and settings. With `resume = TRUE`, a
 compatible file is loaded instead of rerun. Failed units are listed in
 `errors` and are deliberately not checkpointed, so a later run retries
 them.
+
+Every raw row also carries `task_hash` and `input_row`. The hash covers
+the input table, prompt text, response specification, and effective
+model settings. Consequently, the same readable IDs with revised prompt
+text or a revised response schema remain pending rather than being
+silently reused. A complete prior task must contain every expected
+`input_row` before it suppresses calls.
+
+Older unhashed results are rejected by default. For a reviewed one-time
+migration only, `trust_legacy_results = TRUE` verifies exact task IDs,
+inputs, and stored prompt text before assigning current hashes. The
+caller must independently verify the old model settings and response
+specification; save the resulting hashed bundle and return to the
+default afterward.
 
 The combined raw table retains the input metadata and adds `model_id`,
 `model`, `family`, `prompt_id`, `prompt_template`, `completion`,
@@ -243,14 +312,23 @@ mock_raw <- tibble::tibble(
   effect_trust = c(2, 4, 5, 7, 9)
 )
 
-aggregated <- aggregate_model_forecasts(
+median_aggregated <- aggregate_model_forecasts(
   mock_raw,
   outcomes = c("effect_support", "effect_trust"),
   unit_by = "condition_id",
-  family_col = "family"
+  family_col = "family",
+  method = "median"
 )
 
-aggregated$prompt
+mean_aggregated <- aggregate_model_forecasts(
+  mock_raw,
+  outcomes = c("effect_support", "effect_trust"),
+  unit_by = "condition_id",
+  family_col = "family",
+  method = "mean"
+)
+
+median_aggregated$prompt
 #> # A tibble: 4 × 7
 #>   condition_id family      model_id    prompt_id  effect_support effect_trust
 #>   <chr>        <chr>       <chr>       <chr>               <dbl>        <dbl>
@@ -259,20 +337,25 @@ aggregated$prompt
 #> 3 cooperation  developer-a reasoning_a direct                  6            7
 #> 4 cooperation  developer-b fast_b      direct                 10            9
 #> # ℹ 1 more variable: n_completions <int>
-aggregated$model
+median_aggregated$model
 #> # A tibble: 3 × 6
 #>   condition_id family      model_id    effect_support effect_trust n_prompts
 #>   <chr>        <chr>       <chr>                <dbl>        <dbl>     <int>
 #> 1 cooperation  developer-a fast_a                   2            4         2
 #> 2 cooperation  developer-a reasoning_a              6            7         1
 #> 3 cooperation  developer-b fast_b                  10            9         1
-aggregated$family
+median_aggregated$family
 #> # A tibble: 2 × 5
 #>   condition_id family      effect_support effect_trust n_models
 #>   <chr>        <chr>                <dbl>        <dbl>    <int>
 #> 1 cooperation  developer-a              4          5.5        2
 #> 2 cooperation  developer-b             10          9          1
-aggregated$consensus
+median_aggregated$consensus
+#> # A tibble: 1 × 4
+#>   condition_id effect_support effect_trust n_families
+#>   <chr>                 <dbl>        <dbl>      <int>
+#> 1 cooperation               7         7.25          2
+mean_aggregated$consensus
 #> # A tibble: 1 × 4
 #>   condition_id effect_support effect_trust n_families
 #>   <chr>                 <dbl>        <dbl>      <int>
@@ -291,12 +374,20 @@ weight directly. The count columns (`n_completions`, `n_prompts`,
 `n_models`, and `n_families`) make each stage auditable. A raw mean
 would instead give extra weight to whichever model produced more rows.
 
+`method = "mean"` is the backward-compatible default.
+`method = "median"` uses medians at all four stages, which can make the
+primary estimate less sensitive to an extreme completion while retaining
+the same equal-weight hierarchy. Missing values are omitted separately
+for each outcome at each stage; an all-missing group remains missing.
+Counts describe all configured contributors, including contributors
+missing a particular outcome.
+
 ## What remains downstream
 
-`nalanda` handles configuration validation, expansion, budgeting,
-provenance, checkpointing, resume, and arithmetic aggregation. The
-following choices stay in downstream analysis because they depend on the
-study:
+`nalanda` handles configuration validation, expansion, pending-call
+budgeting, strong-identity reuse, checkpoint collection, provenance,
+resume, and mean/median hierarchical aggregation. The following choices
+stay in downstream analysis because they depend on the study:
 
 - which models and prompt variants belong in the estimand,
 - whether a `family` groups developers, model lineages, or another

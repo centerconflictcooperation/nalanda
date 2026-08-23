@@ -232,6 +232,9 @@ Projects](https://mindandlife-europe.org/2024-eva-recipients-projects/)
 - [`aggregate_simulations()`](https://centerconflictcooperation.github.io/nalanda/reference/aggregate_simulations.md)
   : Aggregate simulation runs
 
+- [`collect_prompt_grid_results()`](https://centerconflictcooperation.github.io/nalanda/reference/collect_prompt_grid_results.md)
+  : Collect prompt-grid checkpoints into one reusable results table
+
 - [`combine_book_files()`](https://centerconflictcooperation.github.io/nalanda/reference/combine_book_files.md)
   : Combine chapter text files into one numbered file per book
 

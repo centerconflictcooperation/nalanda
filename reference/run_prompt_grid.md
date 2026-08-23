@@ -21,6 +21,8 @@ run_prompt_grid(
   smoke_n = NULL,
   dry_run = FALSE,
   output_dir = NULL,
+  existing_results = NULL,
+  trust_legacy_results = FALSE,
   resume = TRUE,
   on_error = c("stop", "continue"),
   progress = interactive(),
@@ -75,6 +77,24 @@ run_prompt_grid(
   Optional directory for one RDS checkpoint per completed
   model-prompt-completion unit. Files contain raw, unaggregated results.
 
+- existing_results:
+
+  Optional prior results created by `run_prompt_grid()`: a data frame, a
+  returned run bundle, or the path to either an RDS run bundle/results
+  table or a CSV results table. Complete tasks with matching `task_hash`
+  values are reused without model calls. All prior rows, including rows
+  for models not active in the current configuration, are retained in
+  the returned combined results.
+
+- trust_legacy_results:
+
+  Logical. The default `FALSE` requires strong hashes. Set to `TRUE`
+  only for a deliberate one-time migration of an older unhashed results
+  table whose model settings and response specification you have
+  independently verified. Nalanda still requires exact task IDs, input
+  rows, and stored prompt text before assigning current hashes. This
+  explicit escape hatch must not be used for routine resume.
+
 - resume:
 
   Logical. If `TRUE` and `output_dir` is supplied, compatible completed
@@ -101,4 +121,7 @@ run_prompt_grid(
 ## Value
 
 If `dry_run = TRUE`, the plan tibble. Otherwise, a list with `results`
-(combined raw results), `plan`, `tasks`, and `errors`.
+(combined raw and prior results), `plan`, `tasks`, and `errors`. Plans
+returned here add `configured_calls`, `reused_calls`, and
+`pending_calls`; `estimated_calls` remains the backward-compatible name
+for all configured calls.
