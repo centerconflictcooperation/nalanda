@@ -1,17 +1,19 @@
-# nalanda 0.0.2.1
-
+# nalanda 0.0.2.2
 - Added `tidy_forecast_aggregation()`, `summarize_forecast_disagreement()`,
   and `compare_forecast_aggregations()` for reusable diagnostics of structured
   forecast aggregation results.
+- Added `aggregate_model_forecasts()` for explicit equal-weight aggregation of
+  completions within prompts, prompts within models, models within families,
+  and families into a consensus.
+
+# nalanda 0.0.2.1
+
 - Added `run_structured_responses()` as a neutral row-wise structured-prompt
   primitive; `run_text_analysis()` remains the text-annotation use-case wrapper.
 - Added `plan_prompt_grid()` and `run_prompt_grid()` for
   validated multi-model, multi-prompt structured analyses with model-specific
   repetitions, smoke runs, call previews, provenance, per-completion
   checkpointing, resumability, and continue-on-error execution.
-- Added `aggregate_model_forecasts()` for explicit equal-weight aggregation of
-  completions within prompts, prompts within models, models within families,
-  and families into a consensus.
 - Restored compatibility with `ellmer` 0.4.0 by passing structured prompt
   batches as lists in `run_text_analysis()` and
   `run_ai_on_chapters_one_turn()`.
