@@ -144,14 +144,14 @@ split_book_section_by_headings <- function(input_file,
       word_count = purrr::map_int(chapter_texts, count_words_in_text)
     ) |>
     dplyr::select(
-      .data$chapter_index,
-      .data$chapter_title,
-      .data$output_file,
-      .data$output_path,
-      .data$heading_line,
-      .data$start_line,
-      .data$end_line,
-      .data$word_count
+      "chapter_index",
+      "chapter_title",
+      "output_file",
+      "output_path",
+      "heading_line",
+      "start_line",
+      "end_line",
+      "word_count"
     )
 }
 

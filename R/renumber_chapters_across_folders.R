@@ -116,12 +116,12 @@ renumber_chapters_across_folders <- function(folders,
 
   plan |>
     dplyr::select(
-      .data$folder_index,
-      .data$folder,
-      .data$chapter_number,
-      .data$old_name,
-      .data$new_name,
-      .data$old_path,
-      .data$new_path
+      "folder_index",
+      "folder",
+      "chapter_number",
+      "old_name",
+      "new_name",
+      "old_path",
+      "new_path"
     )
 }

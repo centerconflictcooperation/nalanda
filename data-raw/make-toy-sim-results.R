@@ -54,10 +54,10 @@ toy_sim_results <- tibble::as_tibble(toy_sim_results) |>
     delta_gap = .data$delta_outgroup - .data$delta_ingroup
   ) |>
   dplyr::select(
-    .data$book, .data$chapter, .data$sim, .data$identity, .data$party,
-    .data$pre_ingroup, .data$post_ingroup, .data$pre_outgroup, .data$post_outgroup,
-    .data$pre_gap, .data$post_gap, .data$delta_ingroup, .data$delta_outgroup, .data$delta_gap,
-    .data$chapter_excerpt
+    "book", "chapter", "sim", "identity", "party",
+    "pre_ingroup", "post_ingroup", "pre_outgroup", "post_outgroup",
+    "pre_gap", "post_gap", "delta_ingroup", "delta_outgroup", "delta_gap",
+    "chapter_excerpt"
   )
 
 attr(toy_sim_results, "model") <- "gemini-2.5-flash-lite"

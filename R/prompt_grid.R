@@ -75,6 +75,18 @@ plan_prompt_grid <- function(data, prompt_variants, model_config, smoke_n = NULL
 #'   a chat or making model calls.
 #' @param output_dir Optional directory for one RDS checkpoint per completed
 #'   model-prompt-completion unit. Files contain raw, unaggregated results.
+#' @param existing_results Optional prior results created by `run_prompt_grid()`:
+#'   a data frame, a returned run bundle, or the path to either an RDS run
+#'   bundle/results table or a CSV results table. Complete tasks with matching
+#'   `task_hash` values are reused without model calls. All prior rows, including
+#'   rows for models not active in the current configuration, are retained in
+#'   the returned combined results.
+#' @param trust_legacy_results Logical. The default `FALSE` requires strong
+#'   hashes. Set to `TRUE` only for a deliberate one-time migration of an older
+#'   unhashed results table whose model settings and response specification you
+#'   have independently verified. Nalanda still requires exact task IDs, input
+#'   rows, and stored prompt text before assigning current hashes. This explicit
+#'   escape hatch must not be used for routine resume.
 #' @param resume Logical. If `TRUE` and `output_dir` is supplied, compatible
 #'   completed units are read instead of rerun. Checkpoint identity includes
 #'   inputs, prompts, response type, and model settings.
@@ -87,7 +99,10 @@ plan_prompt_grid <- function(data, prompt_variants, model_config, smoke_n = NULL
 #'   configuration row overrides the corresponding global default.
 #'
 #' @return If `dry_run = TRUE`, the plan tibble. Otherwise, a list with
-#'   `results` (combined raw results), `plan`, `tasks`, and `errors`.
+#'   `results` (combined raw and prior results), `plan`, `tasks`, and `errors`.
+#'   Plans returned here add `configured_calls`, `reused_calls`, and
+#'   `pending_calls`; `estimated_calls` remains the backward-compatible name
+#'   for all configured calls.
 #' @export
 run_prompt_grid <- function(
   data,
@@ -99,6 +114,8 @@ run_prompt_grid <- function(
   smoke_n = NULL,
   dry_run = FALSE,
   output_dir = NULL,
+  existing_results = NULL,
+  trust_legacy_results = FALSE,
   resume = TRUE,
   on_error = c("stop", "continue"),
   progress = interactive(),
@@ -130,6 +147,10 @@ run_prompt_grid <- function(
   if (!is.logical(resume) || length(resume) != 1 || is.na(resume)) {
     stop("`resume` must be TRUE or FALSE.")
   }
+  if (!is.logical(trust_legacy_results) || length(trust_legacy_results) != 1 ||
+      is.na(trust_legacy_results)) {
+    stop("`trust_legacy_results` must be TRUE or FALSE.")
+  }
   if (!is.logical(progress) || length(progress) != 1 || is.na(progress)) {
     stop("`progress` must be TRUE or FALSE.")
   }
@@ -138,7 +159,7 @@ run_prompt_grid <- function(
   reserved <- c(
     "model_id", "model", "family", "prompt_id", "prompt_template",
     "completion", "integration", "temperature", "output_mode", "seed",
-    "prompt"
+    "prompt", "task_hash", "input_row"
   )
   collisions <- intersect(reserved, names(data))
   if (length(collisions) > 0) {
@@ -150,20 +171,17 @@ run_prompt_grid <- function(
 
   model_config <- normalize_prompt_model_config(model_config)
   prompt_config <- normalize_prompt_variant_config(prompt_variants)
+  prior_results <- normalize_prompt_grid_results(
+    existing_results,
+    allow_legacy = trust_legacy_results
+  )
   plan <- plan_prompt_grid(
     data = data,
     prompt_variants = prompt_config,
     model_config = model_config,
     smoke_n = smoke_n
   )
-  if (dry_run) {
-    return(plan)
-  }
-  if (nrow(data) == 0) {
-    stop("`data` must contain at least one row when `dry_run = FALSE`.")
-  }
-
-  if (!is.null(output_dir)) {
+  if (!is.null(output_dir) && !dry_run) {
     if (!is.character(output_dir) || length(output_dir) != 1 || !nzchar(output_dir)) {
       stop("`output_dir` must be a single non-empty path, or `NULL`.")
     }
@@ -175,6 +193,71 @@ run_prompt_grid <- function(
 
   data_run <- tibble::as_tibble(data)[seq_len(workflow_n_rows(data, smoke_n)), , drop = FALSE]
   tasks <- expand_prompt_grid_tasks(model_config, prompt_config)
+  task_specs <- lapply(
+    seq_len(nrow(tasks)),
+    function(i) {
+      workflow_prompt_grid_task_spec(
+        task = tasks[i, , drop = FALSE],
+        data_run = data_run,
+        content_col = content_col,
+        id_col = id_col,
+        response_type = response_type,
+        integration = integration,
+        virtual_key = virtual_key,
+        base_url = base_url,
+        excerpt_chars = excerpt_chars,
+        max_active = max_active,
+        rpm = rpm
+      )
+    }
+  )
+  tasks$task_hash <- vapply(
+    task_specs,
+    function(x) workflow_object_md5(x$spec),
+    character(1)
+  )
+  existing_matches <- lapply(
+    seq_len(nrow(tasks)),
+    function(i) {
+      workflow_existing_task_rows(
+        task_hash = tasks$task_hash[[i]],
+        existing = prior_results,
+        n_rows = nrow(data_run),
+        task = tasks[i, , drop = FALSE],
+        data_run = data_run,
+        id_col = id_col,
+        content_col = content_col,
+        excerpt_chars = excerpt_chars,
+        allow_legacy = trust_legacy_results
+      )
+    }
+  )
+  reused <- lengths(existing_matches) > 0L
+  for (i in which(reused)) {
+    rows <- existing_matches[[i]]
+    if (anyNA(prior_results$task_hash[rows])) {
+      prior_results$task_hash[rows] <- tasks$task_hash[[i]]
+      prior_results$input_row[rows] <- seq_len(nrow(data_run))
+    }
+  }
+  plan <- workflow_add_call_status(plan, tasks, reused)
+
+  if (dry_run) {
+    return(plan)
+  }
+  if (nrow(data) == 0) {
+    stop("`data` must contain at least one row when `dry_run = FALSE`.")
+  }
+
+  incomplete_hashes <- unique(tasks$task_hash[!reused])
+  if (nrow(prior_results) > 0 && length(incomplete_hashes) > 0) {
+    prior_results <- prior_results[
+      is.na(prior_results$task_hash) |
+        !prior_results$task_hash %in% incomplete_hashes,
+      ,
+      drop = FALSE
+    ]
+  }
   result_rows <- vector("list", nrow(tasks))
   task_rows <- vector("list", nrow(tasks))
   error_rows <- list()
@@ -189,41 +272,14 @@ run_prompt_grid <- function(
       message("[", task_i, "/", nrow(tasks), "] ", task_label)
     }
 
-    task_route <- workflow_route_settings(
-      configured_integration = task$integration,
-      configured_virtual_key = task$virtual_key,
-      default_integration = integration,
-      default_virtual_key = virtual_key
-    )
-    task_integration <- task_route$integration
-    task_virtual_key <- task_route$virtual_key
-    task_base_url <- workflow_setting(task$base_url, base_url)
-    task_max_active <- workflow_setting(task$max_active, max_active)
-    task_rpm <- workflow_setting(task$rpm, rpm)
-    task_seed <- task$seed + task$completion - 1L
-
-    spec <- list(
-      version = 1L,
-      data = data_run,
-      content_col = content_col,
-      id_col = id_col,
-      prompt_id = task$prompt_id,
-      prompt = task$prompt,
-      response_type = response_type,
-      model_id = task$model_id,
-      model = task$model,
-      family = task$family,
-      integration = task_integration,
-      virtual_key = task_virtual_key,
-      base_url = task_base_url,
-      temperature = task$temperature,
-      output_mode = task$output_mode,
-      seed = task_seed,
-      excerpt_chars = excerpt_chars,
-      max_active = task_max_active,
-      rpm = task_rpm
-    )
-    spec_hash <- workflow_object_md5(spec)
+    task_context <- task_specs[[task_i]]
+    task_integration <- task_context$integration
+    task_virtual_key <- task_context$virtual_key
+    task_base_url <- task_context$base_url
+    task_max_active <- task_context$max_active
+    task_rpm <- task_context$rpm
+    task_seed <- task_context$seed
+    spec_hash <- task$task_hash
     checkpoint_path <- if (is.null(output_dir)) {
       NA_character_
     } else {
@@ -238,6 +294,13 @@ run_prompt_grid <- function(
       )
     }
 
+    if (reused[[task_i]]) {
+      task_rows[[task_i]] <- workflow_task_status(
+        task, "reused", NA_character_, spec_hash
+      )
+      next
+    }
+
     checkpoint <- NULL
     if (resume && !is.na(checkpoint_path) && file.exists(checkpoint_path)) {
       checkpoint <- tryCatch(readRDS(checkpoint_path), error = function(e) NULL)
@@ -248,8 +311,19 @@ run_prompt_grid <- function(
     }
 
     if (!is.null(checkpoint)) {
-      result_rows[[task_i]] <- checkpoint$result
-      task_rows[[task_i]] <- workflow_task_status(task, "resumed", checkpoint_path)
+      checkpoint_result <- checkpoint$result
+      if (nrow(checkpoint_result) != nrow(data_run)) {
+        checkpoint <- NULL
+      } else {
+        checkpoint_result$task_hash <- spec_hash
+        checkpoint_result$input_row <- seq_len(nrow(checkpoint_result))
+        result_rows[[task_i]] <- checkpoint_result
+        task_rows[[task_i]] <- workflow_task_status(
+          task, "resumed", checkpoint_path, spec_hash
+        )
+      }
+    }
+    if (!is.null(checkpoint)) {
       next
     }
 
@@ -286,8 +360,18 @@ run_prompt_grid <- function(
         completion = task$completion,
         message = conditionMessage(result)
       )
-      task_rows[[task_i]] <- workflow_task_status(task, "error", checkpoint_path)
+      task_rows[[task_i]] <- workflow_task_status(
+        task, "error", checkpoint_path, spec_hash
+      )
       next
+    }
+
+    if (nrow(result) != nrow(data_run)) {
+      stop(
+        "Workflow unit `", task_label, "` returned ", nrow(result),
+        " row(s); expected ", nrow(data_run), ".",
+        call. = FALSE
+      )
     }
 
     result$completion <- task$completion
@@ -300,6 +384,8 @@ run_prompt_grid <- function(
     result$temperature <- task$temperature
     result$output_mode <- task$output_mode
     result$seed <- task_seed
+    result$task_hash <- spec_hash
+    result$input_row <- seq_len(nrow(result))
 
     if (!is.na(checkpoint_path)) {
       write_prompt_grid_checkpoint(
@@ -313,10 +399,12 @@ run_prompt_grid <- function(
     }
 
     result_rows[[task_i]] <- result
-    task_rows[[task_i]] <- workflow_task_status(task, "completed", checkpoint_path)
+    task_rows[[task_i]] <- workflow_task_status(
+      task, "completed", checkpoint_path, spec_hash
+    )
   }
 
-  results <- dplyr::bind_rows(result_rows)
+  results <- dplyr::bind_rows(c(list(prior_results), result_rows))
   if (nrow(results) > 0) {
     class(results) <- unique(c("nalanda", class(results)))
   }
@@ -337,18 +425,79 @@ run_prompt_grid <- function(
   )
 }
 
+#' Collect prompt-grid checkpoints into one reusable results table
+#'
+#' Read every valid prompt-grid checkpoint in one or more directories and
+#' combine it with optional prior results. This is useful after cost-gated
+#' phases because checkpoints for models that are inactive in the current
+#' configuration remain available for later analysis and reuse.
+#'
+#' Checkpoint rows are identified by the strong `task_hash` stored with each
+#' checkpoint and by `input_row`. Exact duplicate rows are removed. Conflicting
+#' rows with the same task and input identities cause an error rather than
+#' being silently resolved.
+#'
+#' @param output_dir Character vector of checkpoint directories created by
+#'   [run_prompt_grid()].
+#' @param existing_results Optional results data frame, run bundle, RDS path,
+#'   or CSV path accepted by the `existing_results` argument of
+#'   [run_prompt_grid()].
+#'
+#' @return A tibble of raw prompt-grid results. It can be passed directly to
+#'   `run_prompt_grid(existing_results = ...)`.
+#' @export
+collect_prompt_grid_results <- function(output_dir, existing_results = NULL) {
+  if (!is.character(output_dir) || length(output_dir) < 1L ||
+      anyNA(output_dir) || any(!nzchar(output_dir))) {
+    stop("`output_dir` must contain one or more non-empty directory paths.")
+  }
+  missing_dirs <- output_dir[!dir.exists(output_dir)]
+  if (length(missing_dirs) > 0L) {
+    stop("Checkpoint director", if (length(missing_dirs) == 1L) "y" else "ies",
+         " not found: ", paste(missing_dirs, collapse = ", "))
+  }
+
+  prior <- normalize_prompt_grid_results(existing_results)
+  paths <- unlist(lapply(
+    output_dir,
+    list.files,
+    pattern = "--completion-[0-9]+--[0-9a-f]{12}\\.rds$",
+    full.names = TRUE
+  ), use.names = FALSE)
+  checkpoint_rows <- lapply(paths, workflow_read_prompt_grid_checkpoint)
+  checkpoint_rows <- Filter(Negate(is.null), checkpoint_rows)
+  out <- dplyr::bind_rows(c(list(prior), checkpoint_rows))
+  if (nrow(out) == 0L) {
+    return(tibble::tibble())
+  }
+
+  out <- dplyr::distinct(out)
+  keys <- c("task_hash", "input_row")
+  if (anyDuplicated(out[keys])) {
+    stop(
+      "Conflicting checkpoint rows share the same `task_hash` and `input_row`."
+    )
+  }
+  class(out) <- unique(c("nalanda", class(out)))
+  out
+}
+
 #' Aggregate structured forecasts through an explicit weighting hierarchy
 #'
-#' Average repeated completions within prompt, prompts within model, models
+#' Reduce repeated completions within prompt, prompts within model, models
 #' within family, and then families into a consensus. Each stage operates on
 #' the already-aggregated rows from the previous stage, so unequal completion
 #' counts do not give a model more weight. Supplying `family_col` explicitly
 #' requests equal family weight at the final stage; with `family_col = NULL`,
 #' the final consensus gives models equal weight.
 #'
-#' This helper only computes arithmetic means. Choosing this hierarchy, deciding
-#' whether model outputs represent simulations or expert forecasts, and any
-#' uncertainty analysis remain scientific decisions for the caller.
+#' `method = "mean"` preserves the original arithmetic-mean behavior.
+#' `method = "median"` applies the median at every stage of the same hierarchy.
+#' Missing values are removed independently for each outcome at each stage. A
+#' stage returns `NA_real_` when all values for that outcome and group are
+#' missing. Count columns count distinct configured contributors regardless of
+#' outcome missingness, so they audit the weighting structure rather than the
+#' non-missing sample size for an individual outcome.
 #'
 #' @param data Raw workflow results in long row form.
 #' @param outcomes Character vector naming numeric forecast columns.
@@ -357,7 +506,9 @@ run_prompt_grid <- function(
 #' @param completion_col,prompt_col,model_col Column names identifying the
 #'   repeated completion, prompt variant, and model.
 #' @param family_col Optional column identifying model families. Set to `NULL`
-#'   to average models directly into the consensus.
+#'   to combine models directly into the consensus.
+#' @param method Aggregation statistic applied at every stage: `"mean"`
+#'   (the backward-compatible default) or `"median"`.
 #'
 #' @return A named list of tibbles: `prompt`, `model`, optional `family`, and
 #'   `consensus`. Count columns make the weight at each stage auditable.
@@ -369,7 +520,8 @@ aggregate_model_forecasts <- function(
   completion_col = "completion",
   prompt_col = "prompt_id",
   model_col = "model_id",
-  family_col = "family"
+  family_col = "family",
+  method = c("mean", "median")
 ) {
   if (!inherits(data, "data.frame")) {
     stop("`data` must be a data frame.")
@@ -393,6 +545,7 @@ aggregate_model_forecasts <- function(
        is.na(family_col) || !nzchar(family_col))) {
     stop("`family_col` must be one column name or `NULL`.")
   }
+  method <- match.arg(method)
   id_cols <- c(unit_by, completion_col, prompt_col, model_col, family_col)
   if (anyDuplicated(outcomes)) stop("`outcomes` column names must be unique.")
   overlap <- intersect(outcomes, id_cols)
@@ -419,27 +572,27 @@ aggregate_model_forecasts <- function(
 
   family_group <- if (is.null(family_col)) character() else family_col
   prompt_groups <- unique(c(unit_by, family_group, model_col, prompt_col))
-  prompt_level <- workflow_mean_stage(
-    data, prompt_groups, outcomes, completion_col, "n_completions"
+  prompt_level <- workflow_reduce_stage(
+    data, prompt_groups, outcomes, completion_col, "n_completions", method
   )
 
   model_groups <- unique(c(unit_by, family_group, model_col))
-  model_level <- workflow_mean_stage(
-    prompt_level, model_groups, outcomes, prompt_col, "n_prompts"
+  model_level <- workflow_reduce_stage(
+    prompt_level, model_groups, outcomes, prompt_col, "n_prompts", method
   )
 
   if (is.null(family_col)) {
     family_level <- NULL
-    consensus <- workflow_mean_stage(
-      model_level, unit_by, outcomes, model_col, "n_models"
+    consensus <- workflow_reduce_stage(
+      model_level, unit_by, outcomes, model_col, "n_models", method
     )
   } else {
     family_groups <- unique(c(unit_by, family_col))
-    family_level <- workflow_mean_stage(
-      model_level, family_groups, outcomes, model_col, "n_models"
+    family_level <- workflow_reduce_stage(
+      model_level, family_groups, outcomes, model_col, "n_models", method
     )
-    consensus <- workflow_mean_stage(
-      family_level, unit_by, outcomes, family_col, "n_families"
+    consensus <- workflow_reduce_stage(
+      family_level, unit_by, outcomes, family_col, "n_families", method
     )
   }
 
@@ -631,6 +784,224 @@ workflow_route_settings <- function(
   )
 }
 
+workflow_prompt_grid_task_spec <- function(
+  task,
+  data_run,
+  content_col,
+  id_col,
+  response_type,
+  integration,
+  virtual_key,
+  base_url,
+  excerpt_chars,
+  max_active,
+  rpm
+) {
+  task_route <- workflow_route_settings(
+    configured_integration = task$integration,
+    configured_virtual_key = task$virtual_key,
+    default_integration = integration,
+    default_virtual_key = virtual_key
+  )
+  task_base_url <- workflow_setting(task$base_url, base_url)
+  task_max_active <- workflow_setting(task$max_active, max_active)
+  task_rpm <- workflow_setting(task$rpm, rpm)
+  task_seed <- task$seed + task$completion - 1L
+
+  list(
+    spec = list(
+      version = 2L,
+      data = data_run,
+      content_col = content_col,
+      id_col = id_col,
+      prompt_id = task$prompt_id,
+      prompt = task$prompt,
+      response_type = response_type,
+      model_id = task$model_id,
+      model = task$model,
+      family = task$family,
+      integration = task_route$integration,
+      virtual_key = task_route$virtual_key,
+      base_url = task_base_url,
+      temperature = task$temperature,
+      output_mode = task$output_mode,
+      seed = task_seed,
+      excerpt_chars = excerpt_chars,
+      max_active = task_max_active,
+      rpm = task_rpm
+    ),
+    integration = task_route$integration,
+    virtual_key = task_route$virtual_key,
+    base_url = task_base_url,
+    seed = task_seed,
+    max_active = task_max_active,
+    rpm = task_rpm
+  )
+}
+
+normalize_prompt_grid_results <- function(existing_results, allow_legacy = FALSE) {
+  if (is.null(existing_results)) {
+    return(tibble::tibble(task_hash = character(), input_row = integer()))
+  }
+  if (is.character(existing_results)) {
+    if (length(existing_results) != 1L || is.na(existing_results) ||
+        !nzchar(existing_results) || !file.exists(existing_results)) {
+      stop("`existing_results` must name one existing RDS or CSV file.")
+    }
+    extension <- tolower(tools::file_ext(existing_results))
+    existing_results <- switch(
+      extension,
+      rds = readRDS(existing_results),
+      csv = readr::read_csv(existing_results, show_col_types = FALSE),
+      stop("`existing_results` files must use the .rds or .csv extension.")
+    )
+  }
+  if (is.list(existing_results) && !inherits(existing_results, "data.frame") &&
+      "results" %in% names(existing_results)) {
+    existing_results <- existing_results$results
+  }
+  if (!inherits(existing_results, "data.frame")) {
+    stop("`existing_results` must be a data frame, run bundle, RDS file, or CSV file.")
+  }
+
+  out <- tibble::as_tibble(existing_results)
+  if (nrow(out) == 0L) {
+    if (!"task_hash" %in% names(out)) out$task_hash <- character()
+    if (!"input_row" %in% names(out)) out$input_row <- integer()
+    return(out)
+  }
+  missing_keys <- setdiff(c("task_hash", "input_row"), names(out))
+  if (length(missing_keys) > 0L) {
+    if (length(missing_keys) == 1L) {
+      stop("`existing_results` has incomplete task provenance columns.")
+    }
+    if (!allow_legacy) {
+      stop(
+        "`existing_results` lacks strong task provenance column(s): ",
+        paste(missing_keys, collapse = ", "),
+        ". Use current results or explicitly set `trust_legacy_results = TRUE` ",
+        "for a reviewed one-time migration."
+      )
+    }
+    out$task_hash <- NA_character_
+    out$input_row <- NA_integer_
+  }
+  legacy <- is.na(out$task_hash) & is.na(out$input_row)
+  if (any(xor(is.na(out$task_hash), is.na(out$input_row)))) {
+    stop("`existing_results` has incomplete task provenance identities.")
+  }
+  if (any(legacy) && !allow_legacy) {
+    stop("`existing_results` contains unhashed legacy rows.")
+  }
+  hashed <- !legacy
+  if (!is.character(out$task_hash) ||
+      any(!is.na(out$task_hash) & !nzchar(out$task_hash))) {
+    stop("`existing_results$task_hash` must contain non-empty strings or legacy `NA`s.")
+  }
+  if (!is.numeric(out$input_row) ||
+      any(hashed & (out$input_row < 1L | out$input_row %% 1 != 0))) {
+    stop("`existing_results$input_row` must contain positive integers.")
+  }
+  out$input_row <- as.integer(out$input_row)
+  if (anyDuplicated(out[hashed, c("task_hash", "input_row"), drop = FALSE])) {
+    stop(
+      "`existing_results` has duplicate `task_hash` and `input_row` identities."
+    )
+  }
+  out
+}
+
+workflow_existing_task_rows <- function(
+  task_hash,
+  existing,
+  n_rows,
+  task,
+  data_run,
+  id_col,
+  content_col,
+  excerpt_chars,
+  allow_legacy
+) {
+  if (nrow(existing) == 0L || n_rows == 0L) return(integer())
+  rows <- which(existing$task_hash == task_hash)
+  if (length(rows) == n_rows &&
+      identical(sort(existing$input_row[rows]), seq_len(n_rows))) {
+    return(rows[order(existing$input_row[rows])])
+  }
+  if (!allow_legacy) return(integer())
+
+  required <- unique(c(
+    "model_id", "prompt_id", "completion", names(data_run)
+  ))
+  if (!all(required %in% names(existing)) ||
+      !any(c("prompt_template", "prompt") %in% names(existing))) {
+    return(integer())
+  }
+  legacy <- is.na(existing$task_hash) &
+    existing$model_id == task$model_id &
+    existing$prompt_id == task$prompt_id &
+    existing$completion == task$completion
+  rows <- which(legacy %in% TRUE)
+  if (length(rows) != n_rows) return(integer())
+
+  if (!is.null(id_col) && id_col %in% names(existing) &&
+      !anyDuplicated(data_run[[id_col]]) && !anyDuplicated(existing[[id_col]][rows])) {
+    row_order <- match(data_run[[id_col]], existing[[id_col]][rows])
+    if (anyNA(row_order)) return(integer())
+    rows <- rows[row_order]
+  }
+  for (nm in names(data_run)) {
+    if (!isTRUE(all.equal(
+      existing[[nm]][rows], data_run[[nm]],
+      check.attributes = FALSE
+    ))) {
+      return(integer())
+    }
+  }
+
+  if ("prompt_template" %in% names(existing)) {
+    if (any(existing$prompt_template[rows] != task$prompt)) return(integer())
+  } else {
+    expected_prompt <- vapply(
+      seq_len(nrow(data_run)),
+      function(i) {
+        values <- as.list(data_run[i, , drop = FALSE])
+        values[[content_col]] <- compact_chapter_text(
+          as.character(values[[content_col]]), excerpt_chars = excerpt_chars
+        )
+        interpolate_prompt_template(task$prompt, values)
+      },
+      character(1)
+    )
+    if (any(existing$prompt[rows] != expected_prompt)) return(integer())
+  }
+  rows
+}
+
+workflow_add_call_status <- function(plan, tasks, reused) {
+  task_status <- tibble::tibble(
+    model_id = tasks$model_id,
+    prompt_id = tasks$prompt_id,
+    reused_completion = as.integer(reused)
+  )
+  task_status <- dplyr::summarise(
+    dplyr::group_by(task_status, .data$model_id, .data$prompt_id),
+    reused_completions = sum(.data$reused_completion),
+    .groups = "drop"
+  )
+  out <- dplyr::left_join(plan, task_status, by = c("model_id", "prompt_id"))
+  out$configured_calls <- out$estimated_calls
+  out$reused_calls <- out$n_rows * out$reused_completions
+  out$pending_calls <- out$configured_calls - out$reused_calls
+  out$reused_completions <- NULL
+  attr(out, "total_estimated_calls") <- sum(out$estimated_calls)
+  attr(out, "total_configured_calls") <- sum(out$configured_calls)
+  attr(out, "total_reused_calls") <- sum(out$reused_calls)
+  attr(out, "total_pending_calls") <- sum(out$pending_calls)
+  attr(out, "smoke_n") <- attr(plan, "smoke_n")
+  out
+}
+
 workflow_object_md5 <- function(x) {
   path <- tempfile("nalanda-workflow-", fileext = ".rds")
   on.exit(unlink(path), add = TRUE)
@@ -654,23 +1025,52 @@ write_prompt_grid_checkpoint <- function(path, checkpoint) {
   invisible(path)
 }
 
-workflow_task_status <- function(task, status, path) {
-  tibble::tibble(
-    model_id = task$model_id,
-    prompt_id = task$prompt_id,
-    completion = task$completion,
-    status = status,
-    path = path
+workflow_task_status <- function(task, status, path, task_hash) {
+  safe_columns <- setdiff(
+    names(task),
+    c("prompt", "virtual_key", "base_url", "active", "task_hash")
   )
+  out <- tibble::as_tibble(task[safe_columns])
+  out$task_hash <- task_hash
+  out$status <- status
+  out$path <- path
+  out
 }
 
-workflow_mean_stage <- function(data, groups, outcomes, count_col, count_name) {
+workflow_read_prompt_grid_checkpoint <- function(path) {
+  checkpoint <- tryCatch(readRDS(path), error = function(e) NULL)
+  if (!is.list(checkpoint) ||
+      !is.character(checkpoint$spec_hash) || length(checkpoint$spec_hash) != 1L ||
+      is.na(checkpoint$spec_hash) || !nzchar(checkpoint$spec_hash) ||
+      !inherits(checkpoint$result, "data.frame")) {
+    return(NULL)
+  }
+  out <- tibble::as_tibble(checkpoint$result)
+  if (nrow(out) == 0L) return(NULL)
+  if ("task_hash" %in% names(out) &&
+      any(out$task_hash != checkpoint$spec_hash)) {
+    stop("Checkpoint result hash does not match its metadata: ", path)
+  }
+  out$task_hash <- checkpoint$spec_hash
+  out$input_row <- seq_len(nrow(out))
+  out
+}
+
+workflow_reduce_stage <- function(
+  data,
+  groups,
+  outcomes,
+  count_col,
+  count_name,
+  method
+) {
+  reducer <- switch(method, mean = mean, median = stats::median)
   grouped <- dplyr::group_by(data, dplyr::across(dplyr::all_of(groups)))
   dplyr::summarise(
     grouped,
     dplyr::across(
       dplyr::all_of(outcomes),
-      function(x) if (all(is.na(x))) NA_real_ else mean(x, na.rm = TRUE)
+      function(x) if (all(is.na(x))) NA_real_ else reducer(x, na.rm = TRUE)
     ),
     !!count_name := dplyr::n_distinct(.data[[count_col]]),
     .groups = "drop"

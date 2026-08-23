@@ -11,7 +11,8 @@ aggregate_model_forecasts(
   completion_col = "completion",
   prompt_col = "prompt_id",
   model_col = "model_id",
-  family_col = "family"
+  family_col = "family",
+  method = c("mean", "median")
 )
 }
 \arguments{
@@ -26,14 +27,17 @@ target, such as a condition ID. Include every necessary unit column.}
 repeated completion, prompt variant, and model.}
 
 \item{family_col}{Optional column identifying model families. Set to \code{NULL}
-to average models directly into the consensus.}
+to combine models directly into the consensus.}
+
+\item{method}{Aggregation statistic applied at every stage: \code{"mean"}
+(the backward-compatible default) or \code{"median"}.}
 }
 \value{
 A named list of tibbles: \code{prompt}, \code{model}, optional \code{family}, and
 \code{consensus}. Count columns make the weight at each stage auditable.
 }
 \description{
-Average repeated completions within prompt, prompts within model, models
+Reduce repeated completions within prompt, prompts within model, models
 within family, and then families into a consensus. Each stage operates on
 the already-aggregated rows from the previous stage, so unequal completion
 counts do not give a model more weight. Supplying \code{family_col} explicitly
@@ -41,7 +45,11 @@ requests equal family weight at the final stage; with \code{family_col = NULL},
 the final consensus gives models equal weight.
 }
 \details{
-This helper only computes arithmetic means. Choosing this hierarchy, deciding
-whether model outputs represent simulations or expert forecasts, and any
-uncertainty analysis remain scientific decisions for the caller.
+\code{method = "mean"} preserves the original arithmetic-mean behavior.
+\code{method = "median"} applies the median at every stage of the same hierarchy.
+Missing values are removed independently for each outcome at each stage. A
+stage returns \code{NA_real_} when all values for that outcome and group are
+missing. Count columns count distinct configured contributors regardless of
+outcome missingness, so they audit the weighting structure rather than the
+non-missing sample size for an individual outcome.
 }

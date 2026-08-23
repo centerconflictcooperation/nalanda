@@ -14,6 +14,8 @@ run_prompt_grid(
   smoke_n = NULL,
   dry_run = FALSE,
   output_dir = NULL,
+  existing_results = NULL,
+  trust_legacy_results = FALSE,
   resume = TRUE,
   on_error = c("stop", "continue"),
   progress = interactive(),
@@ -51,6 +53,20 @@ a chat or making model calls.}
 \item{output_dir}{Optional directory for one RDS checkpoint per completed
 model-prompt-completion unit. Files contain raw, unaggregated results.}
 
+\item{existing_results}{Optional prior results created by \code{run_prompt_grid()}:
+a data frame, a returned run bundle, or the path to either an RDS run
+bundle/results table or a CSV results table. Complete tasks with matching
+\code{task_hash} values are reused without model calls. All prior rows, including
+rows for models not active in the current configuration, are retained in
+the returned combined results.}
+
+\item{trust_legacy_results}{Logical. The default \code{FALSE} requires strong
+hashes. Set to \code{TRUE} only for a deliberate one-time migration of an older
+unhashed results table whose model settings and response specification you
+have independently verified. Nalanda still requires exact task IDs, input
+rows, and stored prompt text before assigning current hashes. This explicit
+escape hatch must not be used for routine resume.}
+
 \item{resume}{Logical. If \code{TRUE} and \code{output_dir} is supplied, compatible
 completed units are read instead of rerun. Checkpoint identity includes
 inputs, prompts, response type, and model settings.}
@@ -67,7 +83,10 @@ configuration row overrides the corresponding global default.}
 }
 \value{
 If \code{dry_run = TRUE}, the plan tibble. Otherwise, a list with
-\code{results} (combined raw results), \code{plan}, \code{tasks}, and \code{errors}.
+\code{results} (combined raw and prior results), \code{plan}, \code{tasks}, and \code{errors}.
+Plans returned here add \code{configured_calls}, \code{reused_calls}, and
+\code{pending_calls}; \code{estimated_calls} remains the backward-compatible name
+for all configured calls.
 }
 \description{
 This function is a deliberately thin orchestration layer over

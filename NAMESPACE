@@ -3,6 +3,7 @@
 export(aggregate_model_forecasts)
 export(aggregate_simulations)
 export(build_simulate_treatment_prompt)
+export(collect_prompt_grid_results)
 export(combine_book_files)
 export(combine_split_chapter_files)
 export(compute_run_ai_metrics)
