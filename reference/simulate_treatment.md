@@ -4,7 +4,10 @@ This function provides a simpler, prompt-first interface for running one
 or more turns against an intervention text. Each element of `prompt`
 defines one turn in the chat sequence. When `groups` is supplied, the
 same prompt sequence is repeated for each group identity; groups do not
-create additional turns.
+create additional turns. For independent alternative prompts that must
+start fresh conversations, use
+[`run_prompt_grid()`](https://centerconflictcooperation.github.io/nalanda/reference/run_prompt_grid.md)
+instead.
 
 ## Usage
 
@@ -43,7 +46,8 @@ simulate_treatment(
 
 - prompt:
 
-  Character vector of prompt templates. Each element defines one turn.
+  Character vector of prompt templates. Each element defines one ordered
+  turn in the same conversation, not an independent prompt variant.
   Prompt templates may include `{intervention_text}`, `{identity}`, and
   `{group}` placeholders.
 

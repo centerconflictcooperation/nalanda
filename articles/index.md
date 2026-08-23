@@ -8,6 +8,8 @@
   \`simulate_treatment()\`](https://centerconflictcooperation.github.io/nalanda/articles/post-only-identity-treatments.md):
 - [Psychological Text Analysis with
   \`nalanda\`](https://centerconflictcooperation.github.io/nalanda/articles/psychological-text-analysis.md):
+- [Prompt Grids for Multi-Model Structured
+  Forecasting](https://centerconflictcooperation.github.io/nalanda/articles/prompt-grids-structured-forecasting.md):
 
 ### Methods and Roadmaps
 

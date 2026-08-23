@@ -1,26 +1,25 @@
-# Run row-wise text analysis with a prompt template
+# Run structured prompts independently over data-frame rows
 
-This use-case wrapper applies a prompt template to each row of a text
-dataset. It preserves the original text-analysis API and `sim` output
-column while delegating execution to
-[`run_structured_responses()`](https://centerconflictcooperation.github.io/nalanda/reference/run_structured_responses.md).
-For neutral structured extraction or forecasting, use
-[`run_structured_responses()`](https://centerconflictcooperation.github.io/nalanda/reference/run_structured_responses.md)
-or
+This is nalanda's neutral one-turn prompting primitive. It applies one
+prompt template independently to each row, repeats that operation when
+requested, and extracts a common structured response with `ellmer`.
+Use-case functions such as
+[`run_text_analysis()`](https://centerconflictcooperation.github.io/nalanda/reference/run_text_analysis.md)
+can wrap this function with domain-specific terminology while
 [`run_prompt_grid()`](https://centerconflictcooperation.github.io/nalanda/reference/run_prompt_grid.md)
-directly.
+adds models and independent prompt variants.
 
 ## Usage
 
 ``` r
-run_text_analysis(
+run_structured_responses(
   data,
-  text_col = "text",
+  content_col = "text",
   prompt,
   response_type,
   output_mode = c("structured", "text"),
   id_col = NULL,
-  n_simulations = 1,
+  n_completions = 1,
   temperature = 0,
   seed = 42,
   model = "gemini-2.5-flash-lite",
@@ -39,9 +38,11 @@ run_text_analysis(
 
   A data frame with at least one content column.
 
-- text_col:
+- content_col:
 
-  Name of the column containing the text to analyze.
+  Name of the column containing the primary content. This column is
+  abbreviated in stored prompt previews; any column can still be
+  referenced by the prompt template.
 
 - prompt:
 
@@ -65,13 +66,12 @@ run_text_analysis(
 
 - id_col:
 
-  Optional column name identifying each text row. When omitted, a
-  sequential `text_id` is created for compatibility with earlier
-  versions.
+  Optional column name identifying each input row. When omitted, a
+  pre-existing `row_id` is used or a sequential `row_id` is created.
 
-- n_simulations:
+- n_completions:
 
-  Integer. Number of repeated runs per row.
+  Integer. Number of independent completions per row.
 
 - temperature:
 
@@ -118,5 +118,5 @@ run_text_analysis(
 
 ## Value
 
-A tibble containing the original row metadata, simulation index,
+A tibble containing the original row metadata, completion index,
 structured response fields, and stored prompt previews.

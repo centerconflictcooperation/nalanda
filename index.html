@@ -45,6 +45,7 @@
     <li><a class="dropdown-item" href="articles/getting-started.html">Getting Started</a></li>
     <li><a class="dropdown-item" href="articles/post-only-identity-treatments.html">Post-Only Identity Treatments</a></li>
     <li><a class="dropdown-item" href="articles/psychological-text-analysis.html">Psychological Text Analysis</a></li>
+    <li><a class="dropdown-item" href="articles/prompt-grids-structured-forecasting.html">Multi-Model Structured Forecasting</a></li>
     <li><h6 class="dropdown-header" data-toc-skip>Methods and Roadmaps</h6></li>
     <li><a class="dropdown-item" href="articles/simulation-roadmap.html">Simulation Roadmap</a></li>
     <li><h6 class="dropdown-header" data-toc-skip>Paper Context</h6></li>
@@ -199,6 +200,12 @@
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">chapter_results</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/compute_run_ai_metrics.html">compute_run_ai_metrics</a></span><span class="op">(</span><span class="va">raw_turns</span><span class="op">)</span></span></code></pre></div>
+</div>
+<div class="section level3">
+<h3 id="multi-model-structured-forecasting">Multi-model structured forecasting<a class="anchor" aria-label="anchor" href="#multi-model-structured-forecasting"></a>
+</h3>
+<p><code><a href="reference/run_structured_responses.html">run_structured_responses()</a></code> is the neutral one-model, one-prompt primitive; <code><a href="reference/run_text_analysis.html">run_text_analysis()</a></code> remains its text-annotation-oriented wrapper.</p>
+<p>For row-wise studies that cross several prompt variants with several model routes, use <code><a href="reference/plan_prompt_grid.html">plan_prompt_grid()</a></code> to validate the configuration and preview response counts, then <code><a href="reference/run_prompt_grid.html">run_prompt_grid()</a></code> for provenance, per-completion checkpoints, and resume support. Keep the raw results before using <code><a href="reference/aggregate_model_forecasts.html">aggregate_model_forecasts()</a></code> to apply an explicit completion → prompt → model → family weighting hierarchy. See the <a href="https://centerconflictcooperation.github.io/nalanda/articles/prompt-grids-structured-forecasting.html">multi-model structured forecasting tutorial</a>.</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://centerconflictcooperation.github.io/nalanda/">nalanda</a></span><span class="op">)</span></span>
 <span></span>

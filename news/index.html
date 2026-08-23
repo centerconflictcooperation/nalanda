@@ -22,6 +22,7 @@
     <li><a class="dropdown-item" href="../articles/getting-started.html">Getting Started</a></li>
     <li><a class="dropdown-item" href="../articles/post-only-identity-treatments.html">Post-Only Identity Treatments</a></li>
     <li><a class="dropdown-item" href="../articles/psychological-text-analysis.html">Psychological Text Analysis</a></li>
+    <li><a class="dropdown-item" href="../articles/prompt-grids-structured-forecasting.html">Multi-Model Structured Forecasting</a></li>
     <li><h6 class="dropdown-header" data-toc-skip>Methods and Roadmaps</h6></li>
     <li><a class="dropdown-item" href="../articles/simulation-roadmap.html">Simulation Roadmap</a></li>
     <li><h6 class="dropdown-header" data-toc-skip>Paper Context</h6></li>
@@ -45,7 +46,10 @@
 
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.0.2.1" id="nalanda-0021">nalanda 0.0.2.1<a class="anchor" aria-label="anchor" href="#nalanda-0021"></a></h2>
-<ul><li>Restored compatibility with <code>ellmer</code> 0.4.0 by passing structured prompt batches as lists in <code><a href="../reference/run_text_analysis.html">run_text_analysis()</a></code> and <code><a href="../reference/run_ai_on_chapters_one_turn.html">run_ai_on_chapters_one_turn()</a></code>.</li>
+<ul><li>Added <code><a href="../reference/run_structured_responses.html">run_structured_responses()</a></code> as a neutral row-wise structured-prompt primitive; <code><a href="../reference/run_text_analysis.html">run_text_analysis()</a></code> remains the text-annotation use-case wrapper.</li>
+<li>Added <code><a href="../reference/plan_prompt_grid.html">plan_prompt_grid()</a></code> and <code><a href="../reference/run_prompt_grid.html">run_prompt_grid()</a></code> for validated multi-model, multi-prompt structured analyses with model-specific repetitions, smoke runs, call previews, provenance, per-completion checkpointing, resumability, and continue-on-error execution.</li>
+<li>Added <code><a href="../reference/aggregate_model_forecasts.html">aggregate_model_forecasts()</a></code> for explicit equal-weight aggregation of completions within prompts, prompts within models, models within families, and families into a consensus.</li>
+<li>Restored compatibility with <code>ellmer</code> 0.4.0 by passing structured prompt batches as lists in <code><a href="../reference/run_text_analysis.html">run_text_analysis()</a></code> and <code><a href="../reference/run_ai_on_chapters_one_turn.html">run_ai_on_chapters_one_turn()</a></code>.</li>
 <li>Fixed the <code>nalanda</code> class order on <code><a href="../reference/run_text_analysis.html">run_text_analysis()</a></code> results so current <code>dplyr</code> and <code>vctrs</code> operations work without a downstream class workaround.</li>
 </ul></div>
     <div class="section level2">

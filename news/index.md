@@ -2,6 +2,24 @@
 
 ## nalanda 0.0.2.1
 
+- Added
+  [`run_structured_responses()`](https://centerconflictcooperation.github.io/nalanda/reference/run_structured_responses.md)
+  as a neutral row-wise structured-prompt primitive;
+  [`run_text_analysis()`](https://centerconflictcooperation.github.io/nalanda/reference/run_text_analysis.md)
+  remains the text-annotation use-case wrapper.
+- Added
+  [`plan_prompt_grid()`](https://centerconflictcooperation.github.io/nalanda/reference/plan_prompt_grid.md)
+  and
+  [`run_prompt_grid()`](https://centerconflictcooperation.github.io/nalanda/reference/run_prompt_grid.md)
+  for validated multi-model, multi-prompt structured analyses with
+  model-specific repetitions, smoke runs, call previews, provenance,
+  per-completion checkpointing, resumability, and continue-on-error
+  execution.
+- Added
+  [`aggregate_model_forecasts()`](https://centerconflictcooperation.github.io/nalanda/reference/aggregate_model_forecasts.md)
+  for explicit equal-weight aggregation of completions within prompts,
+  prompts within models, models within families, and families into a
+  consensus.
 - Restored compatibility with `ellmer` 0.4.0 by passing structured
   prompt batches as lists in
   [`run_text_analysis()`](https://centerconflictcooperation.github.io/nalanda/reference/run_text_analysis.md)

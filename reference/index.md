@@ -2,6 +2,10 @@
 
 ## All functions
 
+- [`aggregate_model_forecasts()`](https://centerconflictcooperation.github.io/nalanda/reference/aggregate_model_forecasts.md)
+  : Aggregate structured forecasts through an explicit weighting
+  hierarchy
+
 - [`aggregate_simulations()`](https://centerconflictcooperation.github.io/nalanda/reference/aggregate_simulations.md)
   : Aggregate simulation runs
 
@@ -69,6 +73,9 @@
 - [`pairwise_for_level()`](https://centerconflictcooperation.github.io/nalanda/reference/pairwise_for_level.md)
   : Pairwise model correlations at a chosen analysis level
 
+- [`plan_prompt_grid()`](https://centerconflictcooperation.github.io/nalanda/reference/plan_prompt_grid.md)
+  : Plan a multi-model, multi-prompt grid
+
 - [`plot_chapter_scores_faceted()`](https://centerconflictcooperation.github.io/nalanda/reference/plot_chapter_scores_faceted.md)
   : Faceted plot of chapter scores
 
@@ -122,6 +129,12 @@
 
 - [`run_ai_on_chapters_one_turn()`](https://centerconflictcooperation.github.io/nalanda/reference/run_ai_on_chapters_one_turn.md)
   : Run AI model on book chapters with a single prompt per simulation
+
+- [`run_prompt_grid()`](https://centerconflictcooperation.github.io/nalanda/reference/run_prompt_grid.md)
+  : Run a multi-model, multi-prompt grid
+
+- [`run_structured_responses()`](https://centerconflictcooperation.github.io/nalanda/reference/run_structured_responses.md)
+  : Run structured prompts independently over data-frame rows
 
 - [`run_text_analysis()`](https://centerconflictcooperation.github.io/nalanda/reference/run_text_analysis.md)
   : Run row-wise text analysis with a prompt template

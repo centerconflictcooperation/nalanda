@@ -118,6 +118,25 @@ raw_turns <- run_ai_on_chapters(
 chapter_results <- compute_run_ai_metrics(raw_turns)
 ```
 
+### Multi-model structured forecasting
+
+[`run_structured_responses()`](https://centerconflictcooperation.github.io/nalanda/reference/run_structured_responses.md)
+is the neutral one-model, one-prompt primitive;
+[`run_text_analysis()`](https://centerconflictcooperation.github.io/nalanda/reference/run_text_analysis.md)
+remains its text-annotation-oriented wrapper.
+
+For row-wise studies that cross several prompt variants with several
+model routes, use
+[`plan_prompt_grid()`](https://centerconflictcooperation.github.io/nalanda/reference/plan_prompt_grid.md)
+to validate the configuration and preview response counts, then
+[`run_prompt_grid()`](https://centerconflictcooperation.github.io/nalanda/reference/run_prompt_grid.md)
+for provenance, per-completion checkpoints, and resume support. Keep the
+raw results before using
+[`aggregate_model_forecasts()`](https://centerconflictcooperation.github.io/nalanda/reference/aggregate_model_forecasts.md)
+to apply an explicit completion → prompt → model → family weighting
+hierarchy. See the [multi-model structured forecasting
+tutorial](https://centerconflictcooperation.github.io/nalanda/articles/prompt-grids-structured-forecasting.html).
+
 ``` r
 
 library(nalanda)
@@ -206,6 +225,10 @@ Projects](https://mindandlife-europe.org/2024-eva-recipients-projects/)
 
 ## All functions
 
+- [`aggregate_model_forecasts()`](https://centerconflictcooperation.github.io/nalanda/reference/aggregate_model_forecasts.md)
+  : Aggregate structured forecasts through an explicit weighting
+  hierarchy
+
 - [`aggregate_simulations()`](https://centerconflictcooperation.github.io/nalanda/reference/aggregate_simulations.md)
   : Aggregate simulation runs
 
@@ -273,6 +296,9 @@ Projects](https://mindandlife-europe.org/2024-eva-recipients-projects/)
 - [`pairwise_for_level()`](https://centerconflictcooperation.github.io/nalanda/reference/pairwise_for_level.md)
   : Pairwise model correlations at a chosen analysis level
 
+- [`plan_prompt_grid()`](https://centerconflictcooperation.github.io/nalanda/reference/plan_prompt_grid.md)
+  : Plan a multi-model, multi-prompt grid
+
 - [`plot_chapter_scores_faceted()`](https://centerconflictcooperation.github.io/nalanda/reference/plot_chapter_scores_faceted.md)
   : Faceted plot of chapter scores
 
@@ -327,6 +353,12 @@ Projects](https://mindandlife-europe.org/2024-eva-recipients-projects/)
 - [`run_ai_on_chapters_one_turn()`](https://centerconflictcooperation.github.io/nalanda/reference/run_ai_on_chapters_one_turn.md)
   : Run AI model on book chapters with a single prompt per simulation
 
+- [`run_prompt_grid()`](https://centerconflictcooperation.github.io/nalanda/reference/run_prompt_grid.md)
+  : Run a multi-model, multi-prompt grid
+
+- [`run_structured_responses()`](https://centerconflictcooperation.github.io/nalanda/reference/run_structured_responses.md)
+  : Run structured prompts independently over data-frame rows
+
 - [`run_text_analysis()`](https://centerconflictcooperation.github.io/nalanda/reference/run_text_analysis.md)
   : Run row-wise text analysis with a prompt template
 
@@ -376,6 +408,8 @@ Projects](https://mindandlife-europe.org/2024-eva-recipients-projects/)
   \`simulate_treatment()\`](https://centerconflictcooperation.github.io/nalanda/articles/post-only-identity-treatments.md):
 - [Psychological Text Analysis with
   \`nalanda\`](https://centerconflictcooperation.github.io/nalanda/articles/psychological-text-analysis.md):
+- [Prompt Grids for Multi-Model Structured
+  Forecasting](https://centerconflictcooperation.github.io/nalanda/articles/prompt-grids-structured-forecasting.md):
 
 ### Methods and Roadmaps
 

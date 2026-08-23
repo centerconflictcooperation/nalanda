@@ -3,11 +3,13 @@
 more turns against an intervention text. Each element of prompt defines one
 turn in the chat sequence. When groups is supplied, the same prompt
 sequence is repeated for each group identity; groups do not create additional
-turns."><meta property="og:description" content="This function provides a simpler, prompt-first interface for running one or
+turns. For independent alternative prompts that must start fresh
+conversations, use run_prompt_grid() instead."><meta property="og:description" content="This function provides a simpler, prompt-first interface for running one or
 more turns against an intervention text. Each element of prompt defines one
 turn in the chat sequence. When groups is supplied, the same prompt
 sequence is repeated for each group identity; groups do not create additional
-turns."><meta property="og:image" content="https://centerconflictcooperation.github.io/nalanda/logo.png"></head><body>
+turns. For independent alternative prompts that must start fresh
+conversations, use run_prompt_grid() instead."><meta property="og:image" content="https://centerconflictcooperation.github.io/nalanda/logo.png"></head><body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
 
 
@@ -30,6 +32,7 @@ turns."><meta property="og:image" content="https://centerconflictcooperation.git
     <li><a class="dropdown-item" href="../articles/getting-started.html">Getting Started</a></li>
     <li><a class="dropdown-item" href="../articles/post-only-identity-treatments.html">Post-Only Identity Treatments</a></li>
     <li><a class="dropdown-item" href="../articles/psychological-text-analysis.html">Psychological Text Analysis</a></li>
+    <li><a class="dropdown-item" href="../articles/prompt-grids-structured-forecasting.html">Multi-Model Structured Forecasting</a></li>
     <li><h6 class="dropdown-header" data-toc-skip>Methods and Roadmaps</h6></li>
     <li><a class="dropdown-item" href="../articles/simulation-roadmap.html">Simulation Roadmap</a></li>
     <li><h6 class="dropdown-header" data-toc-skip>Paper Context</h6></li>
@@ -57,7 +60,8 @@ turns."><meta property="og:image" content="https://centerconflictcooperation.git
 more turns against an intervention text. Each element of <code>prompt</code> defines one
 turn in the chat sequence. When <code>groups</code> is supplied, the same prompt
 sequence is repeated for each group identity; groups do not create additional
-turns.</p>
+turns. For independent alternative prompts that must start fresh
+conversations, use <code><a href="run_prompt_grid.html">run_prompt_grid()</a></code> instead.</p>
     </div>
 
     <div class="section level2">
@@ -97,7 +101,8 @@ treatment is already encoded in <code>prompt</code> and/or <code>context_text</c
 
 <dt id="arg-prompt">prompt<a class="anchor" aria-label="anchor" href="#arg-prompt"></a></dt>
 <dd><p>Character vector of prompt templates. Each element defines one
-turn. Prompt templates may include <code>{intervention_text}</code>, <code>{identity}</code>, and
+ordered turn in the same conversation, not an independent prompt variant.
+Prompt templates may include <code>{intervention_text}</code>, <code>{identity}</code>, and
 <code>{group}</code> placeholders.</p></dd>
 
 
