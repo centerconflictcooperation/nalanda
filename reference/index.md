@@ -18,6 +18,9 @@
 - [`combine_split_chapter_files()`](https://centerconflictcooperation.github.io/nalanda/reference/combine_split_chapter_files.md)
   : Combine split chapter chunk files
 
+- [`compare_forecast_aggregations()`](https://centerconflictcooperation.github.io/nalanda/reference/compare_forecast_aggregations.md)
+  : Compare estimates from two forecast aggregations
+
 - [`compute_run_ai_metrics()`](https://centerconflictcooperation.github.io/nalanda/reference/compute_run_ai_metrics.md)
   : Compute derived pre/post effect metrics from raw turn-level output
 
@@ -154,6 +157,9 @@
 - [`summarize_chapter_scores()`](https://centerconflictcooperation.github.io/nalanda/reference/summarize_chapter_scores.md)
   : Summarize simulated chapter scores
 
+- [`summarize_forecast_disagreement()`](https://centerconflictcooperation.github.io/nalanda/reference/summarize_forecast_disagreement.md)
+  : Summarize forecast disagreement within units
+
 - [`summarize_identity_adherence()`](https://centerconflictcooperation.github.io/nalanda/reference/summarize_identity_adherence.md)
   : Summarize whether the model adopts the requested identity
 
@@ -171,6 +177,9 @@
 
 - [`summarize_treatment_results()`](https://centerconflictcooperation.github.io/nalanda/reference/summarize_treatment_results.md)
   : Summarize generic treatment results
+
+- [`tidy_forecast_aggregation()`](https://centerconflictcooperation.github.io/nalanda/reference/tidy_forecast_aggregation.md)
+  : Tidy hierarchical forecast aggregation results
 
 - [`toy_run_ai_turns`](https://centerconflictcooperation.github.io/nalanda/reference/toy_run_ai_turns.md)
   : Toy raw turn-level AI simulation output

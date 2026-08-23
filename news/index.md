@@ -3,6 +3,12 @@
 ## nalanda 0.0.2.1
 
 - Added
+  [`tidy_forecast_aggregation()`](https://centerconflictcooperation.github.io/nalanda/reference/tidy_forecast_aggregation.md),
+  [`summarize_forecast_disagreement()`](https://centerconflictcooperation.github.io/nalanda/reference/summarize_forecast_disagreement.md),
+  and
+  [`compare_forecast_aggregations()`](https://centerconflictcooperation.github.io/nalanda/reference/compare_forecast_aggregations.md)
+  for reusable diagnostics of structured forecast aggregation results.
+- Added
   [`run_structured_responses()`](https://centerconflictcooperation.github.io/nalanda/reference/run_structured_responses.md)
   as a neutral row-wise structured-prompt primitive;
   [`run_text_analysis()`](https://centerconflictcooperation.github.io/nalanda/reference/run_text_analysis.md)

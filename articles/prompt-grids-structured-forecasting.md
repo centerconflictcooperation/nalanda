@@ -382,6 +382,87 @@ for each outcome at each stage; an all-missing group remains missing.
 Counts describe all configured contributors, including contributors
 missing a particular outcome.
 
+## Diagnose and compare forecasts without project-specific wrangling
+
+[`tidy_forecast_aggregation()`](https://centerconflictcooperation.github.io/nalanda/reference/tidy_forecast_aggregation.md)
+makes every stage available in one long table. It works with one or many
+numeric outcomes, and does not assume names for a study’s conditions or
+outcomes.
+
+``` r
+
+forecast_long <- tidy_forecast_aggregation(
+  median_aggregated,
+  unit_by = "condition_id"
+)
+
+model_forecasts <- forecast_long |>
+  dplyr::filter(aggregation_level == "model")
+
+# Disagreement among models for each condition and outcome
+summarize_forecast_disagreement(
+  model_forecasts,
+  unit_by = c("condition_id", "outcome"),
+  estimate_col = "estimate",
+  contributor_col = "model_id"
+)
+#> # A tibble: 2 × 12
+#>   condition_id outcome  n_contributors n_nonmissing n_missing  mean median    sd
+#>   <chr>        <chr>             <int>        <int>     <int> <dbl>  <dbl> <dbl>
+#> 1 cooperation  effect_…              3            3         0  6         6  4   
+#> 2 cooperation  effect_…              3            3         0  6.67      7  2.52
+#> # ℹ 4 more variables: mad <dbl>, min <dbl>, max <dbl>, range <dbl>
+
+# The existing agreement helpers consume this model-stage shape directly.
+effect_models <- model_forecasts |>
+  dplyr::filter(outcome == "effect_support")
+model_pairwise_cor(
+  effect_models,
+  outcome = "estimate",
+  unit_by = "condition_id",
+  model_col = "model_id"
+)
+#> # A tibble: 6 × 5
+#>   model_a     model_b     method   correlation n_units
+#>   <chr>       <chr>       <chr>          <dbl>   <int>
+#> 1 fast_a      reasoning_a pearson           NA       1
+#> 2 fast_a      reasoning_a spearman          NA       1
+#> 3 fast_a      fast_b      pearson           NA       1
+#> 4 fast_a      fast_b      spearman          NA       1
+#> 5 reasoning_a fast_b      pearson           NA       1
+#> 6 reasoning_a fast_b      spearman          NA       1
+
+# Mean--median comparison at the consensus stage. A lookup is optional and
+# lets a project normalize differences by its own outcome-scale widths.
+widths <- tibble::tibble(
+  condition_id = "cooperation",
+  outcome = c("effect_support", "effect_trust"),
+  scale_width = c(10, 10)
+)
+compare_forecast_aggregations(
+  median_aggregated, mean_aggregated,
+  stage = "consensus",
+  unit_by = "condition_id",
+  outcomes = c("effect_support", "effect_trust"),
+  labels = c("median", "mean"),
+  scale_width = widths
+)
+#> # A tibble: 2 × 9
+#>   condition_id outcome   median  mean difference absolute_difference scale_width
+#>   <chr>        <chr>      <dbl> <dbl>      <dbl>               <dbl>       <dbl>
+#> 1 cooperation  effect_s…   7     7             0                   0          10
+#> 2 cooperation  effect_t…   7.25  7.25          0                   0          10
+#> # ℹ 2 more variables: normalized_difference <dbl>,
+#> #   normalized_absolute_difference <dbl>
+```
+
+The comparison helper refuses to silently drop unmatched cells or
+resolve duplicate identities.
+[`summarize_forecast_disagreement()`](https://centerconflictcooperation.github.io/nalanda/reference/summarize_forecast_disagreement.md)
+is deliberately not limited to models: use
+`contributor_col = "prompt_id"` and include `model_id` in `unit_by` to
+describe prompt disagreement within a model and target.
+
 ## What remains downstream
 
 `nalanda` handles configuration validation, expansion, pending-call

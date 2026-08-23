@@ -432,6 +432,84 @@ remains missing. Counts describe all configured contributors, including
 contributors missing a particular outcome.</p>
 </div>
 <div class="section level2">
+<h2 id="diagnose-and-compare-forecasts-without-project-specific-wrangling">Diagnose and compare forecasts without project-specific
+wrangling<a class="anchor" aria-label="anchor" href="#diagnose-and-compare-forecasts-without-project-specific-wrangling"></a>
+</h2>
+<p><code><a href="../reference/tidy_forecast_aggregation.html">tidy_forecast_aggregation()</a></code> makes every stage available
+in one long table. It works with one or many numeric outcomes, and does
+not assume names for a study’s conditions or outcomes.</p>
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">forecast_long</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/tidy_forecast_aggregation.html">tidy_forecast_aggregation</a></span><span class="op">(</span></span>
+<span>  <span class="va">median_aggregated</span>,</span>
+<span>  unit_by <span class="op">=</span> <span class="st">"condition_id"</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">model_forecasts</span> <span class="op">&lt;-</span> <span class="va">forecast_long</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html" class="external-link">filter</a></span><span class="op">(</span><span class="va">aggregation_level</span> <span class="op">==</span> <span class="st">"model"</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Disagreement among models for each condition and outcome</span></span>
+<span><span class="fu"><a href="../reference/summarize_forecast_disagreement.html">summarize_forecast_disagreement</a></span><span class="op">(</span></span>
+<span>  <span class="va">model_forecasts</span>,</span>
+<span>  unit_by <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"condition_id"</span>, <span class="st">"outcome"</span><span class="op">)</span>,</span>
+<span>  estimate_col <span class="op">=</span> <span class="st">"estimate"</span>,</span>
+<span>  contributor_col <span class="op">=</span> <span class="st">"model_id"</span></span>
+<span><span class="op">)</span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 2 × 12</span></span></span>
+<span><span class="co">#&gt;   condition_id outcome  n_contributors n_nonmissing n_missing  mean median    sd</span></span>
+<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>        <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>             <span style="color: #949494; font-style: italic;">&lt;int&gt;</span>        <span style="color: #949494; font-style: italic;">&lt;int&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;int&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> cooperation  effect_…              3            3         0  6         6  4   </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> cooperation  effect_…              3            3         0  6.67      7  2.52</span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># ℹ 4 more variables: mad &lt;dbl&gt;, min &lt;dbl&gt;, max &lt;dbl&gt;, range &lt;dbl&gt;</span></span></span>
+<span></span>
+<span><span class="co"># The existing agreement helpers consume this model-stage shape directly.</span></span>
+<span><span class="va">effect_models</span> <span class="op">&lt;-</span> <span class="va">model_forecasts</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html" class="external-link">filter</a></span><span class="op">(</span><span class="va">outcome</span> <span class="op">==</span> <span class="st">"effect_support"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/model_pairwise_cor.html">model_pairwise_cor</a></span><span class="op">(</span></span>
+<span>  <span class="va">effect_models</span>,</span>
+<span>  outcome <span class="op">=</span> <span class="st">"estimate"</span>,</span>
+<span>  unit_by <span class="op">=</span> <span class="st">"condition_id"</span>,</span>
+<span>  model_col <span class="op">=</span> <span class="st">"model_id"</span></span>
+<span><span class="op">)</span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 6 × 5</span></span></span>
+<span><span class="co">#&gt;   model_a     model_b     method   correlation n_units</span></span>
+<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>       <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>       <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>          <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> fast_a      reasoning_a pearson           <span style="color: #BB0000;">NA</span>       1</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> fast_a      reasoning_a spearman          <span style="color: #BB0000;">NA</span>       1</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span> fast_a      fast_b      pearson           <span style="color: #BB0000;">NA</span>       1</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">4</span> fast_a      fast_b      spearman          <span style="color: #BB0000;">NA</span>       1</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">5</span> reasoning_a fast_b      pearson           <span style="color: #BB0000;">NA</span>       1</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">6</span> reasoning_a fast_b      spearman          <span style="color: #BB0000;">NA</span>       1</span></span>
+<span></span>
+<span><span class="co"># Mean--median comparison at the consensus stage. A lookup is optional and</span></span>
+<span><span class="co"># lets a project normalize differences by its own outcome-scale widths.</span></span>
+<span><span class="va">widths</span> <span class="op">&lt;-</span> <span class="fu">tibble</span><span class="fu">::</span><span class="fu"><a href="https://tibble.tidyverse.org/reference/tibble.html" class="external-link">tibble</a></span><span class="op">(</span></span>
+<span>  condition_id <span class="op">=</span> <span class="st">"cooperation"</span>,</span>
+<span>  outcome <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"effect_support"</span>, <span class="st">"effect_trust"</span><span class="op">)</span>,</span>
+<span>  scale_width <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">10</span>, <span class="fl">10</span><span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/compare_forecast_aggregations.html">compare_forecast_aggregations</a></span><span class="op">(</span></span>
+<span>  <span class="va">median_aggregated</span>, <span class="va">mean_aggregated</span>,</span>
+<span>  stage <span class="op">=</span> <span class="st">"consensus"</span>,</span>
+<span>  unit_by <span class="op">=</span> <span class="st">"condition_id"</span>,</span>
+<span>  outcomes <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"effect_support"</span>, <span class="st">"effect_trust"</span><span class="op">)</span>,</span>
+<span>  labels <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"median"</span>, <span class="st">"mean"</span><span class="op">)</span>,</span>
+<span>  scale_width <span class="op">=</span> <span class="va">widths</span></span>
+<span><span class="op">)</span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 2 × 9</span></span></span>
+<span><span class="co">#&gt;   condition_id outcome   median  mean difference absolute_difference scale_width</span></span>
+<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>        <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>               <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>       <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> cooperation  effect_s…   7     7             0                   0          10</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> cooperation  effect_t…   7.25  7.25          0                   0          10</span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># ℹ 2 more variables: normalized_difference &lt;dbl&gt;,</span></span></span>
+<span><span class="co">#&gt; <span style="color: #949494;">#   normalized_absolute_difference &lt;dbl&gt;</span></span></span></code></pre></div>
+<p>The comparison helper refuses to silently drop unmatched cells or
+resolve duplicate identities.
+<code><a href="../reference/summarize_forecast_disagreement.html">summarize_forecast_disagreement()</a></code> is deliberately not
+limited to models: use <code>contributor_col = "prompt_id"</code> and
+include <code>model_id</code> in <code>unit_by</code> to describe prompt
+disagreement within a model and target.</p>
+</div>
+<div class="section level2">
 <h2 id="what-remains-downstream">What remains downstream<a class="anchor" aria-label="anchor" href="#what-remains-downstream"></a>
 </h2>
 <p><code>nalanda</code> handles configuration validation, expansion,
