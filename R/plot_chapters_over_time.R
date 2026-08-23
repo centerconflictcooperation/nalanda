@@ -246,8 +246,10 @@ plot_chapters_over_time <- function(
     dplyr::ungroup()
 
   df <- df |>
-    dplyr::left_join(chapter_lookup, by = c("book", "chapter")) |>
-    dplyr::arrange(.data$book, .data$chapter_num, .data$sim) |>
+    dplyr::left_join(chapter_lookup, by = c("book", "chapter"))
+  arrange_cols <- intersect(c("book", "chapter_num", "sim"), names(df))
+  df <- df |>
+    dplyr::arrange(dplyr::across(dplyr::all_of(arrange_cols))) |>
     dplyr::group_by(.data$book) |>
     dplyr::mutate(
       chapter_index = dplyr::dense_rank(.data$chapter_num),
@@ -409,6 +411,14 @@ plot_chapters_over_time <- function(
     isTRUE(neutrality_line) &&
       grepl("difference|diff|delta|gap", dv, ignore.case = TRUE)
   ) {
+    finite_scores <- df$score[is.finite(df$score)]
+    no_change_vjust <- if (
+      length(finite_scores) > 0 && max(finite_scores) <= 0
+    ) {
+      1.5
+    } else {
+      -0.5
+    }
     p <- p +
       ggplot2::geom_hline(
         yintercept = 0,
@@ -419,10 +429,11 @@ plot_chapters_over_time <- function(
       ggplot2::annotate(
         "text",
         x = 1,
-        y = 2, # Slightly above 0
+        y = 0,
         label = "No Change (0)",
         color = "grey30",
         hjust = 0,
+        vjust = no_change_vjust,
         size = 3
       )
   }

@@ -414,6 +414,13 @@ test_that("compute_run_ai_metrics binds list inputs before computing metrics", {
   )
 })
 
+test_that("compute_run_ai_metrics clearly reports empty result lists", {
+  expect_error(
+    compute_run_ai_metrics(list()),
+    "No simulation results found: `x` is an empty list"
+  )
+})
+
 test_that("compute_run_ai_metrics keeps books distinct for list inputs", {
   make_book_turns <- function(book) {
     tibble::tibble(

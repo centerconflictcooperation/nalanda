@@ -689,6 +689,70 @@ test_that("plot_chapters_over_time accepts list inputs from compute_run_ai_metri
   expect_equal(p$labels$subtitle, "(model = \"gpt-test\"; temperature = 0.2)")
 })
 
+test_that("plot_chapters_over_time accepts pre-aggregated rows without sim", {
+  skip_if_not_installed("Rmisc")
+
+  chapters <- tibble::tibble(
+    model = rep(c("model-a", "model-b"), each = 4),
+    book = "Book A",
+    chapter = rep(c("Chapter 1", "Chapter 2"), each = 2, times = 2),
+    party = rep(c("Democrat", "Republican"), times = 4),
+    consensus_score = c(-0.2, 0.1, -0.4, 0.2, -0.1, 0.3, -0.5, 0.4)
+  )
+
+  p <- plot_chapters_over_time(
+    chapters,
+    dv = "consensus_score",
+    group = "party",
+    append_model_info = FALSE
+  )
+
+  expect_s3_class(p, "ggplot")
+  expect_true(all(c("Democrat", "Republican") %in% unique(p$data$party)))
+})
+
+test_that("delta annotation does not force the y-axis above zero", {
+  skip_if_not_installed("Rmisc")
+
+  chapters <- tibble::tibble(
+    book = "Book A",
+    chapter = rep(c("Chapter 1", "Chapter 2"), each = 2),
+    party = rep(c("Democrat", "Republican"), times = 2),
+    mean_model_z_delta_gap = c(-0.5, -0.7, -1.5, -1.8)
+  )
+
+  p <- plot_chapters_over_time(
+    chapters,
+    dv = "mean_model_z_delta_gap",
+    group = "party",
+    append_model_info = FALSE
+  )
+
+  annotation <- p$layers[[length(p$layers)]]$data
+  expect_equal(annotation$y, 0)
+})
+
+test_that("pre-aggregated chapters are plotted in numeric chapter order", {
+  skip_if_not_installed("Rmisc")
+
+  chapters <- tibble::tibble(
+    book = "Book A",
+    chapter = c("Chapter 3", "Chapter 1", "Chapter 2"),
+    party = "Democrat",
+    mean_model_z_delta_gap = c(30, 10, 20)
+  )
+
+  p <- plot_chapters_over_time(
+    chapters,
+    dv = "mean_model_z_delta_gap",
+    group = "party",
+    error_bars = FALSE,
+    append_model_info = FALSE
+  )
+
+  expect_equal(p$data$value, c(10, 20, 30))
+})
+
 test_that("plot_chapters_over_time errors on ambiguous chapter numbering", {
   skip_if_not_installed("Rmisc")
 

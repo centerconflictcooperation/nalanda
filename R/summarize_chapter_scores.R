@@ -342,6 +342,12 @@ flatten_sim_results <- function(z) {
   if (!is.list(z)) {
     stop("Unsupported input: expected data.frame or list-like object")
   }
+  if (length(z) == 0) {
+    stop(
+      "No simulation results found: `x` is an empty list. ",
+      "Check that the input folder and file-selection pattern returned result files."
+    )
+  }
 
   # Recursively collect all data.frames inside the (possibly nested) list.
   collect_dfs <- function(obj, parent_name = NULL) {
