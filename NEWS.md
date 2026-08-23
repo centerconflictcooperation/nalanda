@@ -1,5 +1,8 @@
 # nalanda 0.0.2.1
 
+- Added `tidy_forecast_aggregation()`, `summarize_forecast_disagreement()`,
+  and `compare_forecast_aggregations()` for reusable diagnostics of structured
+  forecast aggregation results.
 - Added `run_structured_responses()` as a neutral row-wise structured-prompt
   primitive; `run_text_analysis()` remains the text-annotation use-case wrapper.
 - Added `plan_prompt_grid()` and `run_prompt_grid()` for

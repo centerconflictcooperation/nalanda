@@ -333,6 +333,61 @@ hierarchy. Missing values are omitted separately for each outcome at each
 stage; an all-missing group remains missing. Counts describe all configured
 contributors, including contributors missing a particular outcome.
 
+# Diagnose and compare forecasts without project-specific wrangling
+
+`tidy_forecast_aggregation()` makes every stage available in one long table.
+It works with one or many numeric outcomes, and does not assume names for a
+study's conditions or outcomes.
+
+```{r}
+forecast_long <- tidy_forecast_aggregation(
+  median_aggregated,
+  unit_by = "condition_id"
+)
+
+model_forecasts <- forecast_long |>
+  dplyr::filter(aggregation_level == "model")
+
+# Disagreement among models for each condition and outcome
+summarize_forecast_disagreement(
+  model_forecasts,
+  unit_by = c("condition_id", "outcome"),
+  estimate_col = "estimate",
+  contributor_col = "model_id"
+)
+
+# The existing agreement helpers consume this model-stage shape directly.
+effect_models <- model_forecasts |>
+  dplyr::filter(outcome == "effect_support")
+model_pairwise_cor(
+  effect_models,
+  outcome = "estimate",
+  unit_by = "condition_id",
+  model_col = "model_id"
+)
+
+# Mean--median comparison at the consensus stage. A lookup is optional and
+# lets a project normalize differences by its own outcome-scale widths.
+widths <- tibble::tibble(
+  condition_id = "cooperation",
+  outcome = c("effect_support", "effect_trust"),
+  scale_width = c(10, 10)
+)
+compare_forecast_aggregations(
+  median_aggregated, mean_aggregated,
+  stage = "consensus",
+  unit_by = "condition_id",
+  outcomes = c("effect_support", "effect_trust"),
+  labels = c("median", "mean"),
+  scale_width = widths
+)
+```
+
+The comparison helper refuses to silently drop unmatched cells or resolve
+duplicate identities. `summarize_forecast_disagreement()` is deliberately not
+limited to models: use `contributor_col = "prompt_id"` and include `model_id`
+in `unit_by` to describe prompt disagreement within a model and target.
+
 # What remains downstream
 
 `nalanda` handles configuration validation, expansion, pending-call budgeting,
