@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">nalanda</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.2.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.2.2</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -45,11 +45,14 @@
     </div>
 
     <div class="section level2">
-<h2 class="pkg-version" data-toc-text="0.0.2.1" id="nalanda-0021">nalanda 0.0.2.1<a class="anchor" aria-label="anchor" href="#nalanda-0021"></a></h2>
+<h2 class="pkg-version" data-toc-text="0.0.2.2" id="nalanda-0022">nalanda 0.0.2.2<a class="anchor" aria-label="anchor" href="#nalanda-0022"></a></h2>
 <ul><li>Added <code><a href="../reference/tidy_forecast_aggregation.html">tidy_forecast_aggregation()</a></code>, <code><a href="../reference/summarize_forecast_disagreement.html">summarize_forecast_disagreement()</a></code>, and <code><a href="../reference/compare_forecast_aggregations.html">compare_forecast_aggregations()</a></code> for reusable diagnostics of structured forecast aggregation results.</li>
-<li>Added <code><a href="../reference/run_structured_responses.html">run_structured_responses()</a></code> as a neutral row-wise structured-prompt primitive; <code><a href="../reference/run_text_analysis.html">run_text_analysis()</a></code> remains the text-annotation use-case wrapper.</li>
-<li>Added <code><a href="../reference/plan_prompt_grid.html">plan_prompt_grid()</a></code> and <code><a href="../reference/run_prompt_grid.html">run_prompt_grid()</a></code> for validated multi-model, multi-prompt structured analyses with model-specific repetitions, smoke runs, call previews, provenance, per-completion checkpointing, resumability, and continue-on-error execution.</li>
 <li>Added <code><a href="../reference/aggregate_model_forecasts.html">aggregate_model_forecasts()</a></code> for explicit equal-weight aggregation of completions within prompts, prompts within models, models within families, and families into a consensus.</li>
+</ul></div>
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.0.2.1" id="nalanda-0021">nalanda 0.0.2.1<a class="anchor" aria-label="anchor" href="#nalanda-0021"></a></h2>
+<ul><li>Added <code><a href="../reference/run_structured_responses.html">run_structured_responses()</a></code> as a neutral row-wise structured-prompt primitive; <code><a href="../reference/run_text_analysis.html">run_text_analysis()</a></code> remains the text-annotation use-case wrapper.</li>
+<li>Added <code><a href="../reference/plan_prompt_grid.html">plan_prompt_grid()</a></code> and <code><a href="../reference/run_prompt_grid.html">run_prompt_grid()</a></code> for validated multi-model, multi-prompt structured analyses with model-specific repetitions, smoke runs, call previews, provenance, per-completion checkpointing, resumability, and continue-on-error execution.</li>
 <li>Restored compatibility with <code>ellmer</code> 0.4.0 by passing structured prompt batches as lists in <code><a href="../reference/run_text_analysis.html">run_text_analysis()</a></code> and <code><a href="../reference/run_ai_on_chapters_one_turn.html">run_ai_on_chapters_one_turn()</a></code>.</li>
 <li>Fixed the <code>nalanda</code> class order on <code><a href="../reference/run_text_analysis.html">run_text_analysis()</a></code> results so current <code>dplyr</code> and <code>vctrs</code> operations work without a downstream class workaround.</li>
 </ul></div>
