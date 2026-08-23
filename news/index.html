@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">nalanda</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.2.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.2.1</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -43,6 +43,11 @@
       <small>Source: <a href="https://github.com/centerconflictcooperation/nalanda/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.0.2.1" id="nalanda-0021">nalanda 0.0.2.1<a class="anchor" aria-label="anchor" href="#nalanda-0021"></a></h2>
+<ul><li>Restored compatibility with <code>ellmer</code> 0.4.0 by passing structured prompt batches as lists in <code><a href="../reference/run_text_analysis.html">run_text_analysis()</a></code> and <code><a href="../reference/run_ai_on_chapters_one_turn.html">run_ai_on_chapters_one_turn()</a></code>.</li>
+<li>Fixed the <code>nalanda</code> class order on <code><a href="../reference/run_text_analysis.html">run_text_analysis()</a></code> results so current <code>dplyr</code> and <code>vctrs</code> operations work without a downstream class workaround.</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.0.2.0" id="nalanda-0020">nalanda 0.0.2.0<a class="anchor" aria-label="anchor" href="#nalanda-0020"></a></h2>
 <ul><li>Added <code><a href="../reference/repair_run_ai_on_chapters.html">repair_run_ai_on_chapters()</a></code> to rerun only failed or fully missing simulation units and return a merged result without overwriting the source.</li>

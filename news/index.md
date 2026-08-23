@@ -1,5 +1,17 @@
 # Changelog
 
+## nalanda 0.0.2.1
+
+- Restored compatibility with `ellmer` 0.4.0 by passing structured
+  prompt batches as lists in
+  [`run_text_analysis()`](https://centerconflictcooperation.github.io/nalanda/reference/run_text_analysis.md)
+  and
+  [`run_ai_on_chapters_one_turn()`](https://centerconflictcooperation.github.io/nalanda/reference/run_ai_on_chapters_one_turn.md).
+- Fixed the `nalanda` class order on
+  [`run_text_analysis()`](https://centerconflictcooperation.github.io/nalanda/reference/run_text_analysis.md)
+  results so current `dplyr` and `vctrs` operations work without a
+  downstream class workaround.
+
 ## nalanda 0.0.2.0
 
 - Added
