@@ -84,15 +84,19 @@ make_annotation_prompt <- function(
   )
 }
 
-#' Run row-wise text analysis with a prompt template
+#' Run structured prompts independently over data-frame rows
 #'
-#' This function applies a prompt template to each row of a text dataset and
-#' extracts structured responses with `ellmer`. It is designed for dataset-first
-#' workflows such as sentiment, emotion, offensiveness, or moral-foundation
-#' annotation across many short texts.
+#' This is nalanda's neutral one-turn prompting primitive. It applies one prompt
+#' template independently to each row, repeats that operation when requested,
+#' and extracts a common structured response with `ellmer`. Use-case functions
+#' such as [run_text_analysis()] can wrap this function with domain-specific
+#' terminology while [run_prompt_grid()] adds models and independent prompt
+#' variants.
 #'
-#' @param data A data frame with at least one text column.
-#' @param text_col Name of the column containing the text to analyze.
+#' @param data A data frame with at least one content column.
+#' @param content_col Name of the column containing the primary content. This
+#'   column is abbreviated in stored prompt previews; any column can still be
+#'   referenced by the prompt template.
 #' @param prompt Character scalar prompt template. It may reference any columns
 #'   in `data` using `{column_name}` placeholders.
 #' @param response_type An `ellmer` structured type specification, for example
@@ -104,9 +108,9 @@ make_annotation_prompt <- function(
 #'   model as free text, then parses the JSON back into the same fields.
 #'   Text mode is best-effort and stores the original model reply in
 #'   `raw_response`.
-#' @param id_col Optional column name identifying each text row. When omitted, a
-#'   sequential `text_id` is created.
-#' @param n_simulations Integer. Number of repeated runs per row.
+#' @param id_col Optional column name identifying each input row. When omitted, a
+#'   pre-existing `row_id` is used or a sequential `row_id` is created.
+#' @param n_completions Integer. Number of independent completions per row.
 #' @param temperature Numeric. Sampling temperature passed to the backend.
 #' @param seed Integer. Random seed for reproducibility.
 #' @param model Character. Model name for the chat backend.
@@ -115,7 +119,7 @@ make_annotation_prompt <- function(
 #'   when working with the NYU gateway.
 #' @param virtual_key Optional legacy virtual key.
 #' @param base_url Character. Base URL for API calls.
-#' @param excerpt_chars Integer. Number of text characters to retain in stored
+#' @param excerpt_chars Integer. Number of content characters to retain in stored
 #'   prompt previews.
 #' @param max_active Integer. Maximum number of concurrent requests passed to
 #'   `ellmer::parallel_chat_structured()` in structured mode. Text mode runs
@@ -124,17 +128,17 @@ make_annotation_prompt <- function(
 #'   `ellmer::parallel_chat_structured()` in structured mode. Text mode runs
 #'   plain chat requests sequentially.
 #'
-#' @return A tibble containing the original row metadata, simulation index,
+#' @return A tibble containing the original row metadata, completion index,
 #'   structured response fields, and stored prompt previews.
 #' @export
-run_text_analysis <- function(
+run_structured_responses <- function(
   data,
-  text_col = "text",
+  content_col = "text",
   prompt,
   response_type,
   output_mode = c("structured", "text"),
   id_col = NULL,
-  n_simulations = 1,
+  n_completions = 1,
   temperature = 0,
   seed = 42,
   model = "gemini-2.5-flash-lite",
@@ -148,11 +152,11 @@ run_text_analysis <- function(
   if (!inherits(data, "data.frame")) {
     stop("`data` must be a data frame.")
   }
-  if (!is.character(text_col) || length(text_col) != 1 || !nzchar(text_col)) {
-    stop("`text_col` must be a single non-empty column name.")
+  if (!is.character(content_col) || length(content_col) != 1 || !nzchar(content_col)) {
+    stop("`content_col` must be a single non-empty column name.")
   }
-  if (!text_col %in% names(data)) {
-    stop("`text_col` was not found in `data`.")
+  if (!content_col %in% names(data)) {
+    stop("`content_col` was not found in `data`.")
   }
   if (!is.null(id_col) && (!is.character(id_col) || length(id_col) != 1 || !id_col %in% names(data))) {
     stop("`id_col` must be NULL or a single column name present in `data`.")
@@ -164,8 +168,8 @@ run_text_analysis <- function(
     stop("Please provide `response_type`.")
   }
   output_mode <- normalize_output_mode(output_mode)
-  if (n_simulations < 1) {
-    stop("`n_simulations` must be >= 1.")
+  if (n_completions < 1) {
+    stop("`n_completions` must be >= 1.")
   }
 
   route <- resolve_model_route(
@@ -192,14 +196,14 @@ run_text_analysis <- function(
 
   df <- tibble::as_tibble(data)
   if (is.null(id_col)) {
-    df$text_id <- seq_len(nrow(df))
-    id_col <- "text_id"
+    if (!"row_id" %in% names(df)) df$row_id <- seq_len(nrow(df))
+    id_col <- "row_id"
   }
 
-  rows <- vector("list", nrow(df) * n_simulations)
+  rows <- vector("list", nrow(df) * n_completions)
   row_i <- 0L
 
-  for (k in seq_len(n_simulations)) {
+  for (k in seq_len(n_completions)) {
     chat <- new_portkey_chat(
       model = model,
       base_url = base_url,
@@ -215,8 +219,8 @@ run_text_analysis <- function(
       prompts[[i]] <- interpolate_prompt_template(prompt, row_values)
 
       preview_values <- row_values
-      preview_values[[text_col]] <- compact_chapter_text(
-        as.character(preview_values[[text_col]]),
+      preview_values[[content_col]] <- compact_chapter_text(
+        as.character(preview_values[[content_col]]),
         excerpt_chars = excerpt_chars
       )
       prompt_preview[[i]] <- interpolate_prompt_template(prompt, preview_values)
@@ -259,7 +263,7 @@ run_text_analysis <- function(
 
     for (i in seq_len(nrow(df))) {
       base_row <- as.list(df[i, , drop = FALSE])
-      base_row$sim <- k
+      base_row$completion <- k
       base_row$prompt <- prompt_preview[[i]]
 
       row_i <- row_i + 1L
@@ -272,7 +276,7 @@ run_text_analysis <- function(
     lapply(rows, function(r) as.data.frame(r, stringsAsFactors = FALSE))
   ))
 
-  long_cols <- intersect(c(text_col, "prompt"), names(out))
+  long_cols <- intersect(c(content_col, "prompt"), names(out))
   if (length(long_cols) > 0) {
     out <- out[, c(setdiff(names(out), long_cols), long_cols)]
   }
@@ -280,10 +284,98 @@ run_text_analysis <- function(
   class(out) <- unique(c("nalanda", class(out)))
   attr(out, "model") <- normalize_model_name(model)
   attr(out, "temperature") <- temperature
-  attr(out, "n_simulations") <- n_simulations
-  attr(out, "text_col") <- text_col
+  attr(out, "n_completions") <- n_completions
+  attr(out, "content_col") <- content_col
   attr(out, "id_col") <- id_col
   attr(out, "prompt_template") <- prompt
+  out
+}
+
+#' Run row-wise text analysis with a prompt template
+#'
+#' This use-case wrapper applies a prompt template to each row of a text
+#' dataset. It preserves the original text-analysis API and `sim` output column
+#' while delegating execution to [run_structured_responses()]. For neutral
+#' structured extraction or forecasting, use [run_structured_responses()] or
+#' [run_prompt_grid()] directly.
+#'
+#' @inheritParams run_structured_responses
+#' @param text_col Name of the column containing the text to analyze.
+#' @param id_col Optional column name identifying each text row. When omitted,
+#'   a sequential `text_id` is created for compatibility with earlier versions.
+#' @param n_simulations Integer. Number of repeated runs per row.
+#'
+#' @return A tibble containing the original row metadata, simulation index,
+#'   structured response fields, and stored prompt previews.
+#' @export
+run_text_analysis <- function(
+  data,
+  text_col = "text",
+  prompt,
+  response_type,
+  output_mode = c("structured", "text"),
+  id_col = NULL,
+  n_simulations = 1,
+  temperature = 0,
+  seed = 42,
+  model = "gemini-2.5-flash-lite",
+  integration = getOption("nalanda.integration"),
+  virtual_key = getOption("nalanda.virtual_key"),
+  base_url = getOption("nalanda.base_url"),
+  excerpt_chars = 200,
+  max_active = 10,
+  rpm = 500
+) {
+  if (!inherits(data, "data.frame")) {
+    stop("`data` must be a data frame.")
+  }
+  if (!is.character(text_col) || length(text_col) != 1 || !nzchar(text_col)) {
+    stop("`text_col` must be a single non-empty column name.")
+  }
+  if (!text_col %in% names(data)) {
+    stop("`text_col` was not found in `data`.")
+  }
+  if (n_simulations < 1) {
+    stop("`n_simulations` must be >= 1.")
+  }
+
+  data_run <- data
+  id_col_run <- id_col
+  if (is.null(id_col_run)) {
+    data_run <- tibble::as_tibble(data)
+    data_run$text_id <- seq_len(nrow(data_run))
+    id_col_run <- "text_id"
+  }
+  route <- resolve_model_route(
+    integration = integration,
+    virtual_key = virtual_key,
+    integration_missing = missing(integration),
+    virtual_key_missing = missing(virtual_key)
+  )
+  out <- run_structured_responses(
+    data = data_run,
+    content_col = text_col,
+    prompt = prompt,
+    response_type = response_type,
+    output_mode = output_mode,
+    id_col = id_col_run,
+    n_completions = n_simulations,
+    temperature = temperature,
+    seed = seed,
+    model = model,
+    integration = route$integration,
+    virtual_key = route$virtual_key,
+    base_url = base_url,
+    excerpt_chars = excerpt_chars,
+    max_active = max_active,
+    rpm = rpm
+  )
+
+  names(out)[names(out) == "completion"] <- "sim"
+  attr(out, "n_simulations") <- n_simulations
+  attr(out, "text_col") <- text_col
+  attr(out, "n_completions") <- NULL
+  attr(out, "content_col") <- NULL
   out
 }
 

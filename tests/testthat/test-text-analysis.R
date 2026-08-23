@@ -73,6 +73,39 @@ test_that("run_text_analysis supports ellmer 0.4 structured prompt batches", {
   expect_identical(class(out), c("nalanda", "tbl_df", "tbl", "data.frame"))
   expect_no_error(mutated <- dplyr::mutate(out, doubled = score * 2))
   expect_equal(mutated$doubled, c(2, 4))
+  expect_equal(out$sim, c(1L, 1L))
+  expect_false("completion" %in% names(out))
+  expect_true("text_id" %in% names(out))
+  expect_false("row_id" %in% names(out))
+  expect_equal(attr(out, "n_simulations"), 1)
+  expect_equal(attr(out, "text_col"), "text")
+})
+
+test_that("run_structured_responses uses neutral completion terminology", {
+  testthat::local_mocked_bindings(
+    new_portkey_chat = function(...) list(),
+    .package = "nalanda"
+  )
+  testthat::local_mocked_bindings(
+    parallel_chat_structured = function(chat, prompts, type, ...) {
+      lapply(seq_along(prompts), function(i) list(score = i))
+    },
+    .package = "ellmer"
+  )
+
+  out <- run_structured_responses(
+    data = tibble::tibble(input = c("first", "second")),
+    content_col = "input",
+    prompt = "Extract from {input}",
+    response_type = structure(list(), class = "mock_type"),
+    n_completions = 2
+  )
+
+  expect_equal(out$completion, c(1L, 1L, 2L, 2L))
+  expect_false("sim" %in% names(out))
+  expect_true("row_id" %in% names(out))
+  expect_equal(attr(out, "n_completions"), 2)
+  expect_equal(attr(out, "content_col"), "input")
 })
 
 test_that("evaluate_text_analysis computes categorical metrics", {

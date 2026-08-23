@@ -4,14 +4,16 @@
 #' more turns against an intervention text. Each element of `prompt` defines one
 #' turn in the chat sequence. When `groups` is supplied, the same prompt
 #' sequence is repeated for each group identity; groups do not create additional
-#' turns.
+#' turns. For independent alternative prompts that must start fresh
+#' conversations, use [run_prompt_grid()] instead.
 #'
 #' @param intervention_text A single character string or a nested list of
 #'   intervention texts. This is mapped internally onto the same job grid used
 #'   by [run_ai_on_chapters()]. Defaults to `""`, which is useful when the full
 #'   treatment is already encoded in `prompt` and/or `context_text`.
 #' @param prompt Character vector of prompt templates. Each element defines one
-#'   turn. Prompt templates may include `{intervention_text}`, `{identity}`, and
+#'   ordered turn in the same conversation, not an independent prompt variant.
+#'   Prompt templates may include `{intervention_text}`, `{identity}`, and
 #'   `{group}` placeholders.
 #' @param response_type An `ellmer` structured type specification applied to all
 #'   turns (for example `ellmer::type_object(score = ellmer::type_number())`).

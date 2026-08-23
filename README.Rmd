@@ -128,6 +128,19 @@ raw_turns <- run_ai_on_chapters(
 chapter_results <- compute_run_ai_metrics(raw_turns)
 ```
 
+### Multi-model structured forecasting
+
+`run_structured_responses()` is the neutral one-model, one-prompt primitive;
+`run_text_analysis()` remains its text-annotation-oriented wrapper.
+
+For row-wise studies that cross several prompt variants with several model
+routes, use `plan_prompt_grid()` to validate the configuration and preview
+response counts, then `run_prompt_grid()` for provenance,
+per-completion checkpoints, and resume support. Keep the raw results before
+using `aggregate_model_forecasts()` to apply an explicit completion → prompt →
+model → family weighting hierarchy. See the [multi-model structured forecasting
+tutorial](https://centerconflictcooperation.github.io/nalanda/articles/prompt-grids-structured-forecasting.html).
+
 ```{r}
 library(nalanda)
 

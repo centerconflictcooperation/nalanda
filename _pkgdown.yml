@@ -15,6 +15,8 @@ navbar:
       href: articles/post-only-identity-treatments.html
     - text: Psychological Text Analysis
       href: articles/psychological-text-analysis.html
+    - text: Multi-Model Structured Forecasting
+      href: articles/prompt-grids-structured-forecasting.html
     - text: Methods and Roadmaps
     - text: Simulation Roadmap
       href: articles/simulation-roadmap.html
@@ -33,6 +35,7 @@ articles:
   - getting-started
   - post-only-identity-treatments
   - psychological-text-analysis
+  - prompt-grids-structured-forecasting
 - title: Methods and Roadmaps
   navbar: ~
   contents:

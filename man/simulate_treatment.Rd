@@ -32,7 +32,8 @@ by \code{\link[=run_ai_on_chapters]{run_ai_on_chapters()}}. Defaults to \code{""
 treatment is already encoded in \code{prompt} and/or \code{context_text}.}
 
 \item{prompt}{Character vector of prompt templates. Each element defines one
-turn. Prompt templates may include \code{{intervention_text}}, \code{{identity}}, and
+ordered turn in the same conversation, not an independent prompt variant.
+Prompt templates may include \code{{intervention_text}}, \code{{identity}}, and
 \code{{group}} placeholders.}
 
 \item{response_type}{An \code{ellmer} structured type specification applied to all
@@ -105,7 +106,8 @@ This function provides a simpler, prompt-first interface for running one or
 more turns against an intervention text. Each element of \code{prompt} defines one
 turn in the chat sequence. When \code{groups} is supplied, the same prompt
 sequence is repeated for each group identity; groups do not create additional
-turns.
+turns. For independent alternative prompts that must start fresh
+conversations, use \code{\link[=run_prompt_grid]{run_prompt_grid()}} instead.
 }
 \examples{
 \dontrun{
