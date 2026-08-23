@@ -44,6 +44,37 @@ test_that("run_text_analysis validates required columns before API use", {
   )
 })
 
+test_that("run_text_analysis supports ellmer 0.4 structured prompt batches", {
+  prompts_seen <- NULL
+
+  testthat::local_mocked_bindings(
+    new_portkey_chat = function(...) list(),
+    .package = "nalanda"
+  )
+  testthat::local_mocked_bindings(
+    parallel_chat_structured = function(chat, prompts, type, ...) {
+      if (!is.list(prompts)) {
+        stop("`prompts` must be a list or prompt.")
+      }
+      prompts_seen <<- prompts
+      lapply(seq_along(prompts), function(i) list(score = i))
+    },
+    .package = "ellmer"
+  )
+
+  out <- run_text_analysis(
+    data = tibble::tibble(text = c("first", "second")),
+    prompt = "Analyze {text}",
+    response_type = structure(list(), class = "mock_type")
+  )
+
+  expect_type(prompts_seen, "list")
+  expect_equal(prompts_seen, list("Analyze first", "Analyze second"))
+  expect_identical(class(out), c("nalanda", "tbl_df", "tbl", "data.frame"))
+  expect_no_error(mutated <- dplyr::mutate(out, doubled = score * 2))
+  expect_equal(mutated$doubled, c(2, 4))
+})
+
 test_that("evaluate_text_analysis computes categorical metrics", {
   x <- tibble::tibble(
     language = c("English", "English", "English", "Arabic"),

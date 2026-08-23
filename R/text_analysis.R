@@ -225,7 +225,7 @@ run_text_analysis <- function(
     if (identical(output_mode, "structured")) {
       responses <- ellmer::parallel_chat_structured(
         chat = chat,
-        prompts = prompts,
+        prompts = as.list(prompts),
         type = response_type,
         convert = TRUE,
         max_active = max_active,
@@ -277,7 +277,7 @@ run_text_analysis <- function(
     out <- out[, c(setdiff(names(out), long_cols), long_cols)]
   }
 
-  class(out) <- c(class(out), "nalanda")
+  class(out) <- unique(c("nalanda", class(out)))
   attr(out, "model") <- normalize_model_name(model)
   attr(out, "temperature") <- temperature
   attr(out, "n_simulations") <- n_simulations

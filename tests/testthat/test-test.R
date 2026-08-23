@@ -790,6 +790,7 @@ test_that("run_ai_on_chapters skips missing chapter text without model calls", {
 
 test_that("run_ai_on_chapters_one_turn skips missing chapter text before batching", {
   calls <- 0L
+  prompts_seen <- NULL
   testthat::local_mocked_bindings(
     new_portkey_chat = function(...) {
       list()
@@ -798,6 +799,10 @@ test_that("run_ai_on_chapters_one_turn skips missing chapter text before batchin
   )
   testthat::local_mocked_bindings(
     parallel_chat_structured = function(chat, prompts, type, ...) {
+      if (!is.list(prompts)) {
+        stop("`prompts` must be a list or prompt.")
+      }
+      prompts_seen <<- prompts
       calls <<- calls + length(prompts)
       lapply(prompts, function(prompt) {
         list(party = "Democrat", rating = 42)
@@ -827,6 +832,8 @@ test_that("run_ai_on_chapters_one_turn skips missing chapter text before batchin
   skipped <- out_tbl[out_tbl$chapter == "chapter_2.txt", ]
 
   expect_equal(calls, 2L)
+  expect_type(prompts_seen, "list")
+  expect_true(all(vapply(prompts_seen, is.character, logical(1))))
   expect_equal(nrow(out_tbl), 4)
   expect_true(all(is.na(skipped$rating)))
   expect_equal(skipped$party, c("Democrat", "Republican"))

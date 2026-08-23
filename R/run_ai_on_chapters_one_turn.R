@@ -247,7 +247,7 @@ execute_one_turn_pipeline <- function(
       if (identical(output_mode, "structured")) {
         responses <- ellmer::parallel_chat_structured(
           chat = chat,
-          prompts = prompts,
+          prompts = as.list(prompts),
           type = type_response,
           convert = TRUE,
           max_active = max_active,

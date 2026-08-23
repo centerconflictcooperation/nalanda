@@ -1,3 +1,11 @@
+# nalanda 0.0.2.1
+
+- Restored compatibility with `ellmer` 0.4.0 by passing structured prompt
+  batches as lists in `run_text_analysis()` and
+  `run_ai_on_chapters_one_turn()`.
+- Fixed the `nalanda` class order on `run_text_analysis()` results so current
+  `dplyr` and `vctrs` operations work without a downstream class workaround.
+
 # nalanda 0.0.2.0
 
 - Added `repair_run_ai_on_chapters()` to rerun only failed or fully missing
