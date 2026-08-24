@@ -17,6 +17,8 @@ navbar:
       href: articles/psychological-text-analysis.html
     - text: Multi-Model Structured Forecasting
       href: articles/prompt-grids-structured-forecasting.html
+    - text: Multi-Turn Survey Simulations
+      href: articles/multi-turn-survey-simulations.html
     - text: Methods and Roadmaps
     - text: Simulation Roadmap
       href: articles/simulation-roadmap.html
@@ -36,6 +38,7 @@ articles:
   - post-only-identity-treatments
   - psychological-text-analysis
   - prompt-grids-structured-forecasting
+  - multi-turn-survey-simulations
 - title: Methods and Roadmaps
   navbar: ~
   contents:
