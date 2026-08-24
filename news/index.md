@@ -1,5 +1,15 @@
 # Changelog
 
+## nalanda 0.0.2.3
+
+- Added
+  [`plan_survey_simulation()`](https://centerconflictcooperation.github.io/nalanda/reference/plan_survey_simulation.md)
+  and
+  [`run_survey_simulation()`](https://centerconflictcooperation.github.io/nalanda/reference/plan_survey_simulation.md)
+  for generic multi-turn simulated surveys, with row-wise participant
+  profiles, screen-specific schemas, explicit memory policies, per-turn
+  checkpointing, resume support, and long/wide outputs.
+
 ## nalanda 0.0.2.2
 
 - Added

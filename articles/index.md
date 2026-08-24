@@ -10,6 +10,8 @@
   \`nalanda\`](https://centerconflictcooperation.github.io/nalanda/articles/psychological-text-analysis.md):
 - [Prompt Grids for Multi-Model Structured
   Forecasting](https://centerconflictcooperation.github.io/nalanda/articles/prompt-grids-structured-forecasting.md):
+- [Multi-turn survey
+  simulations](https://centerconflictcooperation.github.io/nalanda/articles/multi-turn-survey-simulations.md):
 
 ### Methods and Roadmaps
 

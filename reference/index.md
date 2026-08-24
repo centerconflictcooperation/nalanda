@@ -82,6 +82,10 @@
 - [`plan_prompt_grid()`](https://centerconflictcooperation.github.io/nalanda/reference/plan_prompt_grid.md)
   : Plan a multi-model, multi-prompt grid
 
+- [`plan_survey_simulation()`](https://centerconflictcooperation.github.io/nalanda/reference/plan_survey_simulation.md)
+  [`run_survey_simulation()`](https://centerconflictcooperation.github.io/nalanda/reference/plan_survey_simulation.md)
+  : Plan and run a multi-turn survey simulation
+
 - [`plot_chapter_scores_faceted()`](https://centerconflictcooperation.github.io/nalanda/reference/plot_chapter_scores_faceted.md)
   : Faceted plot of chapter scores
 
@@ -177,6 +181,9 @@
 
 - [`summarize_treatment_results()`](https://centerconflictcooperation.github.io/nalanda/reference/summarize_treatment_results.md)
   : Summarize generic treatment results
+
+- [`survey_responses_wide()`](https://centerconflictcooperation.github.io/nalanda/reference/survey_responses_wide.md)
+  : Convert long survey turns to one row per simulated respondent
 
 - [`tidy_forecast_aggregation()`](https://centerconflictcooperation.github.io/nalanda/reference/tidy_forecast_aggregation.md)
   : Tidy hierarchical forecast aggregation results

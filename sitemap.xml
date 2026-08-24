@@ -8,6 +8,7 @@
 <url><loc>https://centerconflictcooperation.github.io/nalanda/TODO.html</loc></url>
 <url><loc>https://centerconflictcooperation.github.io/nalanda/articles/getting-started.html</loc></url>
 <url><loc>https://centerconflictcooperation.github.io/nalanda/articles/index.html</loc></url>
+<url><loc>https://centerconflictcooperation.github.io/nalanda/articles/multi-turn-survey-simulations.html</loc></url>
 <url><loc>https://centerconflictcooperation.github.io/nalanda/articles/post-only-identity-treatments.html</loc></url>
 <url><loc>https://centerconflictcooperation.github.io/nalanda/articles/prompt-grids-structured-forecasting.html</loc></url>
 <url><loc>https://centerconflictcooperation.github.io/nalanda/articles/psychological-text-analysis.html</loc></url>
@@ -44,6 +45,7 @@
 <url><loc>https://centerconflictcooperation.github.io/nalanda/reference/pairwise_for_level.html</loc></url>
 <url><loc>https://centerconflictcooperation.github.io/nalanda/reference/parse_chapter_numbers.html</loc></url>
 <url><loc>https://centerconflictcooperation.github.io/nalanda/reference/plan_prompt_grid.html</loc></url>
+<url><loc>https://centerconflictcooperation.github.io/nalanda/reference/plan_survey_simulation.html</loc></url>
 <url><loc>https://centerconflictcooperation.github.io/nalanda/reference/plot_chapter_scores_faceted.html</loc></url>
 <url><loc>https://centerconflictcooperation.github.io/nalanda/reference/plot_chapter_trajectories.html</loc></url>
 <url><loc>https://centerconflictcooperation.github.io/nalanda/reference/plot_chapters_over_time.html</loc></url>
@@ -76,6 +78,7 @@
 <url><loc>https://centerconflictcooperation.github.io/nalanda/reference/summarize_simulation_stability.html</loc></url>
 <url><loc>https://centerconflictcooperation.github.io/nalanda/reference/summarize_top_units.html</loc></url>
 <url><loc>https://centerconflictcooperation.github.io/nalanda/reference/summarize_treatment_results.html</loc></url>
+<url><loc>https://centerconflictcooperation.github.io/nalanda/reference/survey_responses_wide.html</loc></url>
 <url><loc>https://centerconflictcooperation.github.io/nalanda/reference/tidy_forecast_aggregation.html</loc></url>
 <url><loc>https://centerconflictcooperation.github.io/nalanda/reference/toy_run_ai_turns.html</loc></url>
 <url><loc>https://centerconflictcooperation.github.io/nalanda/reference/toy_sim_results.html</loc></url>

@@ -3,12 +3,13 @@ pkgdown: 2.2.1
 pkgdown_sha: ~
 articles:
   getting-started: getting-started.html
+  multi-turn-survey-simulations: multi-turn-survey-simulations.html
   post-only-identity-treatments: post-only-identity-treatments.html
   prompt-grids-structured-forecasting: prompt-grids-structured-forecasting.html
   psychological-text-analysis: psychological-text-analysis.html
   simulation-roadmap: simulation-roadmap.html
   understanding-hewitt-et-al: understanding-hewitt-et-al.html
-last_built: 2026-08-23T20:28Z
+last_built: 2026-08-24T14:01Z
 urls:
   reference: https://centerconflictcooperation.github.io/nalanda/reference
   article: https://centerconflictcooperation.github.io/nalanda/articles
