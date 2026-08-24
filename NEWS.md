@@ -1,4 +1,12 @@
+# nalanda 0.0.2.3
+
+- Added `plan_survey_simulation()` and `run_survey_simulation()` for generic
+  multi-turn simulated surveys, with row-wise participant profiles,
+  screen-specific schemas, explicit memory policies, per-turn checkpointing,
+  resume support, and long/wide outputs.
+
 # nalanda 0.0.2.2
+
 - Added `tidy_forecast_aggregation()`, `summarize_forecast_disagreement()`,
   and `compare_forecast_aggregations()` for reusable diagnostics of structured
   forecast aggregation results.
